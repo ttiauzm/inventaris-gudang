@@ -10,9 +10,11 @@ use Illuminate\Support\Facades\Hash;
 class AuthController extends Controller
 {
     public function login (Request $req) {
-        $req->validate(['username'=>'required|string', 'password'=>'required|string']);
+        $req->validate(['login'=>'required|string', 'password'=>'required|string']);
 
-        $user = User::where('username', $req->username)->first();
+        $user = User::where('username', $req->login)
+                    ->orWhere('email', $req->login)
+                    ->first();
 
         if (! $user || ! Hash::check($req->password, $user->password)) {
             return response()->json(['message' => 'Username atau password salah'], 401);
@@ -23,8 +25,7 @@ class AuthController extends Controller
         return response()->json([
             'access_token'=>$token,
             'token_type'=>'Bearer',
-            'user'=>$user
-            
+            'user'=>$user->only(['username', 'email', 'role'])
         ]);
     }
 

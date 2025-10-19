@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
-class permissions extends Model
+class Permissions extends Model
 {
     use HasUuids, HasFactory;
 
-    protected $primaryKey = 'user_id';
+    protected $primaryKey = 'permission_id';
     public $incrementing = false;
     protected $keyType = 'string';
 

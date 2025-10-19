@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use App\Models\Permissions;
 
 class User extends Authenticatable
 {
@@ -66,4 +67,15 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function hasPermission($permissionName) {
+        $role = $this->role;
+        if (!$role) return false;
+
+        return Permissions::where('role_id', $role->role_id)
+            ->where('permission_name', $permissionName)
+            ->where('is_deleted', false)
+            ->exists();
+    }
+
 }

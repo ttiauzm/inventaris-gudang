@@ -18,8 +18,7 @@ class Role extends Model
     protected $keyType = 'string';
     public $timestamps = false;
 
-
-    protected $fillable = [];
+    protected $fillable = ['role_name', 'permissions'];
 
     public function users()
     {
@@ -30,7 +29,5 @@ class Role extends Model
     {
         return $this->hasMany(Permission::class, 'role_id');
     }
-    
-    
-    
 }
+

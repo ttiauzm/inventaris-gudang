@@ -10,7 +10,8 @@ class Suppliers extends Model
 {
     use HasUuids, HasFactory;
 
-    protected $primaryKey = 'log_id';
+    // pakai kolom primary key yang benar
+    protected $primaryKey = 'supplier_id';
     public $incrementing = false;
     protected $keyType = 'string';
 
@@ -25,14 +26,17 @@ class Suppliers extends Model
         'is_deleted',
     ];
 
-    public function items() {
-        return $this->belongsToMany(Item::class, 'item_supplier', 'item_id', 'supplier_id');
-        
+    public function items()
+    {
+        return $this->belongsToMany(
+            Items::class,
+            'item_supplier',
+            'supplier_id',
+            'item_id'
+        );
     }
 
     public function transactions() {
         return $this->hasMany(Transaction::class, 'supplier_id');
-        
     }
-
 }

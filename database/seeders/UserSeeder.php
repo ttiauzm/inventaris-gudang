@@ -7,6 +7,7 @@ use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Role;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class UserSeeder extends Seeder
 {
@@ -17,11 +18,13 @@ class UserSeeder extends Seeder
     {
         $superadminRole = Role::where('role_name', 'superadmin')->first();
 
+        // Akun superadmin tambahan
         User::updateOrCreate(
-            ['email' => env('SUPERADMIN_EMAIL', 'superadmin@example.com')],
+            ['email' => 'superadmin2@example.com'],
             [
-                'username' => env('SUPERADMIN_USERNAME', 'superadmin'),
-                'password' => Hash::make(env('SUPERADMIN_PASSWORD', 'default123')),
+                'user_id' => Str::uuid(),
+                'username' => 'superadmin2',
+                'password' => Hash::make('password456'),
                 'role_id'  => $superadminRole->role_id,
                 'is_deleted' => false,
             ]

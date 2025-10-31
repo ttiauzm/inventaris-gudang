@@ -5,12 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use App\Models\Categories;
+use App\Models\Materials;
+use App\Models\Images;
+use App\Models\Supplier;
 
 class Items extends Model
 {
     use HasUuids, HasFactory;
 
-    protected $primaryKey = 'items_id';
+    protected $primaryKey = 'item_id';
     public $incrementing = false;
     protected $keyType = 'string';
 
@@ -25,24 +29,30 @@ class Items extends Model
         'parent_item_id',
     ];
 
-    public function category()
+    public function categories()
     {
-        return $this->belongsTo(Category::class, 'category_id');
+        return $this->belongsTo(Categories::class, 'category_id');
     }
 
-    public function material()
+    public function materials()
     {
-        return $this->belongsTo(Material::class, 'material_id');
+        return $this->belongsTo(Materials::class, 'material_id');
     }
 
     public function images () {
-        return $this->hasMany(ItemImage::class, 'item_id');
+        return $this->hasMany(Images::class, 'item_id');
         
     }
 
-    public function supplier () {
-        return $this->belongsToMany(Supplier::class, 'supplier_id', 'item_id', 'supplier_id');
-        
+    public function suppliers()
+    {
+        return $this->belongsToMany(
+            Suppliers::class,      // Model tujuan
+            'item_supplier',      // Nama tabel pivot
+            'item_id',            // Foreign key di tabel pivot untuk Item
+            'supplier_id'         // Foreign key di tabel pivot untuk Supplier
+        );
     }
+
 
 }

@@ -26,6 +26,7 @@ class RolePermissionSeeder extends Seeder
             'login',
             'manage_users',
             'add_item',
+            'view_item',
             'update_item',
             'delete_item',
             'add_category',
@@ -53,6 +54,7 @@ class RolePermissionSeeder extends Seeder
 
             // Admin
             'login_admin',
+            'view_item_admin',
             'add_item_admin',
             'update_item_admin',
             'view_transaction_admin',

@@ -14,7 +14,10 @@ class Logs extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
+    public $timestamps = true;
+
     protected $fillable = [
+        'log_id',      // tambahkan log_id
         'user_id',
         'action',
         'table_name',
@@ -25,8 +28,4 @@ class Logs extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
-    
-
-
-    
 }

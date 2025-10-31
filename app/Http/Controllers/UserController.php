@@ -75,7 +75,6 @@ class UserController extends Controller
             'action'     => 'CREATE',
             'table_name' => 'users',
             'row_id'     => $admin->user_id,
-            'timestamp'  => now(),
         ]);
 
         return response()->json([
@@ -117,7 +116,6 @@ class UserController extends Controller
             'action' => 'UPDATE',
             'table_name' => 'users',
             'row_id' => $authUser->user_id,
-            'timestamp' => now(),
         ]);
 
         return response()->json([
@@ -165,7 +163,6 @@ class UserController extends Controller
             'action' => 'UPDATE',
             'table_name' => 'users',
             'row_id' => $user->user_id,
-            'timestamp' => now(),
         ]);
 
         return response()->json([
@@ -202,7 +199,6 @@ class UserController extends Controller
             'action' => 'DELETE',
             'table_name' => 'users',
             'row_id' => $user->user_id,
-            'timestamp' => now(),
         ]);
 
         return response()->json([

@@ -24,15 +24,15 @@ class Transactions extends Model
         'description',
     ];
 
-    public function user() {
+    public function users() {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function item() {
+    public function items() {
         return $this->belongsTo(items::class, 'item_id');
     }
 
-    public function supplier() {
+    public function suppliers() {
         return $this->belongsTo(suppliers::class, 'supplier_id');
     }
     

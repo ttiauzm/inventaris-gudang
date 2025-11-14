@@ -59,6 +59,7 @@
     "@types/sass-loader": "8.0.3",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
+    "@vitejs/plugin-react": "^5.1.1",
     "@vitejs/plugin-react-swc": "^3.3.2",
     "css-loader": "6.7.1",
     "del": "7.0.0",

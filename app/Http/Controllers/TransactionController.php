@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Transactions;
-use Illuminate\Support\Facades\Auth;
+use Spatie\SimpleExcel\SimpleExcelWriter;
+use Carbon\Carbon;
 
 class TransactionController extends Controller
 {
+
     public function index()
     {
         $authUser = Auth::user();
@@ -56,4 +57,33 @@ class TransactionController extends Controller
             'data' => $transaction
         ]);
     }
+
+    public function exportExcelTransactions()
+    {
+        $transactions = Transactions::with(['items', 'suppliers', 'users'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $rows = $transactions->map(function ($t) {
+            return [
+                'Transaction ID' => $t->transaction_id,
+                'Item Name'      => $t->items->item_name ?? '-',
+                'Supplier'       => $t->suppliers->supplier_name ?? '-',
+                'User'           => $t->users->username ?? '-',
+                'Type'           => $t->transaction_type,
+                'Quantity'       => $t->quantity,
+                'Unit'           => $t->unit,
+                'Description'    => $t->description,
+                'Created At'     => optional($t->created_at)->format('Y-m-d H:i:s'),
+            ];
+        })->toArray();
+
+        $path = storage_path('app/transactions.xlsx');
+
+        $writer = SimpleExcelWriter::create($path)
+            ->addRows($rows);
+
+        return response()->download($path)->deleteFileAfterSend();
+    }
+
 }

@@ -104,6 +104,7 @@ class ItemController extends Controller
             'quantity' => 'required|integer|min:0',
             'supplier_ids' => 'array',
             'supplier_ids.*' => 'exists:suppliers,supplier_id',
+            'description' => 'nullable|string|max:255',
         ]);
 
         $originalQty = $parentItem->quantity;
@@ -164,7 +165,7 @@ class ItemController extends Controller
             'transaction_type' => 'CUT',
             'quantity' => $newQty,
             'unit' => $parentItem->unit,
-            'description' => 'Pengambilan barang dari stok utama',
+            'description' => $request->description ?? 'Pengambilan barang dari stok utama',
             'transaction_date' => now(),
         ]);
 

@@ -9,7 +9,9 @@ use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\SupplierController;
-
+use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\LogsController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -40,10 +42,28 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/transactions', [TransactionController::class, 'index']);
     Route::get('/transactions/{id}', [TransactionController::class, 'show']);
+    Route::get('/export/transactions', [TransactionController::class, 'exportExcelTransactions']);
 
     Route::get('/suppliers', [SupplierController::class, 'index']);
     Route::post('/suppliers', [SupplierController::class, 'store']);
     Route::put('/suppliers/{id}', [SupplierController::class, 'update']);
     Route::delete('/suppliers/{id}', [SupplierController::class, 'destroy']);
+
+    Route::get('/materials/dropdown-data', [MaterialController::class, 'dropdownData']);
+    Route::get('/materials', [MaterialController::class, 'index']);
+    Route::get('/materials/{id}', [MaterialController::class, 'show']);
+    Route::post('/materials', [MaterialController::class, 'store']);
+    Route::put('/materials/{id}', [MaterialController::class, 'update']);
+    Route::delete('/materials/{id}', [MaterialController::class, 'destroy']);
+
+    Route::get('/categories/dropdown-data', [CategoryController::class, 'dropdownData']);
+    Route::get('/categories', [CategoryController::class, 'index']);
+    Route::get('/categories/{id}', [CategoryController::class, 'show']);
+    Route::post('/categories', [CategoryController::class, 'store']);
+    Route::put('/categories/{id}', [CategoryController::class, 'update']);
+    Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
+
+    Route::get('/logs', [LogsController::class, 'index']);
+    Route::get('/export/logs', [LogsController::class, 'exportExcelLogs']);
 });
 

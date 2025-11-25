@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Roles;
+use App\Models\Role;
 use App\Models\Permissions;
 use App\Models\Logs;
 use Illuminate\Support\Str;
@@ -12,7 +12,7 @@ class RoleController extends Controller
 {
     public function index()
     {
-        $roles = Roles::where('is_deleted', false)
+        $roles = Role::where('is_deleted', false)
             ->select('role_id', 'role_name')
             ->get();
 
@@ -92,7 +92,7 @@ class RoleController extends Controller
             'role_name' => 'required|string|unique:roles,role_name',
         ]);
 
-        $role = Roles::create([
+        $role = Role::create([
             'role_id' => Str::uuid(),
             'role_name' => $req->role_name,
             'is_deleted' => false,
@@ -111,4 +111,48 @@ class RoleController extends Controller
             'role' => $role,
         ], 201);
     }
+
+    public function addPermissionToRole(Request $req, $role_id)
+    {
+        $authUser = $req->user();
+
+        if ($authUser->role->role_name !== 'superadmin') {
+            return response()->json(['message' => 'Unauthorized - hanya superadmin'], 403);
+        }
+
+        $req->validate([
+            'permission_name' => 'required|string|exists:permissions,permission_name',
+        ]);
+
+        $role = Role::where('role_id', $role_id)->first();
+
+        if (!$role) {
+            return response()->json(['message' => 'Role tidak ditemukan'], 404);
+        }
+
+        $permission = Permissions::where('permission_name', $req->permission_name)->first();
+
+        if ($role->permissions()->where('permissions.permission_id', $permission->permission_id)->exists()) {
+            return response()->json(['message' => 'Role sudah memiliki permission ini'], 409);
+        }
+
+        $role->permissions()->attach($permission->permission_id);
+
+        Logs::create([
+            'log_id'     => \Illuminate\Support\Str::uuid(),
+            'user_id'    => $authUser->user_id,
+            'action'     => 'CREATE',
+            'table_name' => 'role_permissions',
+            'row_id'     => $role->role_id,
+        ]);
+
+        return response()->json([
+            'message' => 'Permission berhasil ditambahkan ke role',
+            'data' => [
+                'role_name' => $role->role_name,
+                'permission' => $permission->permission_name,
+            ],
+        ], 201);
+    }
+
 }

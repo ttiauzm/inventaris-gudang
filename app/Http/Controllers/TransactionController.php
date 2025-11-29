@@ -15,7 +15,7 @@ class TransactionController extends Controller
 
  //       if (!$authUser->can('view_transaction')) {
  //           return response()->json(['message' => 'Anda tidak memiliki izin melihat transaksi'], 403);
-        }
+ //       }
 
         $transactions = Transactions::with([
             'items:item_id,item_name',

@@ -23,6 +23,7 @@ body {
 	.container-xxl,
 	.container-fluid {
 		padding: 0 get($content-spacing, desktop);
+		// padding: 0;
 	}
 
 	// Wrapper
@@ -44,6 +45,7 @@ body {
 	.container-fluid {
 		max-width: none;
 		padding: 0 get($content-spacing, tablet-and-mobile);
+		// padding: 0;
 	}
 
 	// Wrapper

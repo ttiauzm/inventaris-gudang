@@ -1,17 +1,17 @@
-import {useEffect} from 'react'
-import {Navigate, Routes} from 'react-router-dom'
-import {useAuth} from './core/Auth'
+import {useEffect} from "react";
+import {Navigate} from "react-router-dom";
+import {useAuth} from "./core/Auth";
 
 export function Logout() {
-  const {logout} = useAuth()
-  useEffect(() => {
-    logout()
-    document.location.reload()
-  }, [logout])
+  const {logout} = useAuth();
 
-  return (
-    <Routes>
-      <Navigate to='/auth/login' />
-    </Routes>
-  )
+  useEffect(() => {
+    const processLogout = async () => {
+      await logout();
+    };
+
+    processLogout();
+  }, [logout]);
+
+  return <Navigate to="/auth/login" replace />;
 }

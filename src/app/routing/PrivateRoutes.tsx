@@ -7,8 +7,15 @@ import {MenuTestPage} from '../pages/MenuTestPage'
 import {getCSSVariableValue} from '../../_metronic/assets/ts/_utils'
 import {WithChildren} from '../../_metronic/helpers'
 import BuilderPageWrapper from '../pages/layout-builder/BuilderPageWrapper'
+import {useAuth} from '../modules/auth'
+import {InventoryPage} from '../pages/inventory/InventoryPage'
+import {HistoryPage} from '../pages/history/HistoryPage'
+import {LogSystemPage} from '../pages/log-system/LogSystemPage'
+import { SupplierPage } from '../pages/supplier/SupplierPage'
+import {UserManagementPage} from '../pages/user-management/UserManagementPage'
 
 const PrivateRoutes = () => {
+  const {currentUser} = useAuth()
   const ProfilePage = lazy(() => import('../modules/profile/ProfilePage'))
   const WizardsPage = lazy(() => import('../modules/wizards/WizardsPage'))
   const AccountPage = lazy(() => import('../modules/accounts/AccountPage'))
@@ -16,15 +23,31 @@ const PrivateRoutes = () => {
   const ChatPage = lazy(() => import('../modules/apps/chat/ChatPage'))
   const UsersPage = lazy(() => import('../modules/apps/user-management/UsersPage'))
 
+  // AUTH CHECK: Redirect ke login jika tidak ada user
+  if (!currentUser) {
+    console.log(' No currentUser, redirecting to login')
+    return <Navigate to='/auth/login' replace />
+  }
+
+  console.log('✅ CurrentUser exists:', currentUser.username)
+
   return (
     <Routes>
       <Route element={<MasterLayout />}>
-        {/* Redirect to Dashboard after success login/registartion */}
+        {/* Redirect to Dashboard after success login/registration */}
         <Route path='auth/*' element={<Navigate to='/dashboard' />} />
+        
         {/* Pages */}
         <Route path='dashboard' element={<DashboardWrapper />} />
         <Route path='builder' element={<BuilderPageWrapper />} />
         <Route path='menu-test' element={<MenuTestPage />} />
+        {/*core pages*/}
+        <Route path='apps/inventory' element={<InventoryPage />} />
+        <Route path='apps/history' element={<HistoryPage />} />
+        <Route path='apps/log-system' element={<LogSystemPage />} />
+        <Route path='apps/supplier' element={<SupplierPage/>} />
+        <Route path='admin/users' element={<UserManagementPage />} />
+
         {/* Lazy Modules */}
         <Route
           path='crafted/pages/profile/*'
@@ -74,6 +97,7 @@ const PrivateRoutes = () => {
             </SuspensedView>
           }
         />
+        
         {/* Page Not Found */}
         <Route path='*' element={<Navigate to='/error/404' />} />
       </Route>

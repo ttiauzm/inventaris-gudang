@@ -9,35 +9,31 @@ import {FC} from 'react'
 import {Routes, Route, BrowserRouter, Navigate} from 'react-router-dom'
 import {PrivateRoutes} from './PrivateRoutes'
 import {ErrorsPage} from '../modules/errors/ErrorsPage'
-import {Logout, AuthPage, useAuth} from '../modules/auth'
+import {Logout, AuthPage} from '../modules/auth'
 import {App} from '../App'
 
 /**
  * Base URL of the website.
- *
- * @see https://facebook.github.io/create-react-app/docs/using-the-public-folder
  */
-const {BASE_URL} = import.meta.env
+const {PUBLIC_URL} = import.meta.env
 
 const AppRoutes: FC = () => {
-  const {currentUser} = useAuth()
   return (
-    <BrowserRouter basename={BASE_URL}>
+    <BrowserRouter basename={PUBLIC_URL}>
       <Routes>
         <Route element={<App />}>
+          {/* Error Pages */}
           <Route path='error/*' element={<ErrorsPage />} />
           <Route path='logout' element={<Logout />} />
-          {currentUser ? (
-            <>
-              <Route path='/*' element={<PrivateRoutes />} />
-              <Route index element={<Navigate to='/dashboard' />} />
-            </>
-          ) : (
-            <>
-              <Route path='auth/*' element={<AuthPage />} />
-              <Route path='*' element={<Navigate to='/auth' />} />
-            </>
-          )}
+
+          {/* 🔓 Public Auth Routes */}
+          <Route path='auth/*' element={<AuthPage />} />
+
+          {/* 🔒 Private Routes - Protected */}
+          <Route path='/*' element={<PrivateRoutes />} />
+
+          {/* Redirect root to dashboard */}
+          <Route index element={<Navigate to='/dashboard' />} />
         </Route>
       </Routes>
     </BrowserRouter>
@@ -45,3 +41,9 @@ const AppRoutes: FC = () => {
 }
 
 export {AppRoutes}
+
+/**
+ * Base URL of the website.
+ *
+ * @see https://facebook.github.io/create-react-app/docs/using-the-public-folder
+ */

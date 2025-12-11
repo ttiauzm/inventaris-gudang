@@ -2,12 +2,13 @@ import {useEffect} from 'react'
 import {Outlet, useLocation} from 'react-router-dom'
 import {AsideDefault} from './components/aside/AsideDefault'
 import {Footer} from './components/Footer'
-import {HeaderWrapper} from './components/header/HeaderWrapper'
+import {HeaderWrapper, HEADER_ENABLED} from './components/header/HeaderWrapper'
 import {RightToolbar} from '../partials/layout/RightToolbar'
 import {ScrollTop} from './components/ScrollTop'
 import {PageDataProvider} from './core'
 import {ActivityDrawer, DrawerMessenger, InviteUsers, UpgradePlan} from '../partials'
 import {MenuComponent} from '../assets/ts/components'
+import { Header } from './components/header/Header'
 
 const MasterLayout = () => {
   const location = useLocation()
@@ -25,6 +26,7 @@ const MasterLayout = () => {
         <div className='page d-flex flex-row flex-column-fluid'>
           <AsideDefault />
           {/* begin::Wrapper */}
+          {HEADER_ENABLED && <Header />}
           <div className='wrapper d-flex flex-column flex-row-fluid' id='kt_wrapper'>
             <HeaderWrapper />
             {/* begin::Content */}

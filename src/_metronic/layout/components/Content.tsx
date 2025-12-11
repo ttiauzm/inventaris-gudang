@@ -14,7 +14,7 @@ const Content: FC<WithChildren> = ({children}) => {
 
   return (
     <div id='kt_content_container' className={clsx(classes.contentContainer.join(' '))}>
-      <div id='kt_content' className='content d-flex flex-column flex-column-fluid'>
+      <div id='kt_content' className='content d-flex flex-column flex-column-fluid py-10'>
         {children}
       </div>
     </div>

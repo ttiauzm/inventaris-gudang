@@ -21,6 +21,7 @@ const AsideMenu: React.FC<Props> = () => {
     <div
       id='kt_aside_menu'
       className='menu menu-column menu-title-gray-600 menu-state-primary menu-state-icon-primary menu-state-bullet-primary menu-arrow-gray-500 fw-bold fs-6'
+      style={{ backgroundColor: '#F6F6F9' }}
       data-kt-menu='true'
     >
       <AsideMenuMain />

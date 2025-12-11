@@ -9,6 +9,7 @@ import {Link} from 'react-router-dom'
 import {toAbsoluteUrl} from '../../../../_metronic/helpers'
 import {PasswordMeterComponent} from '../../../../_metronic/assets/ts/components'
 import {useAuth} from '../core/Auth'
+import API from "../../../../api";
 
 const initialValues = {
   firstname: '',
@@ -54,20 +55,24 @@ export function Registration() {
     onSubmit: async (values, {setStatus, setSubmitting}) => {
       setLoading(true)
       try {
-        const {data: auth} = await register(
-          values.email,
-          values.firstname,
-          values.lastname,
-          values.password,
-          values.changepassword
-        )
-        saveAuth(auth)
-        const {data: user} = await getUserByToken(auth.api_token)
-        setCurrentUser(user)
-      } catch (error) {
+        // 1. Hit API Laravel register
+        await API.post("/register", {
+          name: values.firstname + " " + values.lastname,
+          email: values.email,
+          password: values.password,
+          password_confirmation: values.changepassword,
+        });
+
+        // 2. Setelah register sukses, arahkan user ke halaman login
+        setStatus("Register success! Please login.")
+        setSubmitting(false)
+        setLoading(false)
+
+      } catch (error:any) {
         console.error(error)
-        saveAuth(undefined)
-        setStatus('The registration details is incorrect')
+        setStatus(
+          error?.response?.data?.message || "Registration failed"
+        )
         setSubmitting(false)
         setLoading(false)
       }

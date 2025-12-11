@@ -3,7 +3,7 @@ import {Outlet} from 'react-router-dom'
 import {I18nProvider} from '../_metronic/i18n/i18nProvider'
 import {LayoutProvider, LayoutSplashScreen} from '../_metronic/layout/core'
 import {MasterInit} from '../_metronic/layout/MasterInit'
-import {AuthInit} from './modules/auth'
+import {AuthProvider, AuthInit} from './modules/auth'
 import {ThemeModeProvider} from '../_metronic/partials/layout/theme-mode/ThemeModeProvider'
 
 const App = () => {
@@ -11,12 +11,12 @@ const App = () => {
     <Suspense fallback={<LayoutSplashScreen />}>
       <I18nProvider>
         <LayoutProvider>
-          <ThemeModeProvider>
+          <AuthProvider>
             <AuthInit>
               <Outlet />
               <MasterInit />
             </AuthInit>
-          </ThemeModeProvider>
+          </AuthProvider>
         </LayoutProvider>
       </I18nProvider>
     </Suspense>

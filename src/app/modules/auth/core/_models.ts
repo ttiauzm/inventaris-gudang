@@ -1,5 +1,5 @@
 export interface AuthModel {
-  api_token: string
+  token: string
   refreshToken?: string
 }
 
@@ -31,8 +31,8 @@ export interface UserEmailSettingsModel {
     newsAboutKeenthemesProductsAndFeatureUpdates?: boolean
     tipsOnGettingMoreOutOfKeen?: boolean
     thingsYouMissedSindeYouLastLoggedIntoKeen?: boolean
-    newsAboutStartOnPartnerProductsAndOtherServices?: boolean
-    tipsOnStartBusinessProducts?: boolean
+    newsAboutMetronicOnPartnerProductsAndOtherServices?: boolean
+    tipsOnMetronicBusinessProducts?: boolean
   }
 }
 
@@ -58,10 +58,10 @@ export interface UserModel {
   pic?: string
   language?: 'en' | 'de' | 'es' | 'fr' | 'ja' | 'zh' | 'ru'
   timeZone?: string
-  website?: 'https://keenthemes.com'
+  website?: string
   emailSettings?: UserEmailSettingsModel
   auth?: AuthModel
   communication?: UserCommunicationModel
   address?: UserAddressModel
   socialNetworks?: UserSocialNetworksModel
-}
+};

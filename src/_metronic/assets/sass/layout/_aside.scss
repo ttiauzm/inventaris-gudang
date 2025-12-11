@@ -26,7 +26,7 @@
 
 					i,
 					.svg-icon {
-						color: $white !important;
+						color: #897870 !important;
 					}
 				}
 									
@@ -36,18 +36,18 @@
 
 						i,
 						.svg-icon {
-							color: $white !important;
+							color: black !important;
 						}
 					}
 				}
 
 				&.active {
 					.menu-icon {
-						background-color: $white;
+						background-color: $white !important;
 
 						i,
 						.svg-icon {
-							color: $primary !important;
+							color: #897870 !important;
 						}
 					}
 				}
@@ -60,7 +60,7 @@
 
 					i,
 					.svg-icon {
-						color: $white !important;
+						color: #897900 !important;
 					}
 				}
 			}

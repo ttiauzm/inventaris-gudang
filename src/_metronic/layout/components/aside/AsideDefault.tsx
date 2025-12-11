@@ -13,7 +13,8 @@ const AsideDefault: FC = () => {
   return (
     <div
       id='kt_aside'
-      className={clsx('aside overflow-visible bg-primary', classes.aside.join(' '))}
+      className={clsx('aside overflow-visible', classes.aside.join(' '))}
+      style={{ backgroundColor: '#F6F6F9', color: 'black'}}
       data-kt-drawer='true'
       data-kt-drawer-name='aside'
       data-kt-drawer-activate='{default: true, lg: false}'
@@ -28,7 +29,7 @@ const AsideDefault: FC = () => {
         id='kt_aside_logo'
       >
         <Link to='/dashboard'>
-          <img src={toAbsoluteUrl('media/logos/demo4.svg')} alt='logo' className='h-55px' />
+          <img src={toAbsoluteUrl('media/logos/default-delova.png')} alt='logo' className='h-25px' />
         </Link>
       </div>
       {/* end::Logo */}
@@ -36,6 +37,7 @@ const AsideDefault: FC = () => {
       {/* begin::Nav */}
       <div
         className='asaside-nav d-flex flex-column align-lg-center flex-column-fluid w-100 pt-5 pt-lg-0'
+        style={{ backgroundColor: '#F6F6F9' }}
         id='kt_aside_nav'
       >
         <AsideMenu asideMenuCSSClasses={classes.asideMenu} />

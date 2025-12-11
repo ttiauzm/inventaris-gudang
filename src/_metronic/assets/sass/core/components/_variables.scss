@@ -20,6 +20,8 @@ $coal-clarity:  rgba(#18191F, 50) !default;
 // Bootstrap color system
 $white: #ffffff !default;
 $black:#000000 !default;
+$delova-second: #B7ADA6 !default;
+$delova: #897870 !default;
 
 // Bootstrap grey colors
 $gray-100: #F9F9F9 !default;
@@ -50,17 +52,17 @@ $grays: (
 
 // Bootstrap contextual colors
 // Primary colors
-$primary:						#1B84FF !default;
-$primary-active:				#056EE9 !default;
-$primary-light: 				#E9F3FF !default;
-$primary-clarity: 				rgba(#1B84FF, 0.2) !default;
+$primary:						#897870 !default;
+$primary-active:				#897870 !default;
+$primary-light: 				#F6F6F9 !default;
+$primary-clarity: 				rgba(#897870, 0.2) !default;
 $primary-inverse: 				$white !default; 
 
 // Secondary colors
-$secondary: 						$gray-200 !default;
-$secondary-active: 				$gray-400 !default;
-$secondary-light: 				#F9F9F9 !default;
-$secondary-clarity:				rgba(#F9F9F9, 0.2) !default; 
+$secondary: 					#B7ADA6 !default;
+$secondary-active: 				#B7ADA6, 0.2 !default;
+$secondary-light: 				#F6F6F9 !default;
+$secondary-clarity:				#B7ADA6, 0.2 !default; 
 $secondary-inverse:				$gray-800 !default; 
 
 // Light colors

@@ -74,11 +74,26 @@ export function AsideMenuMain() {
       {isSuperAdmin && (
         <>
           <div className='separator separator-dashed mx-5 my-3'></div>
+          <div className='menu-section text-muted text-uppercase fs-8 ls-1 px-5 mb-2'>
+            Admin Panel
+          </div>
           <AsideMenuItem
             to='/admin/users'
             icon='profile-user'
             title='Manajemen Akun'
             fontIcon='bi-people'
+          />
+          <AsideMenuItem
+            to='/admin/categories'
+            icon='category'
+            title='Kategori Barang'
+            fontIcon='bi-grid'
+          />
+          <AsideMenuItem
+            to='/admin/materials'
+            icon='bucket'
+            title='Jenis Material'
+            fontIcon='bi-box2'
           />
         </>
       )}

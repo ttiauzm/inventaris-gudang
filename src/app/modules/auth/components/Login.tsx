@@ -83,30 +83,47 @@ export function Login() {
         values.password === "1234"
 
       if (isDevLogin) {
-        console.log('🚀 DEV MODE: Bypassing authentication')
-        console.log('📧 Email:', values.email)
-        console.log('🔑 Password:', values.password)
+        console.log('=====DEV MODE: Bypassing authentication=====')
+        console.log('Email:', values.email)
+        console.log('Password:', values.password)
         
+        // const devAuth = { token: "dev-token" }
+        // const devUser: UserModel = {
+        //   id: 0,
+        //   username: "dev",
+        //   password: undefined,
+        //   email: "dev@example.com",
+        //   first_name: "Dev",
+        //   last_name: "User",
+        //   fullname: "Dev User",
+        //   // ... other fields
+        //   roles: [999], // 999 = SuperAdmin
+        //   // ... rest of fields
+        // }
+        // saveAuth(devAuth)
+        // setCurrentUser(devUser)
+        // navigate('/dashboard')
+
         try {
           const devAuth = { token: "dev-token" }
-          console.log('💾 Saving auth:', devAuth)
+          console.log('==Saving auth:', devAuth)
           saveAuth(devAuth)
           
-          console.log('👤 Setting user:', DEV_USER)
+          console.log('==Setting user:', DEV_USER)
           setCurrentUser(DEV_USER)
           
-          console.log('✅ Auth saved, navigating to dashboard...')
+          console.log('==Auth saved, navigating to dashboard...')
           
           // Small delay untuk memastikan state terupdate
           setTimeout(() => {
-            console.log('🚀 Navigate to /dashboard')
+            console.log('==Navigate to /dashboard')
             navigate('/dashboard')
           }, 100)
           
           setLoading(false)
           return
         } catch (error) {
-          console.error('❌ Dev login error:', error)
+          console.error('+=+=+Dev login error:', error)
           setStatus('Dev login failed: ' + error)
           setLoading(false)
           return

@@ -6,18 +6,39 @@ import {HeaderWrapper, HEADER_ENABLED} from './components/header/HeaderWrapper'
 import {RightToolbar} from '../partials/layout/RightToolbar'
 import {ScrollTop} from './components/ScrollTop'
 import {PageDataProvider} from './core'
-import {ActivityDrawer, DrawerMessenger, InviteUsers, UpgradePlan} from '../partials'
 import {MenuComponent} from '../assets/ts/components'
 import { Header } from './components/header/Header'
+import {Content} from './components/Content'
+import {Sidebar} from './components/Sidebar'
+import {
+  DrawerMessenger,
+  ActivityDrawer,
+  InboxCompose,
+  InviteUsers,
+  UpgradePlan,
+} from '../partials'
+import { main } from '@popperjs/core'
+import { themeModeSwitchHelper } from '../partials/layout/theme-mode/ThemeModeProvider'
+import { useThemeMode } from '../partials/layout/theme-mode/ThemeModeProvider'
+import {reInitMenu} from '../helpers'
 
 const MasterLayout = () => {
   const location = useLocation()
+  const {mode} = useThemeMode()
 
   useEffect(() => {
     setTimeout(() => {
       MenuComponent.reinitialization()
     }, 500)
   }, [location.key])
+  
+  // useEffect(() => {
+  //   reInitMenu()
+  // }, [location.key])
+
+  // useEffect(() => {
+  //   themeModeSwitchHelper(mode)
+  // }, [mode])
 
   return (
     <PageDataProvider>

@@ -1,3 +1,4 @@
+//InventoryPage.tsx
 import {FC, useState, useEffect} from 'react'
 import {KTIcon} from '../../../_metronic/helpers'
 import TiltedCard from '../../components/TiltedCard'
@@ -98,9 +99,25 @@ const InventoryPage: FC = () => {
   }
 
   const handleTakeItem = async (quantity: number) => {
-    console.log('Taking item:', selectedItem?.name, 'quantity:', quantity)
-    // API call here
-    fetchInventory()
+    if (!selectedItem || !currentUser) return
+
+    //API here
+
+    try {
+      const {takeInventoryItem} = await import('./core/_requests')
+      await takeInventoryItem(
+        selectedItem.id,
+        quantity,
+        `Pengambilan barang oleh ${currentUser.fullname || currentUser.username}`,
+        currentUser.id,
+        currentUser.fullname || currentUser.username
+      )
+
+      alert(`Berhasil mengambil ${quantity} ${selectedItem.unit} ${selectedItem.name}`)
+      fetchInventory() // Refresh data
+    } catch (error: any) {
+      alert(error.message || 'Gagal mengambil barang')
+    }
   }
 
   const handleSave = () => {

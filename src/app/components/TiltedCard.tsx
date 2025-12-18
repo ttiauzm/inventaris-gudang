@@ -47,7 +47,7 @@ const TiltedCard: React.FC<TiltedCardProps> = ({
   }
 
   function handleMouseEnter() {
-    scale.set(1.05)
+    scale.set(1.15)
     opacity.set(1)
   }
 

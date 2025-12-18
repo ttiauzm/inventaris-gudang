@@ -1,25 +1,31 @@
 import {FC, useState} from 'react'
 import {KTIcon} from '../../../../_metronic/helpers'
-import {InventoryItem} from '../core/_model'
+import { InventoryItem } from '../core/_model'
 import {useAuth} from '../../../modules/auth'
 
 interface ItemDetailModalProps {
   item: InventoryItem
   onClose: () => void
   onEdit: (item: InventoryItem) => void
-  onTakeItem: (quantity: number) => void
+  onTakeItem: (quantity: number, description: string) => void
 }
 
 const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTakeItem}) => {
   const {currentUser} = useAuth()
-  const isSuperAdmin = currentUser?.roles?.includes(999) // SuperAdmin role ID
+  const isSuperAdmin = currentUser?.roles?.includes(999)
   const [takeQuantity, setTakeQuantity] = useState(0)
+  const [takeDescription, setTakeDescription] = useState('')
   const [showTakeForm, setShowTakeForm] = useState(false)
 
-  const handleTake = () => {
+  const handleTake = async () => {
     if (takeQuantity > 0 && takeQuantity <= item.quantity) {
-      onTakeItem(takeQuantity)
-      onClose()
+      try {
+        onTakeItem(takeQuantity, takeDescription)
+        alert(`Berhasil mengambil ${takeQuantity} ${item.unit} ${item.name}`)
+        onClose()
+      } catch (error) {
+        alert('Gagal mengambil barang')
+      }
     } else {
       alert('Jumlah tidak valid')
     }
@@ -30,17 +36,17 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
       {/* Backdrop */}
       <div 
         className='modal-backdrop fade show' 
-        style={{backgroundColor: 'rgba(0,0,0,0.7)'}}
+        style={{backgroundColor: 'rgba(0,0,0,0.5)'}}
         onClick={onClose}
       />
 
       {/* Modal */}
       <div className='modal fade show d-block' tabIndex={-1}>
-        <div className='modal-dialog modal-dialog-centered modal-lg'>
-          <div className='modal-content'>
+        <div className='modal-dialog modal-dialog-centered' style={{maxWidth: '1200px'}}>
+          <div className='modal-content' style={{borderRadius: '12px'}}>
             {/* Header */}
-            <div className='modal-header'>
-              <h3 className='modal-title fw-bold'>{item.name}</h3>
+            <div className='modal-header border-0 pb-0'>
+              <h2 className='modal-title fw-bold'>{item.name}</h2>
               <button
                 type='button'
                 className='btn-close'
@@ -49,123 +55,221 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
             </div>
 
             {/* Body */}
-            <div className='modal-body'>
-              <div className='row g-5'>
-                {/* Image */}
-                <div className='col-md-6'>
-                  <img
-                    src={item.image || 'https://via.placeholder.com/400'}
-                    alt={item.name}
-                    className='w-100 rounded'
-                    style={{maxHeight: '400px', objectFit: 'cover'}}
-                  />
-                </div>
-
-                {/* Details */}
-                <div className='col-md-6'>
-                  <div className='mb-5'>
-                    <label className='form-label text-muted fs-7'>Supplier</label>
-                    <p className='fw-bold fs-5'>{item.supplier}</p>
+            <div className='modal-body pt-3'>
+              {!showTakeForm ? (
+                <div className='row g-5'>
+                  {/* Left Side - Image */}
+                  <div className='col-md-6'>
+                    <img
+                      src={item.image || 'https://via.placeholder.com/600x800'}
+                      alt={item.name}
+                      className='w-100 rounded'
+                      style={{
+                        height: '600px',
+                        objectFit: 'cover',
+                        borderRadius: '12px'
+                      }}
+                    />
                   </div>
 
-                  <div className='mb-5'>
-                    <label className='form-label text-muted fs-7'>Deskripsi</label>
-                    <p>{item.description || '-'}</p>
-                  </div>
-
-                  <div className='row mb-5'>
-                    <div className='col-6'>
-                      <label className='form-label text-muted fs-7'>Stock Tersedia</label>
-                      <p className='fw-bold fs-4 text-primary'>
-                        {item.quantity} {item.unit}
-                      </p>
+                  {/* Right Side - Details */}
+                  <div className='col-md-6'>
+                    {/* Supplier */}
+                    <div className='mb-6'>
+                      <label className='text-muted fs-7 mb-2'>Supplier</label>
+                      <h4 className='fw-bold mb-0'>{item.supplier}</h4>
                     </div>
-                    {item.price && (
+
+                    {/* Deskripsi */}
+                    <div className='mb-6'>
+                      <label className='text-muted fs-7 mb-2'>Deskripsi</label>
+                      <p className='mb-0'>{item.description || '-'}</p>
+                    </div>
+
+                    {/* Stock & Harga */}
+                    <div className='row mb-6'>
                       <div className='col-6'>
-                        <label className='form-label text-muted fs-7'>Harga</label>
-                        <p className='fw-bold fs-4 text-success'>
-                          Rp {item.price.toLocaleString('id-ID')}
-                        </p>
+                        <label className='text-muted fs-7 mb-2'>Stock Tersedia</label>
+                        <h3 className='fw-bold mb-0'>{item.quantity} {item.unit}</h3>
                       </div>
-                    )}
+                      {item.price && (
+                        <div className='col-6'>
+                          <label className='text-muted fs-7 mb-2'>Harga</label>
+                          <h3 className='fw-bold text-success mb-0'>
+                            Rp {item.price.toLocaleString('id-ID')}
+                          </h3>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Kategori */}
+                    <div className='mb-8'>
+                      <label className='text-muted fs-7 mb-2'>Kategori</label>
+                      <div>
+                        <span 
+                          className='badge px-4 py-2'
+                          style={{
+                            backgroundColor: '#E8E3FF',
+                            color: '#7239EA',
+                            fontSize: '0.9rem',
+                            fontWeight: '500'
+                          }}
+                        >
+                          {item.category || 'Uncategorized'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className='d-flex flex-column gap-3'>
+                      <button
+                        className='btn btn-lg w-100'
+                        style={{
+                          backgroundColor: '#8B7B6E',
+                          color: 'white',
+                          borderRadius: '8px',
+                          padding: '14px'
+                        }}
+                        onClick={() => setShowTakeForm(true)}
+                      >
+                        Ambil barang
+                      </button>
+
+                      {isSuperAdmin && (
+                        <button
+                          className='btn btn-lg btn-light w-100'
+                          style={{
+                            borderRadius: '8px',
+                            padding: '14px'
+                          }}
+                          onClick={() => onEdit(item)}
+                        >
+                          Edit Barang
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Take Form */
+                <div className='row g-5'>
+                  {/* Left Side - Image (smaller) */}
+                  <div className='col-md-5'>
+                    <img
+                      src={item.image || 'https://via.placeholder.com/600x800'}
+                      alt={item.name}
+                      className='w-100 rounded'
+                      style={{
+                        height: '500px',
+                        objectFit: 'cover',
+                        borderRadius: '12px'
+                      }}
+                    />
                   </div>
 
-                  <div className='mb-5'>
-                    <label className='form-label text-muted fs-7'>Kategori</label>
-                    <p>
-                      <span className='badge badge-light-info'>
-                        {item.category || 'Uncategorized'}
-                      </span>
-                    </p>
-                  </div>
+                  {/* Right Side - Form */}
+                  <div className='col-md-7'>
+                    <h3 className='fw-bold mb-6'>Ambil barang</h3>
 
-                  {/* Take Item Form */}
-                  {!showTakeForm ? (
-                    <button
-                      className='btn btn-primary w-100 mb-3'
-                      onClick={() => setShowTakeForm(true)}
-                    >
-                      <KTIcon iconName='basket' className='fs-3' />
-                      Ambil Barang
-                    </button>
-                  ) : (
-                    <div className='border border-primary rounded p-4 mb-3'>
-                      <h6 className='mb-3'>Ambil barang</h6>
-                      <label className='form-label'>Masukkan jumlah</label>
-                      <div className='d-flex gap-2 mb-3'>
+                    {/* Masukkan jumlah */}
+                    <div className='mb-6'>
+                      <label className='form-label fw-semibold mb-3'>
+                        Masukkan jumlah:
+                      </label>
+                      <div className='d-flex align-items-center gap-3'>
                         <button
                           className='btn btn-icon btn-light-primary'
+                          style={{
+                            width: '48px',
+                            height: '48px',
+                            borderRadius: '8px'
+                          }}
                           onClick={() => setTakeQuantity(Math.max(0, takeQuantity - 1))}
                         >
-                          <KTIcon iconName='minus' className='fs-3' />
+                          <KTIcon iconName='minus' className='fs-2' />
                         </button>
+                        
                         <input
                           type='number'
-                          className='form-control text-center'
+                          className='form-control form-control-lg text-center'
+                          style={{
+                            height: '48px',
+                            borderRadius: '8px',
+                            fontSize: '1.2rem',
+                            fontWeight: '600'
+                          }}
                           value={takeQuantity}
                           onChange={(e) => setTakeQuantity(parseInt(e.target.value) || 0)}
                           max={item.quantity}
                           min={0}
                         />
+                        
                         <button
                           className='btn btn-icon btn-light-primary'
+                          style={{
+                            width: '48px',
+                            height: '48px',
+                            borderRadius: '8px'
+                          }}
                           onClick={() => setTakeQuantity(Math.min(item.quantity, takeQuantity + 1))}
                         >
-                          <KTIcon iconName='plus' className='fs-3' />
-                        </button>
-                      </div>
-                      <div className='d-flex gap-2'>
-                        <button
-                          className='btn btn-primary flex-grow-1'
-                          onClick={handleTake}
-                        >
-                          Oke
-                        </button>
-                        <button
-                          className='btn btn-light'
-                          onClick={() => {
-                            setShowTakeForm(false)
-                            setTakeQuantity(0)
-                          }}
-                        >
-                          Cancel
+                          <KTIcon iconName='plus' className='fs-2' />
                         </button>
                       </div>
                     </div>
-                  )}
 
-                  {/* Edit Button - Only for SuperAdmin */}
-                  {isSuperAdmin && (
-                    <button
-                      className='btn btn-light-primary w-100'
-                      onClick={() => onEdit(item)}
-                    >
-                      <KTIcon iconName='pencil' className='fs-3' />
-                      Edit Barang
-                    </button>
-                  )}
+                    {/* Masukkan deskripsi */}
+                    <div className='mb-8'>
+                      <label className='form-label fw-semibold mb-3'>
+                        Masukkan deskripsi:
+                      </label>
+                      <textarea
+                        className='form-control form-control-lg'
+                        rows={4}
+                        placeholder='Masukkan deskripsi pengambilan barang...'
+                        value={takeDescription}
+                        onChange={(e) => setTakeDescription(e.target.value)}
+                        style={{
+                          borderRadius: '8px',
+                          resize: 'none'
+                        }}
+                      />
+                    </div>
+
+                    {/* Buttons */}
+                    <div className='d-flex gap-3'>
+                      <button
+                        className='btn btn-lg flex-grow-1'
+                        style={{
+                          backgroundColor: '#5C8AE6',
+                          color: 'white',
+                          borderRadius: '8px',
+                          padding: '14px'
+                        }}
+                        onClick={handleTake}
+                        disabled={takeQuantity === 0 || takeDescription.trim() === ''}
+                      >
+                        Oke
+                      </button>
+                      <button
+                        className='btn btn-lg btn-light'
+                        style={{
+                          borderRadius: '8px',
+                          padding: '14px',
+                          minWidth: '120px'
+                        }}
+                        onClick={() => {
+                          setShowTakeForm(false)
+                          setTakeQuantity(0)
+                          setTakeDescription('')
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

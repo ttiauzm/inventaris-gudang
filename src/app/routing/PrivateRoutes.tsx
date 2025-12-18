@@ -13,6 +13,8 @@ import {HistoryPage} from '../pages/history/HistoryPage'
 import {LogSystemPage} from '../pages/log-system/LogSystemPage'
 import { SupplierPage } from '../pages/supplier/SupplierPage'
 import {UserManagementPage} from '../pages/user-management/UserManagementPage'
+import {CategoryPage} from '../pages/category/CategoryPage'
+import {MaterialPage} from '../pages/material/MaterialPage'
 
 const PrivateRoutes = () => {
   const {currentUser} = useAuth()
@@ -33,7 +35,7 @@ const PrivateRoutes = () => {
 
   return (
     <Routes>
-      <Route element={<MasterLayout />}>
+      <Route element={<MasterLayout/>}>
         {/* Redirect to Dashboard after success login/registration */}
         <Route path='auth/*' element={<Navigate to='/dashboard' />} />
         
@@ -47,6 +49,8 @@ const PrivateRoutes = () => {
         <Route path='apps/log-system' element={<LogSystemPage />} />
         <Route path='apps/supplier' element={<SupplierPage/>} />
         <Route path='admin/users' element={<UserManagementPage />} />
+        <Route path='admin/categories' element={<CategoryPage />} />
+        <Route path='admin/materials' element={<MaterialPage />} />
 
         {/* Lazy Modules */}
         <Route

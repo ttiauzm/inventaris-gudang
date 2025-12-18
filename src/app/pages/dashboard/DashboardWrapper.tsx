@@ -84,7 +84,7 @@ const DashboardWrapper: FC = () => {
           {/* Logo */}
           <div className='mb-8 text-center'>
             <img 
-              src={toAbsoluteUrl('/media/logos/delova.svg')} 
+              src={toAbsoluteUrl('public/media/logos/delova.svg')} 
               alt='Delova Logo' 
               style={{maxWidth: '300px', height: 'auto'}}
             />

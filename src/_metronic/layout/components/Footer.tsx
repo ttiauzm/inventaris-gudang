@@ -23,7 +23,7 @@ const Footer: FC = () => {
         {/* end::Copyright */}
 
         {/* begin::Menu */}
-        <ul className='menu menu-gray-600 menu-hover-primary fw-bold order-1'>
+        {/* <ul className='menu menu-gray-600 menu-hover-primary fw-bold order-1'>
           <li className='menu-item'>
             <a href='#' className='menu-link px-2'>
               About
@@ -39,7 +39,7 @@ const Footer: FC = () => {
               Purchase
             </a>
           </li>
-        </ul>
+        </ul> */}
         {/* end::Nav */}
       </div>
       {/* end::Container */}

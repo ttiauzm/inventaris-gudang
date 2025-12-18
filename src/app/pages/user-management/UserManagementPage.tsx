@@ -3,45 +3,33 @@ import {Navigate} from 'react-router-dom'
 import {KTIcon} from '../../../_metronic/helpers'
 import {useAuth} from '../../modules/auth'
 import {UserModal} from './components/UserModal'
-
-interface Admin {
-  id: number
-  name: string
-  email: string
-  role: string
-  created_at: string
-  last_login: string
-}
+import {User} from './core/_models'
+import {getUsers, deleteUser, toggleUserStatus} from './core/_requests'
+import {isSuperAdmin as checkSuperAdmin} from '../../utils/permissionHelper'
 
 const UserManagementPage: FC = () => {
   const {currentUser} = useAuth()
-  const [admins, setAdmins] = useState<Admin[]>([])
+  const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
   const [showModal, setShowModal] = useState(false)
-  const [selectedAdmin, setSelectedAdmin] = useState<Admin | null>(null)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
 
-  // Check if SuperAdmin
-  const isSuperAdmin = currentUser?.roles?.includes(999)
+  // Check if SuperAdmin - akan otomatis bypass di dev mode
+  const isSuperAdmin = checkSuperAdmin(currentUser)
 
   useEffect(() => {
-    fetchAdmins()
+    fetchUsers()
   }, [])
 
-  const fetchAdmins = async () => {
+  const fetchUsers = async () => {
     try {
       setLoading(true)
-      // Dummy data - replace with API call
-      const dummyData: Admin[] = [
-        {id: 177013, name: 'Agus Kopling', email: 'agus@delova.com', role: 'SuperAdmin', created_at: '2025-10-05', last_login: '2025-10-05'},
-        {id: 177014, name: 'Bernadya', email: 'bernadya@delova.com', role: 'Admin', created_at: '2025-10-05', last_login: '2025-10-05'},
-        {id: 177015, name: 'Mac', email: 'mac@delova.com', role: 'Admin', created_at: '2025-10-05', last_login: '2025-10-05'},
-      ]
-      setAdmins(dummyData)
+      const data = await getUsers()
+      setUsers(data)
     } catch (error) {
-      console.error('Error fetching admins:', error)
+      console.error('Error fetching users:', error)
     } finally {
       setLoading(false)
     }
@@ -52,34 +40,29 @@ const UserManagementPage: FC = () => {
     return <Navigate to='/dashboard' replace />
   }
 
-  const filteredAdmins = admins.filter(admin =>
-    admin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    admin.email.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  const totalPages = Math.ceil(filteredAdmins.length / itemsPerPage)
+  const totalPages = Math.ceil(users.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
-  const paginatedData = filteredAdmins.slice(startIndex, startIndex + itemsPerPage)
+  const paginatedData = users.slice(startIndex, startIndex + itemsPerPage)
 
   const handleAdd = () => {
-    setSelectedAdmin(null)
+    setSelectedUser(null)
     setShowModal(true)
   }
 
-  const handleEdit = (admin: Admin) => {
-    setSelectedAdmin(admin)
+  const handleEdit = (user: User) => {
+    setSelectedUser(user)
     setShowModal(true)
   }
 
   const handleSave = () => {
     setShowModal(false)
-    fetchAdmins()
+    fetchUsers()
   }
 
   return (
     <>
       {/* Padding Container */}
-      <div style={{padding: '20px', backgroundColor: '#B7ADA6', minHeight: 'calc(100vh - 80px)'}}>
+      <div style={{borderRadius: '9px',margin: '10px' ,paddingTop: '2vh',padding: '10px', backgroundColor: '#B7ADA6', minHeight: 'calc(5vh - 40px)'}}>
         <div className='card' style={{backgroundColor: '#FFFFFF'}}>
           <div className='card-header border-0 pt-6'>
             <div className='card-title'>
@@ -87,27 +70,13 @@ const UserManagementPage: FC = () => {
             </div>
             
             <div className='card-toolbar gap-3'>
-              <div className='d-flex align-items-center position-relative'>
-                <KTIcon iconName='magnifier' className='fs-3 position-absolute ms-5' />
-                <input
-                  type='text'
-                  className='form-control form-control-solid w-250px ps-13'
-                  placeholder='Cari Admin'
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value)
-                    setCurrentPage(1)
-                  }}
-                />
-              </div>
-
               <button 
                 className='btn btn-sm btn-primary' 
                 onClick={handleAdd}
                 style={{backgroundColor: '#5C8AE6'}}
               >
                 <KTIcon iconName='plus' className='fs-3' />
-                Add Device
+                Tambah Akun
               </button>
             </div>
           </div>
@@ -120,55 +89,65 @@ const UserManagementPage: FC = () => {
             ) : (
               <>
                 <div className='table-responsive'>
-                  <table className='table align-middle table-row-dashed fs-6 gy-5'>
+                  <table className='table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4'>
                     <thead>
-                      <tr className='text-start text-muted fw-bold fs-7 text-uppercase gs-0'>
+                      <tr className='fw-bold text-muted'>
                         <th className='min-w-100px'>ID</th>
-                        <th className='min-w-200px'>Nama</th>
+                        <th className='min-w-150px'>Nama</th>
+                        <th className='min-w-100px'>Role</th>
                         <th className='min-w-150px'>Tanggal Dibuat</th>
                         <th className='min-w-150px'>Terakhir Login</th>
                         <th className='text-end min-w-100px'>Actions</th>
                       </tr>
                     </thead>
-                    <tbody className='text-gray-600 fw-semibold'>
-                      {paginatedData.map((admin) => (
-                        <tr key={admin.id}>
-                          <td>{admin.id}</td>
+                    <tbody>
+                      {paginatedData.map((user) => (
+                        <tr key={user.id}>
+                          <td>
+                            <div className='text-dark fw-bold'>{user.id}</div>
+                          </td>
                           <td>
                             <div className='d-flex align-items-center'>
                               <div className='symbol symbol-circle symbol-40px me-3'>
-                                <div className='symbol-label bg-light-primary'>
-                                  <KTIcon iconName='user' className='fs-2 text-primary' />
+                                <div className='symbol-label' style={{backgroundColor: '#E8F5E9'}}>
+                                  <KTIcon iconName='user' className='fs-3 text-success' />
                                 </div>
                               </div>
                               <div className='d-flex flex-column'>
-                                <span className='text-gray-800 fw-bold mb-1'>{admin.name}</span>
-                                <span className='text-muted fs-7'>{admin.role}</span>
+                                <span className='text-dark fw-bold'>{user.fullname || `${user.first_name} ${user.last_name}`}</span>
+                                <span className='text-muted fs-7'>{user.username}</span>
                               </div>
                             </div>
                           </td>
                           <td>
-                            {new Date(admin.created_at).toLocaleDateString('id-ID', {
-                              weekday: 'long',
-                              day: '2-digit',
-                              month: 'long',
-                              year: 'numeric'
-                            })}
+                            <span className='text-dark fw-semibold'>{user.role}</span>
                           </td>
                           <td>
-                            {new Date(admin.last_login).toLocaleDateString('id-ID', {
-                              weekday: 'long',
-                              day: '2-digit',
-                              month: 'long',
-                              year: 'numeric'
-                            })}
+                            <span className='text-muted'>
+                              {user.created_at ? new Date(user.created_at).toLocaleDateString('id-ID', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              }) : '-'}
+                            </span>
+                          </td>
+                          <td>
+                            <span className='text-muted'>
+                              {user.last_login ? new Date(user.last_login).toLocaleDateString('id-ID', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              }) : '-'}
+                            </span>
                           </td>
                           <td className='text-end'>
                             <button
-                              className='btn btn-icon btn-light-primary btn-sm'
-                              onClick={() => handleEdit(admin)}
+                              className='btn btn-icon btn-bg-light btn-active-color-primary btn-sm'
+                              onClick={() => handleEdit(user)}
                             >
-                              <KTIcon iconName='pencil' className='fs-4' />
+                              <KTIcon iconName='pencil' className='fs-3' />
                             </button>
                           </td>
                         </tr>
@@ -178,56 +157,55 @@ const UserManagementPage: FC = () => {
                 </div>
 
                 {/* Pagination */}
-                {filteredAdmins.length > 0 && (
-                  <div className='d-flex justify-content-between align-items-center flex-wrap pt-5'>
-                    <div className='d-flex align-items-center'>
-                      <span className='text-muted me-2'>Show</span>
-                      <span className='fw-bold me-2'>{itemsPerPage}</span>
-                      <span className='text-muted'>per page</span>
-                    </div>
-
-                    <div className='text-muted'>
-                      {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredAdmins.length)} of {filteredAdmins.length}
-                    </div>
-
-                    <div className='d-flex gap-2'>
-                      <button
-                        className='btn btn-sm btn-light-primary'
-                        disabled={currentPage === 1}
-                        onClick={() => setCurrentPage(prev => prev - 1)}
-                      >
-                        <KTIcon iconName='arrow-left' className='fs-3' />
-                      </button>
-                      
-                      {[...Array(totalPages)].map((_, index) => (
-                        <button
-                          key={index + 1}
-                          className={`btn btn-sm ${currentPage === index + 1 ? 'btn-primary' : 'btn-light'}`}
-                          onClick={() => setCurrentPage(index + 1)}
-                        >
-                          {index + 1}
-                        </button>
-                      ))}
-
-                      <button
-                        className='btn btn-sm btn-light-primary'
-                        disabled={currentPage === totalPages}
-                        onClick={() => setCurrentPage(prev => prev + 1)}
-                      >
-                        <KTIcon iconName='arrow-right' className='fs-3' />
-                      </button>
-                    </div>
+                <div className='d-flex justify-content-between align-items-center mt-4'>
+                  <div className='d-flex align-items-center gap-2'>
+                    <span className='text-muted'>Show</span>
+                    <select className='form-select form-select-sm w-auto'>
+                      <option value='10'>10</option>
+                      <option value='25'>25</option>
+                      <option value='50'>50</option>
+                    </select>
+                    <span className='text-muted'>per page</span>
                   </div>
-                )}
+                  <div className='d-flex align-items-center gap-2'>
+                    <span className='text-muted'>
+                      {startIndex + 1}-{Math.min(startIndex + itemsPerPage, users.length)} of {users.length}
+                    </span>
+                    <button 
+                      className='btn btn-sm btn-icon btn-light'
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <KTIcon iconName='arrow-left' className='fs-3' />
+                    </button>
+                    {Array.from({length: Math.min(5, totalPages)}, (_, i) => i + 1).map(page => (
+                      <button 
+                        key={page} 
+                        className={`btn btn-sm btn-icon ${page === currentPage ? 'btn-primary' : 'btn-light'}`}
+                        onClick={() => setCurrentPage(page)}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button 
+                      className='btn btn-sm btn-icon btn-light'
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      <KTIcon iconName='arrow-right' className='fs-3' />
+                    </button>
+                  </div>
+                </div>
               </>
             )}
           </div>
         </div>
       </div>
 
+      {/* User Modal */}
       {showModal && (
         <UserModal
-          admin={selectedAdmin}
+          user={selectedUser}
           onClose={() => setShowModal(false)}
           onSave={handleSave}
         />

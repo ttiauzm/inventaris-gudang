@@ -2,12 +2,14 @@ import {FC, useState, useEffect} from 'react'
 import {KTIcon} from '../../../_metronic/helpers'
 import { getHistory } from './core/_requests'
 import { HistoryItem } from './core/_model'
+import {exportHistoryToExcel, exportHistoryToPDF} from '../../utils/exportUtils'
 
 const HistoryPage: FC = () => {
   const [history, setHistory] = useState<HistoryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [showExportMenu, setShowExportMenu] = useState(false)
   const itemsPerPage = 10
 
   useEffect(() => {
@@ -35,6 +37,15 @@ const HistoryPage: FC = () => {
   const startIndex = (currentPage - 1) * itemsPerPage
   const paginatedData = filteredHistory.slice(startIndex, startIndex + itemsPerPage)
 
+  const handleExport = (type: 'excel' | 'pdf') => {
+    if (type === 'excel') {
+      exportHistoryToExcel(filteredHistory)
+    } else {
+      exportHistoryToPDF(filteredHistory)
+    }
+    setShowExportMenu(false)
+  }
+
   return (
     <div style={{borderRadius: '9px',margin: '10px' ,padding: '10px', backgroundColor: '#B7ADA6', minHeight: 'calc(5vh - 40px)'}}>
       <div className='card'>
@@ -43,7 +54,7 @@ const HistoryPage: FC = () => {
             <h3 className='fw-bold mb-0'>Histori Pengambilan</h3>
           </div>
           
-          <div className='card-toolbar'>
+          <div className='card-toolbar gap-3'>
             <div className='d-flex align-items-center position-relative'>
               <KTIcon iconName='magnifier' className='fs-3 position-absolute ms-5' />
               <input
@@ -56,6 +67,33 @@ const HistoryPage: FC = () => {
                   setCurrentPage(1)
                 }}
               />
+            </div>
+
+            {/* Export Dropdown */}
+            <div className='position-relative'>
+              <button
+                className='btn btn-sm btn-light-success'
+                onClick={() => setShowExportMenu(!showExportMenu)}
+              >
+                <KTIcon iconName='file-down' className='fs-3' />
+                Export
+              </button>
+              {showExportMenu && (
+                <div className='menu menu-sub menu-sub-dropdown show position-absolute' style={{top: '100%', right: 0, zIndex: 105}}>
+                  <div className='menu-item px-3'>
+                    <button className='menu-link px-3' onClick={() => handleExport('excel')}>
+                      <KTIcon iconName='file-sheet' className='fs-3 me-2' />
+                      Export Excel
+                    </button>
+                  </div>
+                  <div className='menu-item px-3'>
+                    <button className='menu-link px-3' onClick={() => handleExport('pdf')}>
+                      <KTIcon iconName='file' className='fs-3 me-2' />
+                      Export PDF
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

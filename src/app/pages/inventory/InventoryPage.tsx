@@ -8,10 +8,12 @@ import {getInventory } from './core/_requests'
 import { InventoryItem } from './core/_model'
 import {exportInventoryToExcel, exportInventoryToPDF} from '../../utils/exportUtils'
 import {useAuth} from '../../modules/auth'
+import {isSuperAdmin as checkSuperAdmin} from '../../utils/permissionHelper'
 
 const InventoryPage: FC = () => {
   const {currentUser} = useAuth()
-  const isSuperAdmin = currentUser?.roles?.includes(999)
+  // Check superadmin - akan otomatis bypass di dev mode
+  const isSuperAdmin = checkSuperAdmin(currentUser)
   
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -355,6 +357,7 @@ const InventoryPage: FC = () => {
           item={selectedItem}
           onClose={() => setShowModal(false)}
           onSave={handleSave}
+          onDelete={handleSave}
         />
       )}
 
@@ -363,7 +366,10 @@ const InventoryPage: FC = () => {
           item={selectedItem}
           onClose={() => setShowDetailModal(false)}
           onEdit={handleEdit}
-          onTakeItem={handleTakeItem}
+          onTakeItem={(qty, desc) => {
+            handleTakeItem(qty)
+            setShowDetailModal(false)
+          }}
         />
       )}
       {/* </div> */}

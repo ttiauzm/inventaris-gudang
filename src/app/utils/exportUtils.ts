@@ -114,15 +114,55 @@ export const exportInventoryToPDF = (inventory: any[]) => {
   )
 }
 
-// Export History to Excel
-export const exportHistoryToExcel = (history: any[]) => {
-  const exportData = history.map(item => ({
+// Export Logs to Excel
+export const exportLogsToExcel = (logs: any[]) => {
+  const exportData = logs.map((item, index) => ({
+    'No': index + 1,
     'ID Transaksi': item.transaction_id,
     'Nama Barang': item.item_name,
-    'Deskripsi': item.description,
+    'Jumlah': item.quantity,
+    'Tabel': item.table_name,
+    'Aksi': item.action,
+    'Tanggal': new Date(item.created_at).toLocaleString('id-ID'),
+    'Deskripsi': item.description
+  }))
+  
+  return exportToExcel(exportData, `SystemLogs_${new Date().toISOString().split('T')[0]}`, 'Logs')
+}
+
+// Export Logs to PDF
+export const exportLogsToPDF = (logs: any[]) => {
+  const columns = [
+    {header: 'No', dataKey: 'no'},
+    {header: 'ID', dataKey: 'transaction_id'},
+    {header: 'Nama Barang', dataKey: 'item_name'},
+    {header: 'Jumlah', dataKey: 'quantity'},
+    {header: 'Aksi', dataKey: 'action'},
+    {header: 'Tanggal', dataKey: 'created_at'}
+  ]
+  
+  const exportData = logs.map((item, index) => ({
+    no: index + 1,
+    transaction_id: item.transaction_id,
+    item_name: item.item_name,
+    quantity: item.quantity,
+    action: item.action,
+    created_at: new Date(item.created_at).toLocaleString('id-ID')
+  }))
+  
+  return exportToPDF(exportData, columns, `SystemLogs_${new Date().toISOString().split('T')[0]}`, 'Laporan Log Sistem')
+}
+
+// Export History to Excel
+export const exportHistoryToExcel = (history: any[]) => {
+  const exportData = history.map((item, index) => ({
+    'No': index + 1,
+    'ID Transaksi': item.transaction_id,
+    'Nama Barang': item.item_name,
     'Jumlah': `${item.quantity} ${item.unit}`,
-    'Tanggal': new Date(item.date).toLocaleDateString('id-ID'),
-    'Admin': item.admin_name
+    'Admin': item.user_name,
+    'Tanggal': new Date(item.created_at).toLocaleString('id-ID'),
+    'Deskripsi': item.description
   }))
   
   return exportToExcel(exportData, `History_${new Date().toISOString().split('T')[0]}`, 'History')
@@ -131,25 +171,50 @@ export const exportHistoryToExcel = (history: any[]) => {
 // Export History to PDF
 export const exportHistoryToPDF = (history: any[]) => {
   const columns = [
+    {header: 'No', dataKey: 'no'},
     {header: 'ID', dataKey: 'transaction_id'},
-    {header: 'Barang', dataKey: 'item_name'},
+    {header: 'Nama Barang', dataKey: 'item_name'},
     {header: 'Jumlah', dataKey: 'quantity'},
-    {header: 'Tanggal', dataKey: 'date'},
-    {header: 'Admin', dataKey: 'admin_name'}
+    {header: 'Admin', dataKey: 'user_name'},
+    {header: 'Tanggal', dataKey: 'created_at'}
   ]
   
-  const exportData = history.map(item => ({
+  const exportData = history.map((item, index) => ({
+    no: index + 1,
     transaction_id: item.transaction_id,
     item_name: item.item_name,
     quantity: `${item.quantity} ${item.unit}`,
-    date: new Date(item.date).toLocaleDateString('id-ID'),
-    admin_name: item.admin_name
+    user_name: item.user_name,
+    created_at: new Date(item.created_at).toLocaleString('id-ID')
   }))
   
-  return exportToPDF(
-    exportData,
-    columns,
-    `History_${new Date().toISOString().split('T')[0]}`,
-    'Histori Pengambilan Barang'
-  )
+  return exportToPDF(exportData, columns, `History_${new Date().toISOString().split('T')[0]}`, 'Laporan Histori Pengambilan')
+}
+
+// Export Master Data (Categories/Materials) to Excel
+export const exportMasterDataToExcel = (data: any[], type: 'Category' | 'Material') => {
+  const exportData = data.map((item, index) => ({
+    'No': index + 1,
+    'Nama': item.name,
+    'Deskripsi': item.description || '-'
+  }))
+  
+  return exportToExcel(exportData, `${type}_${new Date().toISOString().split('T')[0]}`, type)
+}
+
+// Export Master Data (Categories/Materials) to PDF
+export const exportMasterDataToPDF = (data: any[], type: 'Category' | 'Material') => {
+  const columns = [
+    {header: 'No', dataKey: 'no'},
+    {header: 'Nama', dataKey: 'name'},
+    {header: 'Deskripsi', dataKey: 'description'}
+  ]
+  
+  const exportData = data.map((item, index) => ({
+    no: index + 1,
+    name: item.name,
+    description: item.description || '-'
+  }))
+  
+  return exportToPDF(exportData, columns, `${type}_${new Date().toISOString().split('T')[0]}`, `Laporan Data ${type}`)
 }

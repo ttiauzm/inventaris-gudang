@@ -45,7 +45,16 @@ API.interceptors.response.use(
   (error) => {
     // Handle 401 Unauthorized - redirect to login
     if (error.response?.status === 401) {
+      const auth = getAuth()
+      // Jika menggunakan bypass token (dev-token atau admin-token), jangan redirect ke login
+      if (auth?.token?.includes('-token')) {
+        console.warn(`⚠️ 401 Unauthorized detected with bypass token (${auth.token}). Skipping redirect to login.`)
+        return Promise.reject(error)
+      }
+
+      console.warn('⚠️ 401 Unauthorized - clearing auth and redirecting')
       localStorage.removeItem('kt-auth-react-v')
+      localStorage.removeItem('current-user')
       window.location.href = '/auth/login'
     }
 

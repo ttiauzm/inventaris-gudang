@@ -32,13 +32,15 @@ const MasterLayout = () => {
     }, 500)
   }, [location.key])
   
-  // useEffect(() => {
-  //   reInitMenu()
-  // }, [location.key])
+  // reinit menu on location change
+  useEffect(() => {
+    reInitMenu()
+  }, [location.key])
 
-  // useEffect(() => {
-  //   themeModeSwitchHelper(mode)
-  // }, [mode])
+  // switch theme mode
+  useEffect(() => {
+    themeModeSwitchHelper(mode)
+  }, [mode])
 
   return (
     <PageDataProvider>
@@ -62,7 +64,7 @@ const MasterLayout = () => {
 
       {/* begin:: Drawers */}
       <ActivityDrawer />
-      <RightToolbar />
+      {/* <RightToolbar /> */}
       <DrawerMessenger />
       {/* end:: Drawers */}
 

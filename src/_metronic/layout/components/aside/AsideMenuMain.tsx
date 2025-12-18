@@ -4,13 +4,15 @@ import {AsideMenuItemWithSubMain} from './AsideMenuItemWithSubMain'
 import {AsideMenuItemWithSub} from './AsideMenuItemWithSub'
 import {AsideMenuItem} from './AsideMenuItem'
 import { useAuth } from '../../../../app/modules/auth'
+import { isSuperAdmin as checkSuperAdmin } from '../../../../app/utils/permissionHelper'
 
 export function AsideMenuMain() {
   const intl = useIntl()
   const {currentUser, logout} = useAuth()
 
-  //check superadmin
-  const isSuperAdmin = currentUser?.roles?.includes(999)
+  // Check superadmin - akan otomatis bypass di dev mode
+  const isSuperAdmin = checkSuperAdmin(currentUser)
+  const isAdmin = currentUser?.roles?.includes(1) || isSuperAdmin
 
   const handleLogout = () => {
     logout()
@@ -29,19 +31,14 @@ export function AsideMenuMain() {
       />
       
       <AsideMenuItem
-        to='/builder'
-        title='Layout Builder'
-        bsTitle='Layout Builder'
-        fontIcon='bi-person'
-        className='py-3'
-      />
-      <AsideMenuItem
         to='/crafted/account/overview'
         title='Account'
         bsTitle='Account'
         fontIcon='bi-person'
         className='py-3'
       />
+      
+      {/* Inventory - Available for both Admin and SuperAdmin */}
       <AsideMenuItem
         to='/apps/inventory'
         title='Inventory'
@@ -49,20 +46,30 @@ export function AsideMenuMain() {
         fontIcon='bi-box'
         className='py-3'
       />
-      <AsideMenuItem
-        to='/apps/history'
-        title='History'
-        bsTitle='History'
-        fontIcon='bi-clock-history'
-        className='py-3'
-      />
-      <AsideMenuItem
-        to='/apps/log-system'
-        title='System Log'
-        bsTitle='System Log'
-        fontIcon='bi-gear'
-        className='py-3'
-      />
+      
+      {/* SuperAdmin Only - History */}
+      {isSuperAdmin && (
+        <AsideMenuItem
+          to='/apps/history'
+          title='History'
+          bsTitle='History'
+          fontIcon='bi-clock-history'
+          className='py-3'
+        />
+      )}
+      
+      {/* SuperAdmin Only - Log System */}
+      {isSuperAdmin && (
+        <AsideMenuItem
+          to='/apps/log-system'
+          title='System Log'
+          bsTitle='System Log'
+          fontIcon='bi-gear'
+          className='py-3'
+        />
+      )}
+      
+      {/* Supplier - Available for both */}
       <AsideMenuItem
         to='/apps/supplier'
         title='Supplier'
@@ -70,32 +77,27 @@ export function AsideMenuMain() {
         fontIcon='bi-truck'
         className='py-3'
       />
-
+      
+      {/* SuperAdmin Only - User Management */}
       {isSuperAdmin && (
-        <>
-          <div className='separator separator-dashed mx-5 my-3'></div>
-          <div className='menu-section text-muted text-uppercase fs-8 ls-1 px-5 mb-2'>
-            Admin Panel
-          </div>
-          <AsideMenuItem
-            to='/admin/users'
-            icon='profile-user'
-            title='Manajemen Akun'
-            fontIcon='bi-people'
-          />
-          <AsideMenuItem
-            to='/admin/categories'
-            icon='category'
-            title='Kategori Barang'
-            fontIcon='bi-grid'
-          />
-          <AsideMenuItem
-            to='/admin/materials'
-            icon='bucket'
-            title='Jenis Material'
-            fontIcon='bi-box2'
-          />
-        </>
+        <AsideMenuItem
+          to='/apps/users'
+          icon='profile-user'
+          bsTitle='Manajemen Akun'
+          title='Manajemen Akun'
+          fontIcon='bi-people'
+        />
+      )}
+      
+      {/* SuperAdmin Only - Master Data */}
+      {isSuperAdmin && (
+        <AsideMenuItem
+          to='/apps/master-data'
+          icon='category'
+          bsTitle='Data Master'
+          title='Data Master'
+          fontIcon='bi-grid'
+        />
       )}
 
       {/* Divider */}

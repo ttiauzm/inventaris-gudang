@@ -25,7 +25,7 @@ const initialValues = {
 
 // Dev user dengan type yang benar
 const DEV_USER: UserModel = {
-  id: 0,
+  id: 999,
   username: "dev",
   password: undefined,
   email: "dev@example.com",
@@ -35,7 +35,8 @@ const DEV_USER: UserModel = {
   occupation: "Developer",
   companyName: "Development",
   phone: "0000000000",
-  roles: [1],
+  roles: [999], // SuperAdmin role
+  role: "SuperAdmin",
   pic: "",
   language: "en",
   timeZone: "Asia/Jakarta",
@@ -106,24 +107,37 @@ export function Login() {
 
         try {
           const devAuth = { token: "dev-token" }
-          console.log('==Saving auth:', devAuth)
+          
+          console.log('🔑 Dev login - Setting auth and user...')
+          console.log('  Auth:', devAuth)
+          console.log('  User:', DEV_USER)
+          
+          // Save auth first
           saveAuth(devAuth)
           
-          console.log('==Setting user:', DEV_USER)
+          // Then set current user (will be saved to localStorage by AuthProvider)
           setCurrentUser(DEV_USER)
           
-          console.log('==Auth saved, navigating to dashboard...')
-          
-          // Small delay untuk memastikan state terupdate
+          // Verify localStorage
           setTimeout(() => {
-            console.log('==Navigate to /dashboard')
+            const savedAuth = localStorage.getItem('kt-auth-react-v')
+            const savedUser = localStorage.getItem('current-user')
+            console.log('✅ Verification after save:', {
+              hasAuth: !!savedAuth,
+              hasUser: !!savedUser,
+              auth: savedAuth,
+              user: savedUser
+            })
+            
+            // Navigate to dashboard
+            console.log('🔄 Navigating to dashboard...')
             navigate('/dashboard')
-          }, 100)
+          }, 200)
           
           setLoading(false)
           return
         } catch (error) {
-          console.error('+=+=+Dev login error:', error)
+          console.error('❌ Dev login error:', error)
           setStatus('Dev login failed: ' + error)
           setLoading(false)
           return

@@ -1,21 +1,29 @@
 import {FC, useState, useEffect} from 'react'
 import { InventoryItem } from '../core/_model'
-import {createInventory, updateInventory} from '../core/_requests'
+import {createInventory, updateInventory, deleteInventory} from '../core/_requests'
 import {KTIcon} from '../../../../_metronic/helpers'
 import { MaterialModal } from './MaterialModal'
 import { CategoryModal } from './CategoryModal'
+import {useAuth} from '../../../modules/auth'
+import {isSuperAdmin as checkSuperAdmin} from '../../../utils/permissionHelper'
 
 interface InventoryModalProps {
   item: InventoryItem | null
   onClose: () => void
   onSave: () => void
+  onDelete?: () => void
 }
 
-const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave}) => {
+const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelete}) => {
+  const {currentUser} = useAuth()
+  const isSuperAdmin = checkSuperAdmin(currentUser)
   const [loading, setLoading] = useState(false)
   const [showMaterialModal, setShowMaterialModal] = useState(false)
   const [showCategoryModal, setShowCategoryModal] = useState(false)
-  
+  const [showDeleteSection, setShowDeleteSection] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -45,6 +53,18 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave}) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    // Simple validation
+    const {validateInventoryForm, showValidationErrors} = await import('../../../utils/validationHelper')
+
+    // Validasi form
+    const validationErrors = validateInventoryForm(formData)
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
+      showValidationErrors(validationErrors)
+      return
+    }
+
+    // Ini aslinya di try-catch biar bisa nampung error dari server
     try {
       setLoading(true)
       
@@ -73,29 +93,53 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave}) => {
     setShowCategoryModal(false)
   }
 
+  const handleDelete = async () => {
+    if (!confirmDelete) {
+      alert('Silakan centang konfirmasi penghapusan barang')
+      return
+    }
+
+    if (window.confirm('Apakah Anda yakin ingin menghapus barang ini?')) {
+      try {
+        setLoading(true)
+        if (item) {
+          await deleteInventory(item.id)
+          onDelete?.()
+          onClose()
+        }
+      } catch (error) {
+        console.error('Error deleting item:', error)
+        alert('Gagal menghapus barang')
+      } finally {
+        setLoading(false)
+      }
+    }
+  }
+
   return (
     <>
       <div className='modal-backdrop fade show' onClick={onClose} />
 
       <div className='modal fade show d-block' tabIndex={-1}>
-        <div className='modal-dialog modal-dialog-centered modal-lg'>
-          <div className='modal-content'>
-            <div className='modal-header'>
-              <h5 className='modal-title'>
+        <div className='modal-dialog modal-dialog-centered' style={{maxWidth: '650px'}}>
+          <div className='modal-content' style={{borderRadius: '12px'}}>
+            {/* Edit Barang Section */}
+            <div className='modal-header border-0'>
+              <h3 className='modal-title fw-bold'>
                 {item ? 'Edit Barang' : 'Tambah Barang'}
-              </h5>
+              </h3>
               <button type='button' className='btn-close' onClick={onClose} />
             </div>
 
             <form onSubmit={handleSubmit}>
-              <div className='modal-body'>
-                <div className='row g-5'>
-                  {/* Nama Barang */}
+              <div className='modal-body' style={{padding: '20px 30px'}}>
+                <div className='row g-4'>
+                  {/* Nama */}
                   <div className='col-12'>
-                    <label className='form-label required'>Nama</label>
+                    <label className='form-label fw-semibold'>Nama</label>
                     <input
                       type='text'
-                      className='form-control'
+                      className='form-control form-control-lg'
                       placeholder='Kain Sutra Emas'
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
@@ -103,137 +147,159 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave}) => {
                     />
                   </div>
 
-                  {/* Kategori dengan tombol tambah */}
-                  <div className='col-md-6'>
-                    <label className='form-label required'>Kategori</label>
-                    <div className='input-group'>
-                      <input
-                        type='text'
-                        className='form-control'
-                        placeholder='Kain/Pernak-pernik/Lain-lain...'
-                        value={formData.category}
-                        onChange={(e) => setFormData({...formData, category: e.target.value})}
-                        required
-                      />
-                      <button
-                        type='button'
-                        className='btn btn-light-primary'
-                        onClick={() => setShowCategoryModal(true)}
-                      >
-                        <KTIcon iconName='plus' className='fs-3' />
-                      </button>
-                    </div>
-                  </div>
+                  {!item && (
+                    <>
+                      {/* Kategori - Only for Add */}
+                      <div className='col-12'>
+                        <label className='form-label fw-semibold'>Kategori</label>
+                        <input
+                          type='text'
+                          className='form-control form-control-lg'
+                          placeholder='Kain/Pernak-pernik/Lain-lain...'
+                          value={formData.category}
+                          onChange={(e) => setFormData({...formData, category: e.target.value})}
+                          required
+                        />
+                      </div>
 
-                  {/* Material dengan tombol tambah */}
-                  <div className='col-md-6'>
-                    <label className='form-label required'>Material</label>
-                    <div className='input-group'>
-                      <input
-                        type='text'
-                        className='form-control'
-                        placeholder='Jl. in aja dulu'
-                        value={formData.material}
-                        onChange={(e) => setFormData({...formData, material: e.target.value})}
-                        required
-                      />
-                      <button
-                        type='button'
-                        className='btn btn-light-primary'
-                        onClick={() => setShowMaterialModal(true)}
-                      >
-                        <KTIcon iconName='plus' className='fs-3' />
-                      </button>
-                    </div>
-                  </div>
+                      {/* Material - Only for Add */}
+                      <div className='col-12'>
+                        <label className='form-label fw-semibold'>Material</label>
+                        <input
+                          type='text'
+                          className='form-control form-control-lg'
+                          placeholder='Jl. in aja dulu'
+                          value={formData.material}
+                          onChange={(e) => setFormData({...formData, material: e.target.value})}
+                        />
+                      </div>
 
-                  {/* Supplier dengan tombol tambah */}
+                      {/* Supplier - Only for Add */}
+                      <div className='col-12'>
+                        <label className='form-label fw-semibold'>Supplier</label>
+                        <input
+                          type='text'
+                          className='form-control form-control-lg'
+                          placeholder='jogja'
+                          value={formData.supplier}
+                          onChange={(e) => setFormData({...formData, supplier: e.target.value})}
+                          required
+                        />
+                      </div>
+
+                      {/* Jumlah - Only for Add */}
+                      <div className='col-12'>
+                        <label className='form-label fw-semibold'>Jumlah</label>
+                        <input
+                          type='text'
+                          className='form-control form-control-lg'
+                          placeholder='Jogja'
+                          value={formData.quantity}
+                          onChange={(e) => setFormData({...formData, quantity: parseInt(e.target.value) || 0})}
+                          required
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Unit - Show for both Add and Edit */}
                   <div className='col-12'>
-                    <label className='form-label required'>Supplier</label>
-                    <div className='input-group'>
-                      <input
-                        type='text'
-                        className='form-control'
-                        placeholder='jogja'
-                        value={formData.supplier}
-                        onChange={(e) => setFormData({...formData, supplier: e.target.value})}
-                        required
-                      />
-                      <button type='button' className='btn btn-light-primary'>
-                        <KTIcon iconName='plus' className='fs-3' />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Jumlah */}
-                  <div className='col-md-6'>
-                    <label className='form-label required'>Jumlah</label>
+                    <label className='form-label fw-semibold'>Unit</label>
                     <input
                       type='text'
-                      className='form-control'
-                      placeholder='Jogja'
-                      value={formData.quantity}
-                      onChange={(e) => setFormData({...formData, quantity: parseInt(e.target.value) || 0})}
-                      required
-                    />
-                  </div>
-
-                  {/* Unit */}
-                  <div className='col-md-6'>
-                    <label className='form-label required'>Unit</label>
-                    <input
-                      type='text'
-                      className='form-control'
-                      placeholder='55555'
+                      className='form-control form-control-lg'
+                      placeholder='per cm/item/'
                       value={formData.unit}
                       onChange={(e) => setFormData({...formData, unit: e.target.value})}
                       required
                     />
                   </div>
 
-                  {/* Harga */}
+                  {/* Harga - Show for both Add and Edit */}
                   <div className='col-12'>
-                    <label className='form-label'>Harga</label>
+                    <label className='form-label fw-semibold'>Harga</label>
                     <input
-                      type='number'
-                      className='form-control'
-                      placeholder='Indonesia'
+                      type='text'
+                      className='form-control form-control-lg'
+                      placeholder='Jl. in aja dulu'
                       value={formData.price}
-                      onChange={(e) => setFormData({...formData, price: parseInt(e.target.value) || 0})}
+                      onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
                     />
                   </div>
                 </div>
-              </div>
 
-              <div className='modal-footer'>
-                <button
-                  type='button'
-                  className='btn btn-light'
-                  onClick={onClose}
-                  disabled={loading}
-                >
-                  Batal
-                </button>
-                <button
-                  type='submit'
-                  className='btn btn-primary'
-                  style={{backgroundColor: '#5C8AE6'}}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <span className='spinner-border spinner-border-sm me-2' />
-                      Menyimpan...
-                    </>
-                  ) : (
-                    <>
-                      <KTIcon iconName='check' className='fs-3' />
-                      Tambah
-                    </>
-                  )}
-                </button>
+                {/* Action Button */}
+                <div className='text-end mt-6'>
+                  <button
+                    type='submit'
+                    className='btn btn-lg px-8'
+                    style={{
+                      backgroundColor: '#5C8AE6',
+                      color: 'white',
+                      borderRadius: '8px'
+                    }}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <span className='spinner-border spinner-border-sm' />
+                    ) : (
+                      item ? 'Simpan' : 'Tambah'
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
+
+            {/* Delete Section - Only show when editing */}
+            {item && isSuperAdmin && (
+              <div style={{
+                borderTop: '1px solid #e0e0e0',
+                padding: '30px',
+                backgroundColor: '#f9f9f9',
+                borderBottomLeftRadius: '12px',
+                borderBottomRightRadius: '12px'
+              }}>
+                <h3 className='fw-bold mb-4'>Hapus Barang</h3>
+                <p className='text-muted mb-4'>
+                  Apakah kamu yakin ingin menghapus barang ini ?
+                </p>
+
+                <div className='form-check mb-6'>
+                  <input
+                    className='form-check-input'
+                    type='checkbox'
+                    id='confirmDelete'
+                    checked={confirmDelete}
+                    onChange={(e) => setConfirmDelete(e.target.checked)}
+                  />
+                  <label className='form-check-label' htmlFor='confirmDelete'>
+                    Konfirmasi penghapusan barang
+                  </label>
+                </div>
+
+                <div className='d-flex gap-3'>
+                  <button
+                    type='button'
+                    className='btn btn-light'
+                    onClick={onClose}
+                  >
+                    Deactivate Instead
+                  </button>
+                  <button
+                    type='button'
+                    className='btn btn-danger'
+                    onClick={handleDelete}
+                    disabled={!confirmDelete || loading}
+                  >
+                    {loading ? (
+                      <span className='spinner-border spinner-border-sm' />
+                    ) : (
+                      'Delete Account'
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -37,7 +37,22 @@ const useAuth = () => {
 
 const AuthProvider: FC<WithChildren> = ({children}) => {
   const [auth, setAuth] = useState<AuthModel | undefined>(authHelper.getAuth())
-  const [currentUser, setCurrentUser] = useState<UserModel | undefined>()
+  const [currentUser, setCurrentUser] = useState<UserModel | undefined>(() => {
+    // Load currentUser dari localStorage saat inisialisasi
+    const storedUser = localStorage.getItem('current-user')
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser)
+        console.log('🔄 AuthProvider - Loaded user from localStorage:', userData.email, '- Role:', userData.role)
+        return userData
+      } catch (e) {
+        console.error('Failed to parse stored user:', e)
+        return undefined
+      }
+    }
+    console.log('⚠️ AuthProvider - No stored user found')
+    return undefined
+  })
   
   const saveAuth = (auth: AuthModel | undefined) => {
     setAuth(auth)
@@ -51,7 +66,19 @@ const AuthProvider: FC<WithChildren> = ({children}) => {
   const logout = () => {
     saveAuth(undefined)
     setCurrentUser(undefined)
+    localStorage.removeItem('current-user')
   }
+
+  // Simpan currentUser ke localStorage setiap kali berubah
+  useEffect(() => {
+    if (currentUser) {
+      console.log('💾 Saving currentUser to localStorage:', currentUser.email)
+      localStorage.setItem('current-user', JSON.stringify(currentUser))
+    } else {
+      console.log('🗑️ Removing currentUser from localStorage')
+      localStorage.removeItem('current-user')
+    }
+  }, [currentUser])
 
   return (
     <AuthContext.Provider value={{auth, saveAuth, currentUser, setCurrentUser, logout}}>

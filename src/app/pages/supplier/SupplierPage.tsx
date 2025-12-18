@@ -216,6 +216,7 @@ const SupplierPage: FC = () => {
           supplier={selectedSupplier}
           onClose={() => setShowModal(false)}
           onSave={handleSave}
+          onDelete={handleSave}
         />
       )}
       </div>

@@ -3,8 +3,7 @@ import {Navigate} from 'react-router-dom'
 import {KTIcon} from '../../../_metronic/helpers'
 import {useAuth} from '../../modules/auth'
 import {getCategoriesData, addMaterial, updateMaterial as updateMaterialData, deleteMaterial} from '../../data/dataManager'
-// import {updateMaterial}
-// import {deleteMaterial}
+import {isSuperAdmin as checkSuperAdmin} from '../../utils/permissionHelper'
 
 interface Material {
   id: number
@@ -21,7 +20,8 @@ const MaterialPage: FC = () => {
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null)
   const [formData, setFormData] = useState({name: '', description: ''})
 
-  const isSuperAdmin = currentUser?.roles?.includes(999)
+  // Check superadmin - akan otomatis bypass di dev mode
+  const isSuperAdmin = checkSuperAdmin(currentUser)
 
   useEffect(() => {
     fetchCategories()
@@ -35,7 +35,7 @@ const MaterialPage: FC = () => {
   }
 
   if (!isSuperAdmin) {
-    return <Navigate to='/dashboard' replace />
+    return <Navigate to='/admin/materials' replace />
   }
 
   const filteredCategories = categories.filter(cat =>
@@ -77,7 +77,7 @@ const MaterialPage: FC = () => {
         <div className='card'>
           <div className='card-header border-0 pt-6'>
             <div className='card-title'>
-              <h3 className='fw-bold mb-0'>Kategori Barang</h3>
+              <h3 className='fw-bold mb-0'>Jenis Material</h3>
             </div>
             
             <div className='card-toolbar gap-3'>
@@ -86,7 +86,7 @@ const MaterialPage: FC = () => {
                 <input
                   type='text'
                   className='form-control form-control-solid w-250px ps-13'
-                  placeholder='Cari Kategori'
+                  placeholder='Cari Material'
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -94,7 +94,7 @@ const MaterialPage: FC = () => {
 
               <button className='btn btn-sm btn-primary' onClick={handleAdd}>
                 <KTIcon iconName='plus' className='fs-3' />
-                Tambah Kategori
+                Tambah Material
               </button>
             </div>
           </div>
@@ -110,7 +110,7 @@ const MaterialPage: FC = () => {
                   <thead>
                     <tr className='text-start text-muted fw-bold fs-7 text-uppercase gs-0'>
                       <th className='min-w-50px'>No</th>
-                      <th className='min-w-200px'>Nama Kategori</th>
+                      <th className='min-w-200px'>Nama Material</th>
                       <th className='min-w-300px'>Deskripsi</th>
                       <th className='text-end min-w-100px'>Actions</th>
                     </tr>
@@ -154,16 +154,17 @@ const MaterialPage: FC = () => {
               <div className='modal-content'>
                 <div className='modal-header'>
                   <h5 className='modal-title'>
-                    {selectedMaterial ? 'Edit Kategori' : 'Tambah Kategori'}
+                    {selectedMaterial ? 'Edit Jenis Material' : 'Tambah Jenis Material'}
                   </h5>
                   <button type='button' className='btn-close' onClick={() => setShowModal(false)} />
                 </div>
                 <div className='modal-body'>
                   <div className='mb-5'>
-                    <label className='form-label required'>Nama Kategori</label>
+                    <label className='form-label required'>Nama</label>
                     <input
                       type='text'
                       className='form-control'
+                      placeholder='Kain Sutra Emas'
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
                     />
@@ -173,6 +174,7 @@ const MaterialPage: FC = () => {
                     <textarea
                       className='form-control'
                       rows={3}
+                      placeholder='Kain Sutra Emas'
                       value={formData.description}
                       onChange={(e) => setFormData({...formData, description: e.target.value})}
                     />
@@ -182,8 +184,12 @@ const MaterialPage: FC = () => {
                   <button className='btn btn-light' onClick={() => setShowModal(false)}>
                     Batal
                   </button>
-                  <button className='btn btn-primary' onClick={handleSave}>
-                    Simpan
+                  <button 
+                    className='btn btn-primary' 
+                    onClick={handleSave}
+                    style={{backgroundColor: '#007bff', borderColor: '#007bff'}}
+                  >
+                    Tambah
                   </button>
                 </div>
               </div>

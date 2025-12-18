@@ -1,85 +1,121 @@
 import {FC, useState, useEffect} from 'react'
 import {KTIcon} from '../../../../_metronic/helpers'
-
-interface Admin {
-  id: number
-  name: string
-  email: string
-  role: string
-  password?: string
-  permissions?: string[]
-}
+import {User, CreateUserRequest, ROLE_OPTIONS, PERMISSION_GROUPS, PERMISSION_LABELS} from '../core/_models'
+import {createUser, updateUser, resetPassword} from '../core/_requests'
 
 interface UserModalProps {
-  admin: Admin | null
+  user: User | null
   onClose: () => void
   onSave: () => void
 }
 
-const UserModal: FC<UserModalProps> = ({admin, onClose, onSave}) => {
+const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
-    name: '',
+    username: '',
     email: '',
     password: '',
-    role: 'Admin',
-    permissions: [] as string[]
+    first_name: '',
+    last_name: '',
+    phone: '',
+    role_ids: [1] as number[], // Default to ADMIN
+    permission_ids: [] as number[],
+    is_active: true
   })
 
-  const availablePermissions = [
-    {id: 'inventory.read', label: 'Lihat Inventory'},
-    {id: 'inventory.create', label: 'Tambah Barang'},
-    {id: 'inventory.update', label: 'Edit Barang'},
-    {id: 'inventory.delete', label: 'Hapus Barang'},
-    {id: 'history.read', label: 'Lihat History'},
-    {id: 'supplier.read', label: 'Lihat Supplier'},
-    {id: 'supplier.manage', label: 'Kelola Supplier'},
-    {id: 'user.manage', label: 'Kelola Admin'},
-    {id: 'logs.read', label: 'Lihat Log System'},
-  ]
-
   useEffect(() => {
-    if (admin) {
+    if (user) {
       setFormData({
-        name: admin.name,
-        email: admin.email,
+        username: user.username,
+        email: user.email,
         password: '',
-        role: admin.role,
-        permissions: admin.permissions || []
+        first_name: user.first_name,
+        last_name: user.last_name,
+        phone: user.phone || '',
+        role_ids: user.roles,
+        permission_ids: user.permissions,
+        is_active: user.is_active
       })
     }
-  }, [admin])
+  }, [user])
 
-  const handlePermissionToggle = (permissionId: string) => {
+  const handlePermissionToggle = (permissionId: number) => {
     setFormData(prev => ({
       ...prev,
-      permissions: prev.permissions.includes(permissionId)
-        ? prev.permissions.filter(p => p !== permissionId)
-        : [...prev.permissions, permissionId]
+      permission_ids: prev.permission_ids.includes(permissionId)
+        ? prev.permission_ids.filter(p => p !== permissionId)
+        : [...prev.permission_ids, permissionId]
     }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    // Validation
+    if (!formData.username.trim()) {
+      alert('Username tidak boleh kosong!')
+      return
+    }
+
+    if (!formData.email.trim()) {
+      alert('Email tidak boleh kosong!')
+      return
+    }
+
+    if (!formData.first_name.trim() || !formData.last_name.trim()) {
+      alert('Nama lengkap tidak boleh kosong!')
+      return
+    }
+
+    if (!user && !formData.password.trim()) {
+      alert('Password tidak boleh kosong untuk user baru!')
+      return
+    }
+    
     try {
       setLoading(true)
       
-      // API call here
-      // if (admin) {
-      //   await updateAdmin(admin.id, formData)
-      // } else {
-      //   await createAdmin(formData)
-      // }
+      if (user) {
+        // Update existing user
+        await updateUser(user.id, {
+          username: formData.username,
+          email: formData.email,
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          phone: formData.phone,
+          role_ids: formData.role_ids,
+          permission_ids: formData.permission_ids,
+          is_active: formData.is_active
+        })
+
+        // Update password if provided
+        if (formData.password.trim()) {
+          await resetPassword(user.id, formData.password)
+        }
+
+        alert('User berhasil diupdate!')
+      } else {
+        // Create new user
+        const newUserData: CreateUserRequest = {
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          phone: formData.phone,
+          role_ids: formData.role_ids,
+          permission_ids: formData.permission_ids,
+          is_active: formData.is_active
+        }
+
+        await createUser(newUserData)
+        alert('User berhasil ditambahkan!')
+      }
       
-      console.log('Saving admin:', formData)
-      
-      setTimeout(() => {
-        onSave()
-      }, 1000)
-    } catch (error) {
-      console.error('Error saving admin:', error)
-      alert('Gagal menyimpan data admin')
+      onSave()
+    } catch (error: any) {
+      console.error('Error saving user:', error)
+      alert(error.message || 'Gagal menyimpan data user')
     } finally {
       setLoading(false)
     }
@@ -94,14 +130,14 @@ const UserModal: FC<UserModalProps> = ({admin, onClose, onSave}) => {
           <div className='modal-content'>
             <div className='modal-header'>
               <h5 className='modal-title'>
-                {admin ? 'Edit Admin' : 'Tambah Admin'}
+                {user ? 'Edit Admin' : 'Tambah Admin'}
               </h5>
               <button type='button' className='btn-close' onClick={onClose} />
             </div>
 
             <form onSubmit={handleSubmit}>
               <div className='modal-body'>
-                <div className='row g-5'>
+                <div className='row g-4'>
                   {/* Nama */}
                   <div className='col-12'>
                     <label className='form-label required'>Nama</label>
@@ -109,70 +145,67 @@ const UserModal: FC<UserModalProps> = ({admin, onClose, onSave}) => {
                       type='text'
                       className='form-control'
                       placeholder='Jason Tatum'
-                      value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      value={`${formData.first_name} ${formData.last_name}`.trim()}
+                      onChange={(e) => {
+                        const parts = e.target.value.split(' ')
+                        setFormData({
+                          ...formData, 
+                          first_name: parts[0] || '',
+                          last_name: parts.slice(1).join(' ') || ''
+                        })
+                      }}
                       required
                     />
                   </div>
 
                   {/* Email */}
-                  <div className='col-md-6'>
+                  <div className='col-12'>
                     <label className='form-label required'>Email</label>
                     <input
-                      type='email'
+                      type='text'
                       className='form-control'
                       placeholder='0812389018'
-                      value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      value={formData.phone}
+                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
                       required
                     />
                   </div>
 
                   {/* Password */}
-                  <div className='col-md-6'>
+                  <div className='col-12'>
                     <label className='form-label'>
-                      Password {!admin && <span className='text-danger'>*</span>}
+                      Password {!user && <span className='text-danger'>*</span>}
                     </label>
                     <input
                       type='password'
                       className='form-control'
-                      placeholder={admin ? 'Kosongkan jika tidak ingin mengubah' : 'Jl. in aja dulu'}
+                      placeholder={user ? 'Kosongkan jika tidak ingin mengubah' : 'Jl. in aja dulu'}
                       value={formData.password}
                       onChange={(e) => setFormData({...formData, password: e.target.value})}
-                      required={!admin}
+                      required={!user}
                     />
                   </div>
 
-                  {/* Role */}
+                  {/* Permissions - Simplified */}
                   <div className='col-12'>
-                    <label className='form-label required'>Role</label>
-                    <select
-                      className='form-select'
-                      value={formData.role}
-                      onChange={(e) => setFormData({...formData, role: e.target.value})}
-                    >
-                      <option value='Admin'>Admin</option>
-                      <option value='SuperAdmin'>SuperAdmin</option>
-                    </select>
-                  </div>
-
-                  {/* Permissions */}
-                  <div className='col-12'>
-                    <label className='form-label mb-3'>Permissions</label>
-                    <div className='row g-3'>
-                      {availablePermissions.map((permission) => (
-                        <div key={permission.id} className='col-md-4'>
+                    <div className='d-flex flex-column gap-3'>
+                      {['Edit Detail Barang', 'Edit Detail Barang', 'Edit Detail Barang'].map((label, idx) => (
+                        <div key={idx} className='d-flex justify-content-between align-items-center'>
                           <div className='form-check'>
                             <input
                               className='form-check-input'
                               type='checkbox'
-                              id={permission.id}
-                              checked={formData.permissions.includes(permission.id)}
-                              onChange={() => handlePermissionToggle(permission.id)}
+                              id={`perm-${idx}`}
+                              checked={formData.permission_ids.includes(idx + 1)}
+                              onChange={() => handlePermissionToggle(idx + 1)}
                             />
-                            <label className='form-check-label' htmlFor={permission.id}>
-                              {permission.label}
+                            <label className='form-check-label fw-semibold' htmlFor={`perm-${idx}`}>
+                              {label}
                             </label>
+                          </div>
+                          <div className='d-flex gap-5'>
+                            <span className='text-muted'>{label}</span>
+                            <span className='text-muted'>{label}</span>
                           </div>
                         </div>
                       ))}
@@ -193,7 +226,7 @@ const UserModal: FC<UserModalProps> = ({admin, onClose, onSave}) => {
                 <button
                   type='submit'
                   className='btn btn-primary'
-                  style={{backgroundColor: '#5C8AE6'}}
+                  style={{backgroundColor: '#007bff', borderColor: '#007bff'}}
                   disabled={loading}
                 >
                   {loading ? (
@@ -202,10 +235,7 @@ const UserModal: FC<UserModalProps> = ({admin, onClose, onSave}) => {
                       Menyimpan...
                     </>
                   ) : (
-                    <>
-                      <KTIcon iconName='check' className='fs-3' />
-                      Tambah
-                    </>
+                    <>Tambah</>
                   )}
                 </button>
               </div>

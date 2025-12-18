@@ -3,6 +3,51 @@
 //
 
 // General mode(all devices)
+// Mobile aside toggle
+.aside-toggle-mobile {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 100;
+  display: none;
+  
+  @media (max-width: 991px) {
+    display: block;
+  }
+}
+
+// Aside responsive
+#kt_aside {
+  @media (max-width: 991px) {
+    position: fixed;
+    left: -300px;
+    transition: left 0.3s ease;
+    z-index: 101;
+    
+    &.aside-show {
+      left: 0;
+    }
+  }
+}
+
+// Overlay when aside open on mobile
+.aside-overlay {
+  display: none;
+  
+  @media (max-width: 991px) {
+    &.show {
+      display: block;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+    }
+  }
+}
+
 .aside {
 	display: flex;
 	flex-direction: column;

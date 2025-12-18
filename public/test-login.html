@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Login Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-super {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-super:hover {
+            background: #2563eb;
+        }
+        .btn-admin {
+            background: #10b981;
+            color: white;
+        }
+        .btn-admin:hover {
+            background: #059669;
+        }
+        .btn-clear {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-clear:hover {
+            background: #dc2626;
+        }
+        .btn-check {
+            background: #f59e0b;
+            color: white;
+        }
+        .btn-check:hover {
+            background: #d97706;
+        }
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            border-radius: 4px;
+        }
+        .info h3 {
+            margin-top: 0;
+            color: #1e40af;
+        }
+        .info ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .info li {
+            margin: 5px 0;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Quick Login Test</h1>
+        <p class="subtitle">Test role-based access tanpa backend API</p>
+        
+        <button class="btn-super" onclick="loginAsSuperAdmin()">
+            🔑 Login as SuperAdmin
+        </button>
+        
+        <button class="btn-admin" onclick="loginAsAdmin()">
+            👤 Login as Admin (Limited)
+        </button>
+        
+        <button class="btn-check" onclick="checkCurrentAuth()">
+            🔍 Check Current Auth Status
+        </button>
+        
+        <button class="btn-clear" onclick="clearAndLogout()">
+            🗑️ Clear & Logout
+        </button>
+
+        <div class="info">
+            <h3>📋 Access Control</h3>
+            <ul>
+                <li><strong>SuperAdmin (999):</strong> Full access to all pages</li>
+                <li><strong>Admin (1):</strong> Limited to Dashboard, Account, Inventory, Supplier</li>
+            </ul>
+            <p><strong>After login:</strong> Click "Check Current Auth Status" to verify, then navigate to <a href="/">Dashboard</a></p>
+        </div>
+
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        function showResult(message) {
+            const resultDiv = document.getElementById('result')
+            resultDiv.textContent = message
+            resultDiv.style.display = 'block'
+        }
+
+        function loginAsSuperAdmin() {
+            const superAdmin = {
+                id: 999,
+                username: "superadmin",
+                email: "dev@example.com",
+                first_name: "Super",
+                last_name: "Admin",
+                fullname: "Super Admin",
+                role: "SuperAdmin",
+                roles: [999],
+                permissions: ['*']
+            }
+            
+            const auth = {token: 'dev-token'}
+            
+            // Set both auth and user
+            localStorage.setItem('kt-auth-react-v', JSON.stringify(auth))
+            localStorage.setItem('current-user', JSON.stringify(superAdmin))
+            
+            // Verify it was saved
+            const savedAuth = localStorage.getItem('kt-auth-react-v')
+            const savedUser = localStorage.getItem('current-user')
+            
+            console.log('✅ Saved to localStorage:', {
+                auth: savedAuth,
+                user: savedUser
+            })
+            
+            showResult(`✅ Logged in as SuperAdmin\n\nEmail: ${superAdmin.email}\nRole: ${superAdmin.role}\nRoles: [${superAdmin.roles}]\n\n✅ Data saved to localStorage\n🔄 Redirecting to dashboard...`)
+            
+            setTimeout(() => {
+                window.location.href = '/'
+            }, 1500)
+        }
+
+        function loginAsAdmin() {
+            const admin = {
+                id: 1,
+                username: "admin",
+                email: "admin@example.com",
+                first_name: "Regular",
+                last_name: "Admin",
+                fullname: "Regular Admin",
+                role: "Admin",
+                roles: [1],
+                permissions: ['inventory.read', 'inventory.create', 'supplier.read']
+            }
+            
+            const auth = {token: 'admin-token'}
+            
+            // Set both auth and user
+            localStorage.setItem('kt-auth-react-v', JSON.stringify(auth))
+            localStorage.setItem('current-user', JSON.stringify(admin))
+            
+            // Verify it was saved
+            const savedAuth = localStorage.getItem('kt-auth-react-v')
+            const savedUser = localStorage.getItem('current-user')
+            
+            console.log('✅ Saved to localStorage:', {
+                auth: savedAuth,
+                user: savedUser
+            })
+            
+            showResult(`✅ Logged in as Admin (Limited)\n\nEmail: ${admin.email}\nRole: ${admin.role}\nRoles: [${admin.roles}]\n\nRestricted from:\n- History\n- Log System\n- User Management\n- Master Data\n\n✅ Data saved to localStorage\n🔄 Redirecting to dashboard...`)
+            
+            setTimeout(() => {
+                window.location.href = '/'
+            }, 1500)
+        }
+
+        function checkCurrentAuth() {
+            const auth = localStorage.getItem('kt-auth-react-v')
+            const user = localStorage.getItem('current-user')
+            
+            let message = '=== CURRENT AUTH STATUS ===\n\n'
+            
+            if (!auth) {
+                message += '❌ No auth token found\n'
+            } else {
+                try {
+                    const authData = JSON.parse(auth)
+                    message += `✅ Auth Token: ${authData.token}\n`
+                } catch (e) {
+                    message += `⚠️ Invalid auth data: ${auth}\n`
+                }
+            }
+            
+            message += '\n'
+            
+            if (!user) {
+                message += '❌ No user data found\n'
+            } else {
+                try {
+                    const userData = JSON.parse(user)
+                    message += '✅ User Data:\n'
+                    message += `  - ID: ${userData.id}\n`
+                    message += `  - Email: ${userData.email}\n`
+                    message += `  - Username: ${userData.username}\n`
+                    message += `  - Full Name: ${userData.fullname}\n`
+                    message += `  - Role: ${userData.role}\n`
+                    message += `  - Roles Array: [${userData.roles}]\n`
+                    message += `  - Permissions: ${JSON.stringify(userData.permissions)}\n`
+                    
+                    // Check access level
+                    message += '\n=== ACCESS LEVEL ===\n'
+                    const isSuperAdmin = userData.roles?.includes(999) || userData.role === 'SuperAdmin'
+                    if (isSuperAdmin) {
+                        message += '🔓 SuperAdmin - Full Access\n'
+                        message += '  ✅ All menus visible\n'
+                        message += '  ✅ All pages accessible\n'
+                    } else {
+                        message += '🔒 Admin - Limited Access\n'
+                        message += '  ✅ Dashboard, Account, Inventory, Supplier\n'
+                        message += '  ❌ History, Log System, User Management, Master Data\n'
+                    }
+                } catch (e) {
+                    message += `⚠️ Invalid user data: ${user}\n`
+                }
+            }
+            
+            showResult(message)
+        }
+
+        function clearAndLogout() {
+            localStorage.clear()
+            sessionStorage.clear()
+            showResult('🗑️ All data cleared!\n\n🔄 Redirecting to login...')
+            
+            setTimeout(() => {
+                window.location.href = '/auth/login'
+            }, 1500)
+        }
+    </script>
+</body>
+</html>

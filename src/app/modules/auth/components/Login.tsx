@@ -67,6 +67,50 @@ const DEV_USER: UserModel = {
   }
 }
 
+// Admin user
+const ADMIN_USER: UserModel = {
+  id: 888,
+  username: "admin",
+  password: undefined,
+  email: "admin@example.com",
+  first_name: "Admin",
+  last_name: "User",
+  fullname: "Admin User",
+  occupation: "Administrator",
+  companyName: "Delova",
+  phone: "0000000000",
+  roles: [888],
+  role: "Admin",
+  pic: "",
+  language: "en",
+  timeZone: "Asia/Jakarta",
+  website: "https://delova.com",
+  emailSettings: {
+    emailNotification: true,
+    sendCopyToPersonalEmail: false
+  },
+  auth: {
+    token: "admin-token",
+  },
+  communication: {
+    email: true,
+    sms: false,
+    phone: false
+  },
+  address: {
+    addressLine: "Admin Street",
+    city: "Jakarta",
+    state: "ID",
+    postCode: "12345"
+  },
+  socialNetworks: {
+    linkedIn: "",
+    facebook: "",
+    twitter: "",
+    instagram: ""
+  }
+}
+
 export function Login() {
   const [loading, setLoading] = useState(false)
   const {saveAuth, setCurrentUser} = useAuth()
@@ -83,40 +127,30 @@ export function Login() {
         (values.email === "dev" || values.email === "dev@example.com") && 
         values.password === "1234"
 
-      if (isDevLogin) {
+      const isAdminLogin = 
+        (values.email === "admin" || values.email === "admin@example.com") && 
+        values.password === "admin"
+
+      if (isDevLogin || isAdminLogin) {
         console.log('=====DEV MODE: Bypassing authentication=====')
         console.log('Email:', values.email)
         console.log('Password:', values.password)
         
-        // const devAuth = { token: "dev-token" }
-        // const devUser: UserModel = {
-        //   id: 0,
-        //   username: "dev",
-        //   password: undefined,
-        //   email: "dev@example.com",
-        //   first_name: "Dev",
-        //   last_name: "User",
-        //   fullname: "Dev User",
-        //   // ... other fields
-        //   roles: [999], // 999 = SuperAdmin
-        //   // ... rest of fields
-        // }
-        // saveAuth(devAuth)
-        // setCurrentUser(devUser)
-        // navigate('/dashboard')
+        const userToLogin = isDevLogin ? DEV_USER : ADMIN_USER;
+        const token = isDevLogin ? "dev-token" : "admin-token";
 
         try {
-          const devAuth = { token: "dev-token" }
+          const devAuth = { token: token }
           
-          console.log('🔑 Dev login - Setting auth and user...')
+          console.log('🔑 Dev/Admin login - Setting auth and user...')
           console.log('  Auth:', devAuth)
-          console.log('  User:', DEV_USER)
+          console.log('  User:', userToLogin)
           
           // Save auth first
           saveAuth(devAuth)
           
           // Then set current user (will be saved to localStorage by AuthProvider)
-          setCurrentUser(DEV_USER)
+          setCurrentUser(userToLogin)
           
           // Verify localStorage
           setTimeout(() => {
@@ -137,8 +171,8 @@ export function Login() {
           setLoading(false)
           return
         } catch (error) {
-          console.error('❌ Dev login error:', error)
-          setStatus('Dev login failed: ' + error)
+          console.error('❌ Dev/Admin login error:', error)
+          setStatus('Login failed: ' + error)
           setLoading(false)
           return
         }
@@ -188,7 +222,7 @@ export function Login() {
           Sign In
         </h1>
         <div className='text-gray-500 fw-semibold fs-6'>
-          Your Social Campaigns
+          SIM Fashion Industry
         </div>
       </div>
 
@@ -201,9 +235,11 @@ export function Login() {
       ) : (
         <div className='mb-10 bg-light-info p-8 rounded'>
           <div className='text-info'>
-            <strong>🔓 DEV MODE:</strong> Use <strong>dev@example.com</strong> / <strong>1234</strong>
+            <strong>🔓 DEV MODE:</strong>
             <br />
-            <small>Or use <strong>admin@demo.com</strong> / <strong>demo</strong> for API login</small>
+            Super Admin: <strong>dev@example.com</strong> / <strong>1234</strong>
+            <br />
+            Admin: <strong>admin@example.com</strong> / <strong>admin</strong>
           </div>
         </div>
       )}

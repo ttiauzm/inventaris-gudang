@@ -106,10 +106,10 @@ export function AsideMenuMain() {
       <div className='menu-item mb-5'>
         <button
           onClick={handleLogout}
-          className='menu-link w-100 text-start border-0 bg-transparent'
+          className='menu-link menu-center border-0 bg-transparent'
           style={{cursor: 'pointer'}}
         >
-          <span className='menu-icon'>
+          <span className='menu-icon me-0'>
             <i className='ki-duotone ki-exit-left fs-2'>
               <span className='path1'></span>
               <span className='path2'></span>

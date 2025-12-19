@@ -2,7 +2,7 @@ import {FC, useState, useEffect} from 'react'
 import {Navigate} from 'react-router-dom'
 import {KTIcon} from '../../../_metronic/helpers'
 import {useAuth} from '../../modules/auth'
-import {getCategoriesData, addCategory, updateCategory as updateCategoryData, deleteCategory, addMaterial, updateMaterial as updateMaterialData, deleteMaterial} from '../../data/dataManager'
+import {getCategoriesData, addCategory, updateCategory as updateCategoryData, deleteCategory, getMaterialsData, addMaterial, updateMaterial as updateMaterialData, deleteMaterial} from '../../data/dataManager'
 import {isSuperAdmin as checkSuperAdmin} from '../../utils/permissionHelper'
 import {exportMasterDataToExcel, exportMasterDataToPDF} from '../../utils/exportUtils'
 
@@ -50,7 +50,7 @@ const MasterDataPage: FC = () => {
 
   const fetchMaterials = () => {
     setLoadingMaterials(true)
-    const data = getCategoriesData() // Using same data for demo
+    const data = getMaterialsData()
     setMaterials(data)
     setLoadingMaterials(false)
   }

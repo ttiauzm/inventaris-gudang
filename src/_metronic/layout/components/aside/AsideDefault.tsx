@@ -95,7 +95,7 @@ const AsideDefault: FC = () => {
         >
           <Link to='/dashboard'>
             <img 
-              src={toAbsoluteUrl('media/logos/default-delova.png')} 
+              src={toAbsoluteUrl('media/logos/delova.svg')} 
               alt='Delova Logo' 
               className='h-40px'
               style={{maxWidth: '100px'}}

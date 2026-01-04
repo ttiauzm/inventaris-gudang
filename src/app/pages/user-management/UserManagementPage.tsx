@@ -3,6 +3,7 @@ import {Navigate} from 'react-router-dom'
 import {KTIcon} from '../../../_metronic/helpers'
 import {useAuth} from '../../modules/auth'
 import {UserModal} from './components/UserModal'
+import {EditUserPage} from './EditUserPage'
 import {User} from './core/_models'
 import {getUsers, deleteUser, toggleUserStatus} from './core/_requests'
 import {isSuperAdmin as checkSuperAdmin} from '../../utils/permissionHelper'
@@ -12,6 +13,7 @@ const UserManagementPage: FC = () => {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
@@ -40,6 +42,14 @@ const UserManagementPage: FC = () => {
     return <Navigate to='/dashboard' replace />
   }
 
+  if (isEditing && selectedUser) {
+    return <EditUserPage user={selectedUser} onBack={() => {
+      setIsEditing(false)
+      setSelectedUser(null)
+      fetchUsers()
+    }} />
+  }
+
   const totalPages = Math.ceil(users.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const paginatedData = users.slice(startIndex, startIndex + itemsPerPage)
@@ -51,7 +61,7 @@ const UserManagementPage: FC = () => {
 
   const handleEdit = (user: User) => {
     setSelectedUser(user)
-    setShowModal(true)
+    setIsEditing(true)
   }
 
   const handleSave = () => {

@@ -11,6 +11,7 @@ type Props = {
   title: string
   icon?: string
   fontIcon?: string
+  customIcon?: string
   className?: string
   hasBullet?: boolean
   bsTitle?: string
@@ -23,6 +24,7 @@ const AsideMenuItem: FC<Props & WithChildren> = ({
   title,
   icon,
   fontIcon,
+  customIcon,
   className,
   bsTitle,
   outside = false,
@@ -50,7 +52,11 @@ const AsideMenuItem: FC<Props & WithChildren> = ({
             target='_blank'
             className={clsx('menu-link menu-center', {active: isActive})}
           >
-            {fontIcon && aside.menuIcon === 'font' && (
+            {customIcon ? (
+              <span className='menu-icon me-0'>
+                <img src={customIcon} alt={title} className='mh-30px' />
+              </span>
+            ) : fontIcon && aside.menuIcon === 'font' && (
               <span className='menu-icon me-0'>
                 <i className={clsx('bi', fontIcon, 'fs-2')}></i>
               </span>
@@ -72,17 +78,23 @@ const AsideMenuItem: FC<Props & WithChildren> = ({
                   <span className='bullet bullet-dot'></span>
                 </span>
               )}
-              {icon && aside.menuIcon === 'svg' && (
-                <span className='menu-icon'>
-                  <KTIcon iconName={icon} className='fs-2' />
-                </span>
-              )}
-              {fontIcon && aside.menuIcon === 'font' ? (
+              {customIcon ? (
                 <span className='menu-icon me-0'>
-                  <i className={clsx('bi', fontIcon, 'fs-2')}></i>
+                  <img src={customIcon} alt={title} className='mh-30px' />
                 </span>
               ) : (
-                <span className='menu-title'>{title}</span>
+                <>
+                  {icon && aside.menuIcon === 'svg' && (
+                    <span className='menu-icon'>
+                      <KTIcon iconName={icon} className='fs-2' />
+                    </span>
+                  )}
+                  {fontIcon && aside.menuIcon === 'font' && (
+                    <span className='menu-icon me-0'>
+                      <i className={clsx('bi', fontIcon, 'fs-2')}></i>
+                    </span>
+                  )}
+                </>
               )}
             </Link>
             {children}

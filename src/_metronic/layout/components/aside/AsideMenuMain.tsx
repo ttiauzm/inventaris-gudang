@@ -25,7 +25,7 @@ export function AsideMenuMain() {
       <AsideMenuItem
         to='/dashboard'
         title={intl.formatMessage({id: 'MENU.DASHBOARD'})}
-        fontIcon='bi-bar-chart-line'
+        customIcon='/media/icons/custom/delova_home.svg'
         bsTitle={intl.formatMessage({id: 'MENU.DASHBOARD'})}
         className='py-3'
       />
@@ -34,7 +34,7 @@ export function AsideMenuMain() {
         to='/crafted/account/overview'
         title='Account'
         bsTitle='Account'
-        fontIcon='bi-person'
+        customIcon='/media/icons/custom/delova_account.svg'
         className='py-3'
       />
       
@@ -43,7 +43,7 @@ export function AsideMenuMain() {
         to='/apps/inventory'
         title='Inventory'
         bsTitle='Inventory'
-        fontIcon='bi-box'
+        customIcon='/media/icons/custom/delova_inventory.svg'
         className='py-3'
       />
       
@@ -53,7 +53,7 @@ export function AsideMenuMain() {
           to='/apps/history'
           title='History'
           bsTitle='History'
-          fontIcon='bi-clock-history'
+          customIcon='/media/icons/custom/delova_history.svg'
           className='py-3'
         />
       )}
@@ -64,7 +64,7 @@ export function AsideMenuMain() {
           to='/apps/log-system'
           title='System Log'
           bsTitle='System Log'
-          fontIcon='bi-gear'
+          customIcon='/media/icons/custom/delova_systemlog.svg'
           className='py-3'
         />
       )}
@@ -74,7 +74,7 @@ export function AsideMenuMain() {
         to='/apps/supplier'
         title='Supplier'
         bsTitle='Supplier'
-        fontIcon='bi-truck'
+        customIcon='/media/icons/custom/delova_supplier.svg'
         className='py-3'
       />
       
@@ -82,10 +82,10 @@ export function AsideMenuMain() {
       {isSuperAdmin && (
         <AsideMenuItem
           to='/apps/users'
-          icon='profile-user'
+          customIcon='/media/icons/custom/delova_account.svg'
           bsTitle='Manajemen Akun'
           title='Manajemen Akun'
-          fontIcon='bi-people'
+          className='py-3'
         />
       )}
       
@@ -93,27 +93,24 @@ export function AsideMenuMain() {
       {isSuperAdmin && (
         <AsideMenuItem
           to='/apps/master-data'
-          icon='category'
-          bsTitle='Data Master'
-          title='Data Master'
-          fontIcon='bi-grid'
+          customIcon='/media/icons/custom/delova_database.svg'
+          bsTitle='Master Data'
+          title='Master Data'
+          className='py-3'
         />
       )}
 
       {/* Divider */}
       <div className='separator separator-dashed mx-5 mb-5'></div>
 
-      <div className='menu-item mb-5'>
+      <div className='menu-item py-3 d-flex justify-content-center'>
         <button
           onClick={handleLogout}
-          className='menu-link menu-center border-0 bg-transparent'
+          className='menu-link menu-center border-0 bg-transparent p-0'
           style={{cursor: 'pointer'}}
         >
           <span className='menu-icon me-0'>
-            <i className='ki-duotone ki-exit-left fs-2'>
-              <span className='path1'></span>
-              <span className='path2'></span>
-            </i>
+            <img src='/media/icons/custom/delova_logout.svg' alt='Logout' className='mh-30px' />
           </span>
         </button>
       </div>

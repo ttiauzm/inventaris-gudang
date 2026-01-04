@@ -1,28 +1,32 @@
 import {FC, useState, useEffect} from 'react'
-import {useNavigate, useParams} from 'react-router-dom'
+import {useNavigate} from 'react-router-dom'
 import {KTIcon} from '../../../_metronic/helpers'
 import {useAuth} from '../../modules/auth'
 import {isSuperAdmin as checkSuperAdmin} from '../../utils/permissionHelper'
+import {User, ROLE_OPTIONS, PERMISSION_GROUPS, PERMISSION_LABELS} from './core/_models'
+import {updateUser, resetPassword, deleteUser, toggleUserStatus} from './core/_requests'
 
-interface UserData {
-  id: number
-  photo?: string
-  name: string
-  email: string
-  role: string
+interface EditUserPageProps {
+  user?: User
+  onBack?: () => void
 }
 
-const EditUserPage: FC = () => {
+const EditUserPage: FC<EditUserPageProps> = ({user, onBack}) => {
   const navigate = useNavigate()
-  const {userId} = useParams<{userId: string}>()
   const {currentUser} = useAuth()
+  const [loading, setLoading] = useState(false)
   
-  const [userData, setUserData] = useState<UserData>({
+  const [userData, setUserData] = useState<User>(user || {
     id: 0,
-    photo: '',
-    name: 'Jason Tatum',
-    email: 'jason@delova.co',
-    role: 'Admin'
+    username: '',
+    email: '',
+    first_name: '',
+    last_name: '',
+    role: 'Admin',
+    roles: [1],
+    permissions: [],
+    is_active: true,
+    created_at: ''
   })
 
   const [passwordData, setPasswordData] = useState({
@@ -30,37 +34,57 @@ const EditUserPage: FC = () => {
     confirmPassword: ''
   })
 
-  const [permissions, setPermissions] = useState<string[]>([
-    'edit_detail_barang_1',
-    'edit_detail_barang_2',
-    'edit_detail_barang_3',
-    'edit_detail_barang_4',
-    'edit_detail_barang_5',
-    'edit_detail_barang_6',
-    'edit_detail_barang_7',
-    'edit_detail_barang_8'
-  ])
-
   const isSuperAdmin = checkSuperAdmin(currentUser)
-  const isEditingSuperAdmin = userData.role === 'SuperAdmin'
+  const isEditingSuperAdmin = userData.roles.includes(999)
 
   useEffect(() => {
-    // Load user data based on userId
-    // For demo purposes, using static data
-  }, [userId])
+    if (user) {
+      setUserData(user)
+    }
+  }, [user])
 
-  const handleSaveChanges = () => {
-    console.log('Saving user changes:', userData)
-    // Implement save logic
+  const handleSaveChanges = async () => {
+    try {
+      setLoading(true)
+      await updateUser(userData.id, {
+        username: userData.username,
+        email: userData.email,
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        phone: userData.phone,
+        role_ids: userData.roles,
+        permission_ids: userData.permissions,
+        is_active: userData.is_active
+      })
+      alert('User detail updated successfully!')
+      if (onBack) onBack()
+    } catch (error: any) {
+      alert(error.message || 'Failed to update user')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleResetPassword = () => {
+  const handleResetPassword = async () => {
+    if (!passwordData.newPassword) {
+      alert('Password baru tidak boleh kosong!')
+      return
+    }
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       alert('Password tidak cocok!')
       return
     }
-    console.log('Resetting password')
-    // Implement password reset logic
+    
+    try {
+      setLoading(true)
+      await resetPassword(userData.id, passwordData.newPassword)
+      alert('Password reset successfully!')
+      setPasswordData({newPassword: '', confirmPassword: ''})
+    } catch (error: any) {
+      alert(error.message || 'Failed to reset password')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,27 +92,59 @@ const EditUserPage: FC = () => {
     if (file) {
       const reader = new FileReader()
       reader.onloadend = () => {
-        setUserData(prev => ({...prev, photo: reader.result as string}))
+        setUserData(prev => ({...prev, avatar: reader.result as string}))
       }
       reader.readAsDataURL(file)
     }
   }
 
-  const handleDeactivate = () => {
-    console.log('Deactivating account')
-    // Implement deactivate logic
+  const handleDeactivate = async () => {
+    try {
+      setLoading(true)
+      await toggleUserStatus(userData.id, !userData.is_active)
+      setUserData(prev => ({...prev, is_active: !prev.is_active}))
+      alert(`User ${userData.is_active ? 'deactivated' : 'activated'} successfully!`)
+    } catch (error: any) {
+      alert(error.message || 'Failed to toggle status')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (window.confirm('Apakah Anda yakin ingin menghapus akun ini?')) {
-      console.log('Deleting account')
-      // Implement delete logic
-      navigate('/apps/users')
+      try {
+        setLoading(true)
+        await deleteUser(userData.id)
+        alert('User deleted successfully!')
+        if (onBack) onBack()
+        else navigate('/apps/users')
+      } catch (error: any) {
+        alert(error.message || 'Failed to delete user')
+      } finally {
+        setLoading(false)
+      }
     }
+  }
+
+  const handlePermissionToggle = (permissionId: number) => {
+    setUserData(prev => ({
+      ...prev,
+      permissions: prev.permissions.includes(permissionId)
+        ? prev.permissions.filter(p => p !== permissionId)
+        : [...prev.permissions, permissionId]
+    }))
   }
 
   return (
     <div className='container-fluid'>
+      <div className='d-flex align-items-center mb-7'>
+        <button className='btn btn-sm btn-icon btn-light-primary me-3' onClick={onBack || (() => navigate(-1))}>
+          <KTIcon iconName='arrow-left' className='fs-2' />
+        </button>
+        <h1 className='text-dark fw-bold my-1 fs-3'>Edit User: {userData.first_name} {userData.last_name}</h1>
+      </div>
+
       <div className='row g-5'>
         {/* Edit Detail Admin Card */}
         <div className='col-12'>
@@ -111,11 +167,11 @@ const EditUserPage: FC = () => {
                         overflow: 'hidden'
                       }}
                     >
-                      {userData.photo ? (
-                        <img src={userData.photo} alt='User' />
+                      {userData.avatar ? (
+                        <img src={userData.avatar} alt='User' />
                       ) : (
                         <div className='symbol-label fs-2 fw-bold text-muted'>
-                          {userData.name.charAt(0)}
+                          {userData.first_name.charAt(0)}
                         </div>
                       )}
                     </div>
@@ -143,14 +199,40 @@ const EditUserPage: FC = () => {
               </div>
 
               <div className='row mb-6'>
-                <label className='col-lg-4 col-form-label required fw-semibold fs-6'>Name</label>
+                <label className='col-lg-4 col-form-label required fw-semibold fs-6'>Username</label>
                 <div className='col-lg-8'>
                   <input
                     type='text'
                     className='form-control form-control-solid'
-                    placeholder='Jason Tatum'
-                    value={userData.name}
-                    onChange={(e) => setUserData(prev => ({...prev, name: e.target.value}))}
+                    placeholder='Username'
+                    value={userData.username}
+                    onChange={(e) => setUserData(prev => ({...prev, username: e.target.value}))}
+                  />
+                </div>
+              </div>
+
+              <div className='row mb-6'>
+                <label className='col-lg-4 col-form-label required fw-semibold fs-6'>First Name</label>
+                <div className='col-lg-8'>
+                  <input
+                    type='text'
+                    className='form-control form-control-solid'
+                    placeholder='First Name'
+                    value={userData.first_name}
+                    onChange={(e) => setUserData(prev => ({...prev, first_name: e.target.value}))}
+                  />
+                </div>
+              </div>
+
+              <div className='row mb-6'>
+                <label className='col-lg-4 col-form-label required fw-semibold fs-6'>Last Name</label>
+                <div className='col-lg-8'>
+                  <input
+                    type='text'
+                    className='form-control form-control-solid'
+                    placeholder='Last Name'
+                    value={userData.last_name}
+                    onChange={(e) => setUserData(prev => ({...prev, last_name: e.target.value}))}
                   />
                 </div>
               </div>
@@ -161,10 +243,38 @@ const EditUserPage: FC = () => {
                   <input
                     type='email'
                     className='form-control form-control-solid'
-                    placeholder='jason@delova.co'
+                    placeholder='Email'
                     value={userData.email}
                     onChange={(e) => setUserData(prev => ({...prev, email: e.target.value}))}
                   />
+                </div>
+              </div>
+
+              <div className='row mb-6'>
+                <label className='col-lg-4 col-form-label fw-semibold fs-6'>Phone</label>
+                <div className='col-lg-8'>
+                  <input
+                    type='text'
+                    className='form-control form-control-solid'
+                    placeholder='Phone'
+                    value={userData.phone || ''}
+                    onChange={(e) => setUserData(prev => ({...prev, phone: e.target.value}))}
+                  />
+                </div>
+              </div>
+
+              <div className='row mb-6'>
+                <label className='col-lg-4 col-form-label required fw-semibold fs-6'>Role</label>
+                <div className='col-lg-8'>
+                  <select
+                    className='form-select form-select-solid'
+                    value={userData.roles[0]}
+                    onChange={(e) => setUserData(prev => ({...prev, roles: [parseInt(e.target.value)]}))}
+                  >
+                    {ROLE_OPTIONS.map(role => (
+                      <option key={role.id} value={role.id}>{role.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -173,8 +283,9 @@ const EditUserPage: FC = () => {
                   type='button'
                   className='btn btn-primary'
                   onClick={handleSaveChanges}
+                  disabled={loading}
                 >
-                  Save Changes
+                  {loading ? <span className='spinner-border spinner-border-sm align-middle ms-2'></span> : 'Save Changes'}
                 </button>
               </div>
             </div>
@@ -222,8 +333,9 @@ const EditUserPage: FC = () => {
                   type='button'
                   className='btn btn-primary'
                   onClick={handleResetPassword}
+                  disabled={loading}
                 >
-                  Reset Password
+                  {loading ? <span className='spinner-border spinner-border-sm align-middle ms-2'></span> : 'Reset Password'}
                 </button>
               </div>
             </div>
@@ -241,27 +353,28 @@ const EditUserPage: FC = () => {
 
             <div className='card-body py-4'>
               <div className='row g-4'>
-                {Array.from({length: 8}).map((_, index) => (
-                  <div className='col-lg-4' key={index}>
-                    <div className='form-check form-check-custom form-check-solid'>
-                      <input
-                        className='form-check-input'
-                        type='checkbox'
-                        id={`permission_${index}`}
-                        checked={permissions.includes(`edit_detail_barang_${index + 1}`)}
-                        onChange={(e) => {
-                          const permId = `edit_detail_barang_${index + 1}`
-                          if (e.target.checked) {
-                            setPermissions(prev => [...prev, permId])
-                          } else {
-                            setPermissions(prev => prev.filter(p => p !== permId))
-                          }
-                        }}
-                      />
-                      <label className='form-check-label' htmlFor={`permission_${index}`}>
-                        Edit Detail Barang
-                      </label>
+                {PERMISSION_GROUPS.map((group) => (
+                  <div className='col-12' key={group.label}>
+                    <h5 className='fw-bold mb-3'>{group.label}</h5>
+                    <div className='row g-3'>
+                      {group.permissions.map((perm) => (
+                        <div className='col-lg-4' key={perm.id}>
+                          <div className='form-check form-check-custom form-check-solid'>
+                            <input
+                              className='form-check-input'
+                              type='checkbox'
+                              id={`permission_${perm.id}`}
+                              checked={userData.permissions.includes(perm.id)}
+                              onChange={() => handlePermissionToggle(perm.id)}
+                            />
+                            <label className='form-check-label' htmlFor={`permission_${perm.id}`}>
+                              {perm.name}
+                            </label>
+                          </div>
+                        </div>
+                      ))}
                     </div>
+                    <hr className='my-4' />
                   </div>
                 ))}
               </div>
@@ -270,9 +383,10 @@ const EditUserPage: FC = () => {
                 <button
                   type='button'
                   className='btn btn-primary'
-                  onClick={() => console.log('Saving permissions:', permissions)}
+                  onClick={handleSaveChanges}
+                  disabled={loading}
                 >
-                  Reset Password
+                  {loading ? <span className='spinner-border spinner-border-sm align-middle ms-2'></span> : 'Save Permissions'}
                 </button>
               </div>
             </div>
@@ -312,15 +426,17 @@ const EditUserPage: FC = () => {
                   <>
                     <button
                       type='button'
-                      className='btn btn-light'
+                      className={`btn ${userData.is_active ? 'btn-light-warning' : 'btn-light-success'}`}
                       onClick={handleDeactivate}
+                      disabled={loading}
                     >
-                      Deactivate Instead
+                      {userData.is_active ? 'Deactivate Account' : 'Activate Account'}
                     </button>
                     <button
                       type='button'
                       className='btn btn-danger'
                       onClick={handleDelete}
+                      disabled={loading}
                     >
                       Delete Account
                     </button>

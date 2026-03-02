@@ -34,7 +34,7 @@ class TransactionController extends Controller
 
     public function show($id)
     {
-        $authUser = Auth::user();
+        $authUser = Auth::users();
 
         if (!$authUser->can('view_transaction')) {
             return response()->json(['message' => 'Anda tidak memiliki izin melihat transaksi'], 403);

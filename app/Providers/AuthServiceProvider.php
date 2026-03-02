@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema; // ✅ Tambahan facade Schema di sini
 use App\Models\Permissions;
 
 class AuthServiceProvider extends ServiceProvider
@@ -31,15 +32,17 @@ class AuthServiceProvider extends ServiceProvider
             }
         });
 
-        // ✅ Buat Gate berdasarkan permission yang ada di DB
-        $permissions = Permissions::where('is_deleted', false)
-            ->pluck('permission_name')
-            ->unique();
+        // ✅ Cek dulu tabelnya ada atau nggak biar nggak error pas migrate database kosong
+        if (Schema::hasTable('permissions')) { 
+            $permissions = Permissions::where('is_deleted', false)
+                ->pluck('permission_name')
+                ->unique();
 
-        foreach ($permissions as $permission) {
-            Gate::define($permission, function ($user) use ($permission) {
-                return $user->hasPermission($permission);
-            });
+            foreach ($permissions as $permission) {
+                Gate::define($permission, function ($user) use ($permission) {
+                    return $user->hasPermission($permission);
+                });
+            }
         }
     }
 }

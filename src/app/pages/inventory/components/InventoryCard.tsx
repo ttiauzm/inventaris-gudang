@@ -8,7 +8,7 @@ interface InventoryCardProps {
 }
 
 const InventoryCard: FC<InventoryCardProps> = ({item, onEdit}) => {
-  const defaultImage = 'https://via.placeholder.com/300x200?text=No+Image'
+  const defaultImage = '/media/svg/material/material-dummy.svg'
 
   return (
     <div className='card card-custom h-100'>

@@ -2,12 +2,13 @@ import {FC, useState, useEffect} from 'react'
 import {Navigate} from 'react-router-dom'
 import {KTIcon} from '../../../_metronic/helpers'
 import {useAuth} from '../../modules/auth'
-import {getCategoriesData, addCategory, updateCategory as updateCategoryData, deleteCategory, getMaterialsData, addMaterial, updateMaterial as updateMaterialData, deleteMaterial} from '../../data/dataManager'
+import {getCategories, createCategory, updateCategory, deleteCategory} from '../category/core/_requests'
+import {getMaterials, createMaterial, updateMaterial, deleteMaterial} from '../material/core/_requests'
 import {isSuperAdmin as checkSuperAdmin} from '../../utils/permissionHelper'
 import {exportMasterDataToExcel, exportMasterDataToPDF} from '../../utils/exportUtils'
 
 interface Item {
-  id: number
+  id: string
   name: string
   description: string
 }
@@ -41,17 +42,25 @@ const MasterDataPage: FC = () => {
     fetchMaterials()
   }, [])
 
-  const fetchCategories = () => {
+  const fetchCategories = async () => {
     setLoadingCategories(true)
-    const data = getCategoriesData()
-    setCategories(data)
+    try {
+      const data = await getCategories()
+      setCategories(data)
+    } catch (e) {
+      console.error(e)
+    }
     setLoadingCategories(false)
   }
 
-  const fetchMaterials = () => {
+  const fetchMaterials = async () => {
     setLoadingMaterials(true)
-    const data = getMaterialsData()
-    setMaterials(data)
+    try {
+      const data = await getMaterials()
+      setMaterials(data)
+    } catch (e) {
+      console.error(e)
+    }
     setLoadingMaterials(false)
   }
 
@@ -80,7 +89,7 @@ const MasterDataPage: FC = () => {
     setShowModalCategory(true)
   }
 
-  const handleSaveCategory = () => {
+  const handleSaveCategory = async () => {
     if (!formDataCategory.name.trim()) {
       alert('Nama kategori tidak boleh kosong!')
       return
@@ -88,9 +97,9 @@ const MasterDataPage: FC = () => {
 
     try {
       if (selectedCategory) {
-        updateCategoryData(selectedCategory.id, formDataCategory)
+        await updateCategory(selectedCategory.id, formDataCategory)
       } else {
-        addCategory(formDataCategory)
+        await createCategory(formDataCategory)
       }
       setShowModalCategory(false)
       fetchCategories()
@@ -100,9 +109,9 @@ const MasterDataPage: FC = () => {
     }
   }
 
-  const handleDeleteCategory = (id: number) => {
+  const handleDeleteCategory = async (id: string) => {
     if (window.confirm('Hapus kategori ini?')) {
-      deleteCategory(id)
+      await deleteCategory(id)
       fetchCategories()
     }
   }
@@ -120,7 +129,7 @@ const MasterDataPage: FC = () => {
     setShowModalMaterial(true)
   }
 
-  const handleSaveMaterial = () => {
+  const handleSaveMaterial = async () => {
     if (!formDataMaterial.name.trim()) {
       alert('Nama material tidak boleh kosong!')
       return
@@ -128,9 +137,9 @@ const MasterDataPage: FC = () => {
 
     try {
       if (selectedMaterial) {
-        updateMaterialData(selectedMaterial.id, formDataMaterial)
+        await updateMaterial(selectedMaterial.id, formDataMaterial)
       } else {
-        addMaterial(formDataMaterial)
+        await createMaterial(formDataMaterial)
       }
       setShowModalMaterial(false)
       fetchMaterials()
@@ -140,9 +149,9 @@ const MasterDataPage: FC = () => {
     }
   }
 
-  const handleDeleteMaterial = (id: number) => {
+  const handleDeleteMaterial = async (id: string) => {
     if (window.confirm('Hapus material ini?')) {
-      deleteMaterial(id)
+      await deleteMaterial(id)
       fetchMaterials()
     }
   }
@@ -239,7 +248,8 @@ const MasterDataPage: FC = () => {
                           <th className='min-w-50px'>No</th>
                           <th className='min-w-100px'>ID</th>
                           <th className='min-w-150px'>Nama Kategori</th>
-                          <th className='min-w-100px'>Jumlah</th>
+                          <th className='min-w-200px'>Deskripsi</th>
+                          <th className='min-w-100px text-end'>Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -248,7 +258,23 @@ const MasterDataPage: FC = () => {
                             <td>{index + 1}</td>
                             <td className='text-dark fw-bold'>{category.id}</td>
                             <td className='text-dark fw-bold'>{category.name}</td>
-                            <td>12 pcs</td>
+                            <td className='text-muted'>{category.description || '-'}</td>
+                            <td className='text-end'>
+                              <button
+                                className='btn btn-icon btn-sm btn-light-primary me-2'
+                                onClick={() => handleEditCategory(category)}
+                                title='Edit'
+                              >
+                                <KTIcon iconName='pencil' className='fs-4' />
+                              </button>
+                              <button
+                                className='btn btn-icon btn-sm btn-light-danger'
+                                onClick={() => handleDeleteCategory(category.id)}
+                                title='Hapus'
+                              >
+                                <KTIcon iconName='trash' className='fs-4' />
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -354,7 +380,8 @@ const MasterDataPage: FC = () => {
                           <th className='min-w-50px'>No</th>
                           <th className='min-w-100px'>ID</th>
                           <th className='min-w-150px'>Nama Material</th>
-                          <th className='min-w-100px'>Jumlah</th>
+                          <th className='min-w-200px'>Deskripsi</th>
+                          <th className='min-w-100px text-end'>Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -363,7 +390,23 @@ const MasterDataPage: FC = () => {
                             <td>{index + 1}</td>
                             <td className='text-dark fw-bold'>{material.id}</td>
                             <td className='text-dark fw-bold'>{material.name}</td>
-                            <td>12 pcs</td>
+                            <td className='text-muted'>{material.description || '-'}</td>
+                            <td className='text-end'>
+                              <button
+                                className='btn btn-icon btn-sm btn-light-primary me-2'
+                                onClick={() => handleEditMaterial(material)}
+                                title='Edit'
+                              >
+                                <KTIcon iconName='pencil' className='fs-4' />
+                              </button>
+                              <button
+                                className='btn btn-icon btn-sm btn-light-danger'
+                                onClick={() => handleDeleteMaterial(material.id)}
+                                title='Hapus'
+                              >
+                                <KTIcon iconName='trash' className='fs-4' />
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -446,7 +489,7 @@ const MasterDataPage: FC = () => {
                     onClick={handleSaveCategory}
                     style={{backgroundColor: '#007bff', borderColor: '#007bff'}}
                   >
-                    Tambah
+                    {selectedCategory ? 'Simpan' : 'Tambah'}
                   </button>
                 </div>
               </div>
@@ -499,7 +542,7 @@ const MasterDataPage: FC = () => {
                     onClick={handleSaveMaterial}
                     style={{backgroundColor: '#007bff', borderColor: '#007bff'}}
                   >
-                    Tambah
+                    {selectedMaterial ? 'Simpan' : 'Tambah'}
                   </button>
                 </div>
               </div>

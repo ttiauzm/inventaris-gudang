@@ -2,11 +2,11 @@ import {FC, useState, useEffect} from 'react'
 import {Navigate} from 'react-router-dom'
 import {KTIcon} from '../../../_metronic/helpers'
 import {useAuth} from '../../modules/auth'
-import {getCategoriesData, addMaterial, updateMaterial as updateMaterialData, deleteMaterial} from '../../data/dataManager'
+import {getMaterials, createMaterial, updateMaterial, deleteMaterial} from './core/_requests'
 import {isSuperAdmin as checkSuperAdmin} from '../../utils/permissionHelper'
 
 interface Material {
-  id: number
+  id: string
   name: string
   description: string
 }
@@ -24,14 +24,19 @@ const MaterialPage: FC = () => {
   const isSuperAdmin = checkSuperAdmin(currentUser)
 
   useEffect(() => {
-    fetchCategories()
+    fetchMaterials()
   }, [])
 
-  const fetchCategories = () => {
+  const fetchMaterials = async () => {
     setLoading(true)
-    const data = getCategoriesData()
-    setCategories(data)
-    setLoading(false)
+    try {
+      const data = await getMaterials()
+      setCategories(data)
+    } catch (error) {
+      console.error('Error fetching materials:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (!isSuperAdmin) {
@@ -54,20 +59,28 @@ const MaterialPage: FC = () => {
     setShowModal(true)
   }
 
-  const handleSave = () => {
-    if (selectedMaterial) {
-      updateMaterialData(selectedMaterial.id, formData)
-    } else {
-      addMaterial(formData)
+  const handleSave = async () => {
+    try {
+      if (selectedMaterial) {
+        await updateMaterial(selectedMaterial.id, formData)
+      } else {
+        await createMaterial(formData)
+      }
+      setShowModal(false)
+      fetchMaterials()
+    } catch (error) {
+      console.error('Error saving material:', error)
     }
-    setShowModal(false)
-    fetchCategories()
   }
 
-  const handleDelete = (id: number) => {
-    if (window.confirm('Hapus kategori ini?')) {
-      deleteMaterial(id)
-      fetchCategories()
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Hapus material ini?')) {
+      try {
+        await deleteMaterial(id)
+        fetchMaterials()
+      } catch (error) {
+        console.error('Error deleting material:', error)
+      }
     }
   }
 

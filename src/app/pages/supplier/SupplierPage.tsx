@@ -2,8 +2,12 @@ import {FC, useState, useEffect} from 'react'
 import {KTIcon} from '../../../_metronic/helpers'
 import {getSuppliers, deleteSupplier, Supplier} from './core/_requests'
 import {SupplierModal} from './components/SupplierModal'
+import {useAuth} from '../../modules/auth'
+import {isSuperAdmin as checkSuperAdmin} from '../../utils/permissionHelper'
 
 const SupplierPage: FC = () => {
+  const {currentUser} = useAuth()
+  const isSuperAdmin = checkSuperAdmin(currentUser)
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -48,7 +52,7 @@ const SupplierPage: FC = () => {
     setShowModal(true)
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('Apakah Anda yakin ingin menghapus supplier ini?')) {
       try {
         await deleteSupplier(id)
@@ -89,10 +93,12 @@ const SupplierPage: FC = () => {
               />
             </div>
 
-            <button className='btn btn-sm btn-primary' onClick={handleAdd}>
-              <KTIcon iconName='plus' className='fs-3' />
-              Tambah Supplier
-            </button>
+            {isSuperAdmin && (
+              <button className='btn btn-sm btn-primary' onClick={handleAdd}>
+                <KTIcon iconName='plus' className='fs-3' />
+                Tambah Supplier
+              </button>
+            )}
           </div>
         </div>
 
@@ -111,7 +117,7 @@ const SupplierPage: FC = () => {
                       <th className='min-w-200px'>Nama Supplier</th>
                       <th className='min-w-150px'>Contact Person</th>
                       <th className='min-w-125px'>Telepon</th>
-                      <th className='min-w-125px'>Email</th>
+                      {/* <th className='min-w-125px'>Email</th> */}
                       <th className='min-w-150px'>Alamat</th>
                       <th className='text-end min-w-100px'>Actions</th>
                     </tr>
@@ -135,27 +141,33 @@ const SupplierPage: FC = () => {
                           </td>
                           <td>{supplier.contact_person || '-'}</td>
                           <td>{supplier.phone || '-'}</td>
-                          <td>{supplier.email || '-'}</td>
+                          {/* <td>{supplier.email || '-'}</td> */}
                           <td>
                             <span className='text-muted fs-7'>
                               {supplier.address || '-'}
                             </span>
                           </td>
                           <td className='text-end'>
-                            <button
-                              className='btn btn-icon btn-light-primary btn-sm me-2'
-                              onClick={() => handleEdit(supplier)}
-                              title='Edit'
-                            >
-                              <KTIcon iconName='pencil' className='fs-4' />
-                            </button>
-                            <button
-                              className='btn btn-icon btn-light-danger btn-sm'
-                              onClick={() => handleDelete(supplier.id)}
-                              title='Delete'
-                            >
-                              <KTIcon iconName='trash' className='fs-4' />
-                            </button>
+                            {isSuperAdmin ? (
+                              <>
+                                <button
+                                  className='btn btn-icon btn-light-primary btn-sm me-2'
+                                  onClick={() => handleEdit(supplier)}
+                                  title='Edit'
+                                >
+                                  <KTIcon iconName='pencil' className='fs-4' />
+                                </button>
+                                <button
+                                  className='btn btn-icon btn-light-danger btn-sm'
+                                  onClick={() => handleDelete(supplier.id)}
+                                  title='Delete'
+                                >
+                                  <KTIcon iconName='trash' className='fs-4' />
+                                </button>
+                              </>
+                            ) : (
+                              <span className='text-muted fs-7'>-</span>
+                            )}
                           </td>
                         </tr>
                       ))

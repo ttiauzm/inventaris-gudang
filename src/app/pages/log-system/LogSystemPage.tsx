@@ -29,8 +29,9 @@ const LogSystemPage: FC = () => {
   }
 
   const filteredLogs = logs.filter(item =>
-    item.item_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.description.toLowerCase().includes(searchQuery.toLowerCase())
+    item.user_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.admin_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.table_name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   const totalPages = Math.ceil(filteredLogs.length / itemsPerPage)
@@ -60,7 +61,7 @@ const LogSystemPage: FC = () => {
     <div className='card'>
       <div className='card-header border-0 pt-6'>
         <div className='card-title'>
-          <h3 className='fw-bold mb-0'>Log system</h3>
+          <h3 className='fw-bold mb-0'>Log Sistem</h3>
         </div>
         
         <div className='card-toolbar gap-3'>
@@ -120,7 +121,7 @@ const LogSystemPage: FC = () => {
                   <tr className='text-start text-muted fw-bold fs-7 text-uppercase gs-0'>
                     <th className='min-w-50px'>No</th>
                     <th className='min-w-100px'>ID</th>
-                    <th className='min-w-200px'>Nama Barang</th>
+                    <th className='min-w-200px'>User ID</th>
                     <th className='min-w-100px'>Jumlah</th>
                     <th className='min-w-100px'>Table Name</th>
                     <th className='min-w-100px'>Row ID</th>
@@ -137,10 +138,10 @@ const LogSystemPage: FC = () => {
                         <td>
                           <div className='d-flex flex-column'>
                             <span className='text-gray-800 fw-bold mb-1'>
-                              {item.item_name}
+                              {item.admin_name}
                             </span>
                             <span className='text-muted fs-7'>
-                              {item.description}
+                              {item.user_id}
                             </span>
                           </div>
                         </td>

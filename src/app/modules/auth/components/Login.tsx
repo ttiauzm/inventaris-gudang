@@ -11,10 +11,10 @@ const loginSchema = Yup.object().shape({
   email: Yup.string()
     .min(3, 'Minimum 3 symbols')
     .max(50, 'Maximum 50 symbols')
-    .required('Email is required'),
+    .required('Username or Email is required'),
   password: Yup.string()
     .min(3, 'Minimum 3 symbols')
-    .max(50, 'Maximum 50 symbols')
+    .max(100, 'Maximum 100 symbols')
     .required('Password is required'),
 })
 
@@ -111,6 +111,24 @@ const ADMIN_USER: UserModel = {
   }
 }
 
+// const onSubmit = async (values) => {
+//    try {
+
+//       // 1️⃣ Ambil CSRF cookie dulu
+//       await axios.get('/sanctum/csrf-cookie', {
+//          withCredentials: true
+//       });
+
+//       // 2️⃣ Baru login
+//       await axios.post('/api/login', values, {
+//          withCredentials: true
+//       });
+
+//    } catch (error) {
+//       console.log(error);
+//    }
+
+
 export function Login() {
   const [loading, setLoading] = useState(false)
   const {saveAuth, setCurrentUser} = useAuth()
@@ -181,25 +199,118 @@ export function Login() {
       // Login normal ke Laravel API
       try {
         console.log('🔐 Normal login attempt')
+        
+        // Ambil CSRF cookie dulu dengan base URL yang sama dengan API
+        // const csrfUrl = API.defaults.baseURL?.replace('/api', '/sanctum/csrf-cookie') || '/sanctum/csrf-cookie'
+        // await axios.get(csrfUrl, { withCredentials: true })
+        
         const response = await API.post("/login", {
-          email: values.email,
+          login: values.email, 
           password: values.password,
         })
 
-        const token = response.data.token
+        console.log('📦 Login response:', response.data)
+
+        // Backend returns: { success: true, data: { access_token: "...", token_type: "Bearer", user: {...} } }
+        const responseData = response.data
+        const token: string | undefined =
+          responseData?.data?.access_token ||   // struktur: { data: { access_token } }
+          responseData?.access_token ||          // struktur: { access_token }
+          responseData?.token                    // struktur: { token } (fallback)
+
+        if (!token) {
+          console.error('❌ Token tidak ditemukan di response:', responseData)
+          throw new Error('Token tidak ditemukan dalam response login')
+        }
+
+        console.log('✅ Token diterima:', token.substring(0, 20) + '...')
         saveAuth({ token })
         API.defaults.headers.common["Authorization"] = `Bearer ${token}`
 
-        const profile = await API.get("/profile")
-        setCurrentUser(profile.data)
+        // Data user dari login response (fallback minimal)
+        // Backend: data.user = { username, email, role: { role_id, role_name } } (lazy-loaded)
+        const loginUserData = responseData?.data?.user ?? {}
 
+        // Ekstrak nama role dari berbagai bentuk data
+        // Backend Role model menggunakan field 'role_name' (bukan 'nama_role')
+        const extractRoleName = (roleData: any): string => {
+          if (!roleData) return ''
+          if (typeof roleData === 'string') return roleData
+          // Role object dari Laravel relationship: { role_id, role_name, ... }
+          return roleData.role_name ?? roleData.nama_role ?? ''
+        }
+
+        // Helper untuk mapping data user ke UserModel
+        const buildUserModel = (userData: any) => {
+          // Role name: coba dari userData dulu, fallback ke loginUserData
+          // Profile endpoint tidak eager-load role, jadi role hanya ada di loginUserData
+          const roleName =
+            extractRoleName(userData.role) ||
+            userData.nama_role ||
+            extractRoleName(loginUserData.role) ||
+            loginUserData.nama_role ||
+            ''
+
+          const roleId =
+            userData.role_id ??
+            (typeof loginUserData.role === 'object' ? loginUserData.role?.role_id : undefined) ??
+            loginUserData.role_id ??
+            ''
+
+          console.log('🎭 Role resolved:', { roleName, roleId, rawRole: userData.role, loginRole: loginUserData.role })
+
+          return {
+            id: userData.user_id ?? userData.id ?? loginUserData.user_id ?? loginUserData.id ?? '',
+            username: userData.username ?? loginUserData.username ?? '',
+            email: userData.email ?? loginUserData.email ?? values.email,
+            first_name: userData.first_name ?? userData.username ?? loginUserData.username ?? '',
+            last_name: userData.last_name ?? '',
+            fullname: userData.fullname ?? userData.name ?? userData.username ?? loginUserData.username ?? '',
+            password: undefined,
+            role: roleName,      // Selalu string (e.g. 'superadmin', 'admin')
+            nama_role: roleName, // Sama, untuk backward-compat dengan permissionHelper
+            role_id: roleId,
+            pic: userData.pic ?? userData.avatar ?? '',
+            language: userData.language ?? 'en',
+            timeZone: userData.timeZone ?? userData.timezone ?? 'Asia/Jakarta',
+            phone: userData.phone ?? '',
+            occupation: userData.occupation ?? '',
+            companyName: userData.companyName ?? userData.company_name ?? '',
+            website: userData.website ?? '',
+            roles: userData.roles ?? [],
+            emailSettings: userData.emailSettings ?? { emailNotification: false, sendCopyToPersonalEmail: false },
+            communication: userData.communication ?? { email: false, sms: false, phone: false },
+            address: userData.address ?? { addressLine: '', city: '', state: '', postCode: '' },
+            socialNetworks: userData.socialNetworks ?? { linkedIn: '', facebook: '', twitter: '', instagram: '' },
+          }
+        }
+
+        // Ambil data lengkap user dari /profile
+        // Jika gagal (misal DB issue), tetap pakai data dari login response agar user bisa masuk
+        let mappedUser
+        try {
+          const profileRes = await API.get("/profile")
+          const userData = profileRes.data
+          console.log('👤 Profile response:', userData)
+          mappedUser = buildUserModel(userData)
+        } catch (profileError: any) {
+          console.warn('⚠️ /profile gagal, menggunakan data dari login response:', profileError?.response?.status)
+          // Fallback: pakai data minimal dari login response
+          mappedUser = buildUserModel(loginUserData)
+        }
+
+        setCurrentUser(mappedUser)
+        // Simpan waktu login terakhir ke localStorage (digunakan oleh halaman manajemen akun)
+        if (mappedUser.id) {
+          localStorage.setItem(`sim_last_login_${mappedUser.id}`, new Date().toISOString())
+        }
         setLoading(false)
         navigate('/dashboard')
       } catch (error: any) {
         console.error('Login error:', error)
         saveAuth(undefined)
         setStatus(
-          error?.response?.data?.message || "The login details are incorrect"
+          error?.response?.data?.message || error?.message || "The login details are incorrect"
         )
         setSubmitting(false)
         setLoading(false)
@@ -245,9 +356,9 @@ export function Login() {
       )}
 
       <div className='fv-row mb-8'>
-        <label className='form-label fs-6 fw-bolder text-gray-900'>Username</label>
+        <label className='form-label fs-6 fw-bolder text-gray-900'>Username / Email</label>
         <input
-          placeholder='dev@example.com'
+          placeholder='Enter Username or Email'
           {...formik.getFieldProps('email')}
           className={clsx(
             'form-control bg-transparent',

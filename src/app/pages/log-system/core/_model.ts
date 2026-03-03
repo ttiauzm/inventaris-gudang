@@ -1,6 +1,7 @@
 export interface LogItem {
-  id: number
+  id: string
   transaction_id: string
+  user_id: string
   item_name: string
   description: string
   quantity: number

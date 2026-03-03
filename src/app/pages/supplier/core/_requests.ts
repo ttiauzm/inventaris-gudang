@@ -3,67 +3,85 @@ import {Supplier} from './_model'
 
 const SUPPLIER_URL = '/suppliers'
 
+const mapSupplier = (item: any): Supplier => ({
+  id: item.supplier_id,
+  name: item.supplier_name,
+  contact_person: item.contact_info,
+  phone: item.contact_info,
+  address: item.street,
+  city: item.city,
+  province: item.province,
+  postal_code: item.postal_code,
+  country: item.country,
+  created_at: item.created_at,
+  updated_at: item.updated_at,
+})
+
 export const getSuppliers = async (): Promise<Supplier[]> => {
   try {
-    const response = await API.get<{data: Supplier[]}>(SUPPLIER_URL)
-    return response.data.data
-  } catch (error) {
+    const response = await API.get<any>(SUPPLIER_URL)
+    // Response shape: { success: true, data: [...] }
+    const list: any[] = response.data?.data ?? []
+    if (!Array.isArray(list)) return []
+    return list.map(mapSupplier)
+  } catch (error: any) {
+    // 403 = user tidak punya izin management_supplier; kembalikan list kosong
+    if (error?.response?.status === 403) {
+      console.warn('Supplier list: akun ini tidak memiliki izin management_supplier')
+      return []
+    }
     console.error('Error fetching suppliers:', error)
-    return getDummySuppliers()
+    return []
   }
 }
 
-export const getSupplierById = async (id: number): Promise<Supplier> => {
-  try {
-    const response = await API.get<{data: Supplier}>(`${SUPPLIER_URL}/${id}`)
-    return response.data.data
-  } catch (error) {
-    console.error('Error fetching supplier:', error)
-    const dummy = getDummySuppliers().find(s => s.id === id)
-    if (dummy) return dummy
-    throw error
+export const getSupplierById = async (id: string): Promise<Supplier> => {
+  const response = await API.get<{data: any}>(`${SUPPLIER_URL}/${id}`)
+  const item = response.data.data
+  return {
+    id: item.supplier_id,
+    name: item.supplier_name,
+    contact_person: item.contact_info,
+    phone: item.contact_info,
+    address: item.street,
+    city: item.city,
+    province: item.province,
+    postal_code: item.postal_code,
+    country: item.country,
+    created_at: item.created_at,
+    updated_at: item.updated_at
   }
 }
-
-// Dummy data for development
-const getDummySuppliers = (): Supplier[] => [
-  {
-    id: 1,
-    name: 'PT. Tekstil Sejahtera',
-    contact_person: 'Budi Santoso',
-    phone: '08123456789',
-    address: 'Jl. Industri No. 12, Bandung',
-    email: 'budi@tekstil.com'
-  },
-  {
-    id: 2,
-    name: 'CV. Benang Emas',
-    contact_person: 'Siti Aminah',
-    phone: '08776543210',
-    address: 'Kawasan Industri Jababeka, Cikarang',
-    email: 'siti@benangemas.com'
-  },
-  {
-    id: 3,
-    name: 'Toko Kain Jaya',
-    contact_person: 'Hendra Wijaya',
-    phone: '08551234567',
-    address: 'Pasar Tanah Abang Blok A, Jakarta',
-    email: 'hendra@kainjaya.com'
-  }
-]
 
 export const createSupplier = async (data: Partial<Supplier>): Promise<Supplier> => {
-  const response = await API.post<{data: Supplier}>(SUPPLIER_URL, data)
+  const payload = {
+    supplier_name: data.name,
+    contact_info: data.phone || data.contact_person,
+    street: data.address,
+    city: data.city,
+    province: data.province,
+    postal_code: data.postal_code,
+    country: data.country
+  }
+  const response = await API.post<{data: any}>(SUPPLIER_URL, payload)
   return response.data.data
 }
 
-export const updateSupplier = async (id: number, data: Partial<Supplier>): Promise<Supplier> => {
-  const response = await API.put<{data: Supplier}>(`${SUPPLIER_URL}/${id}`, data)
+export const updateSupplier = async (id: string, data: Partial<Supplier>): Promise<Supplier> => {
+  const payload = {
+    supplier_name: data.name,
+    contact_info: data.phone || data.contact_person,
+    street: data.address,
+    city: data.city,
+    province: data.province,
+    postal_code: data.postal_code,
+    country: data.country
+  }
+  const response = await API.put<{data: any}>(`${SUPPLIER_URL}/${id}`, payload)
   return response.data.data
 }
 
-export const deleteSupplier = async (id: number): Promise<void> => {
+export const deleteSupplier = async (id: string): Promise<void> => {
   await API.delete(`${SUPPLIER_URL}/${id}`)
 }
 

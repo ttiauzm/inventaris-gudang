@@ -2,11 +2,11 @@ import {FC, useState, useEffect} from 'react'
 import {Navigate} from 'react-router-dom'
 import {KTIcon} from '../../../_metronic/helpers'
 import {useAuth} from '../../modules/auth'
-import {getCategoriesData, updateCategory as updateCategoryData, deleteCategory, addCategory} from '../../data/dataManager'
+import {getCategories, updateCategory, deleteCategory, createCategory} from './core/_requests'
 import {isSuperAdmin as checkSuperAdmin} from '../../utils/permissionHelper'
 
 interface Category {
-  id: number
+  id: string
   name: string
   description: string
 }
@@ -27,11 +27,16 @@ const CategoryPage: FC = () => {
     fetchCategories()
   }, [])
 
-  const fetchCategories = () => {
+  const fetchCategories = async () => {
     setLoading(true)
-    const data = getCategoriesData()
-    setCategories(data)
-    setLoading(false)
+    try {
+      const data = await getCategories()
+      setCategories(data)
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (!isSuperAdmin) {
@@ -54,7 +59,7 @@ const CategoryPage: FC = () => {
     setShowModal(true)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name.trim()) {
       alert('Nama kategori tidak boleh kosong!')
       return
@@ -62,9 +67,9 @@ const CategoryPage: FC = () => {
 
     try {
       if (selectedCategory) {
-        updateCategoryData(selectedCategory.id, formData)
+        await updateCategory(selectedCategory.id, formData)
       } else {
-        addCategory(formData)
+        await createCategory(formData)
       }
       setShowModal(false)
       fetchCategories()
@@ -74,10 +79,14 @@ const CategoryPage: FC = () => {
     }
   }
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('Hapus kategori ini?')) {
-      deleteCategory(id)
-      fetchCategories()
+      try {
+        await deleteCategory(id)
+        fetchCategories()
+      } catch (error) {
+        console.error('Error deleting category:', error)
+      }
     }
   }
 

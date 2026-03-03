@@ -4,15 +4,15 @@ import {AsideMenuItemWithSubMain} from './AsideMenuItemWithSubMain'
 import {AsideMenuItemWithSub} from './AsideMenuItemWithSub'
 import {AsideMenuItem} from './AsideMenuItem'
 import { useAuth } from '../../../../app/modules/auth'
-import { isSuperAdmin as checkSuperAdmin } from '../../../../app/utils/permissionHelper'
+import { isSuperAdmin as checkSuperAdmin, isAdmin as checkIsAdmin } from '../../../../app/utils/permissionHelper'
 
 export function AsideMenuMain() {
   const intl = useIntl()
   const {currentUser, logout} = useAuth()
 
-  // Check superadmin - akan otomatis bypass di dev mode
+  // Gunakan helper dari permissionHelper agar konsisten dengan backend role_name
   const isSuperAdmin = checkSuperAdmin(currentUser)
-  const isAdmin = currentUser?.roles?.includes(1) || isSuperAdmin
+  const isAdmin = checkIsAdmin(currentUser)
 
   const handleLogout = () => {
     logout()
@@ -47,8 +47,8 @@ export function AsideMenuMain() {
         className='py-3'
       />
       
-      {/* SuperAdmin Only - History */}
-      {isSuperAdmin && (
+      {/* Admin & SuperAdmin - History */}
+      {isAdmin && (
         <AsideMenuItem
           to='/apps/history'
           title='History'

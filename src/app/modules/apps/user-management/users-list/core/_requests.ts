@@ -1,45 +1,34 @@
-import axios, { AxiosResponse } from "axios";
+import API from "../../../../../../api";
 import { ID, Response } from "../../../../../../_metronic/helpers";
 import { User, UsersQueryResponse } from "./_models";
 
-const API_URL = import.meta.env.VITE_APP_THEME_API_URL;
-const USER_URL = `${API_URL}/user`;
-const GET_USERS_URL = `${API_URL}/users/query`;
-
 const getUsers = (query: string): Promise<UsersQueryResponse> => {
-  return axios
-    .get(`${GET_USERS_URL}?${query}`)
-    .then((d: AxiosResponse<UsersQueryResponse>) => d.data);
+  return API.get(`/users?${query}`)
+    .then((d) => d.data);
 };
 
 const getUserById = (id: ID): Promise<User | undefined> => {
-  return axios
-    .get(`${USER_URL}/${id}`)
-    .then((response: AxiosResponse<Response<User>>) => response.data)
-    .then((response: Response<User>) => response.data);
+  return API.get(`/users/${id}`)
+    .then((response) => response.data);
 };
 
 const createUser = (user: User): Promise<User | undefined> => {
-  return axios
-    .put(USER_URL, user)
-    .then((response: AxiosResponse<Response<User>>) => response.data)
-    .then((response: Response<User>) => response.data);
+  return API.post(`/users/create-admin`, user)
+    .then((response) => response.data);
 };
 
 const updateUser = (user: User): Promise<User | undefined> => {
-  return axios
-    .post(`${USER_URL}/${user.id}`, user)
-    .then((response: AxiosResponse<Response<User>>) => response.data)
-    .then((response: Response<User>) => response.data);
+  return API.put(`/users/${user.id}/update-profile`, user)
+    .then((response) => response.data);
 };
 
 const deleteUser = (userId: ID): Promise<void> => {
-  return axios.delete(`${USER_URL}/${userId}`).then(() => {});
+  return API.delete(`/users/${userId}`).then(() => {});
 };
 
 const deleteSelectedUsers = (userIds: Array<ID>): Promise<void> => {
-  const requests = userIds.map((id) => axios.delete(`${USER_URL}/${id}`));
-  return axios.all(requests).then(() => {});
+  const requests = userIds.map((id) => API.delete(`/users/${id}`));
+  return Promise.all(requests).then(() => {});
 };
 
 export {

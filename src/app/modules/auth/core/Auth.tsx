@@ -8,7 +8,6 @@ import {
   Dispatch,
   SetStateAction,
 } from 'react'
-import {LayoutSplashScreen} from '../../../../_metronic/layout/core'
 import {AuthModel, UserModel} from './_models'
 import * as authHelper from './AuthHelpers'
 import {WithChildren} from '../../../../_metronic/helpers'
@@ -85,44 +84,6 @@ const AuthProvider: FC<WithChildren> = ({children}) => {
       {children}
     </AuthContext.Provider>
   )
-}
-
-const AuthInit: FC<WithChildren> = ({children}) => {
-  const {auth, logout, setCurrentUser} = useAuth()
-  const [showSplashScreen, setShowSplashScreen] = useState(true)
-
-  useEffect(() => {
-    // Jika sudah ada auth token (dari bypass atau login normal)
-    if (auth && auth.token) {
-      // Jika token adalah dev-token, skip request ke API
-      if (auth.token === 'dev-token') {
-        setShowSplashScreen(false)
-        return
-      }
-
-      // Untuk token normal, bisa request user data dari API
-      // const requestUser = async () => {
-      //   try {
-      //     const {data} = await API.get('/profile')
-      //     setCurrentUser(data)
-      //   } catch (error) {
-      //     console.error(error)
-      //     logout()
-      //   } finally {
-      //     setShowSplashScreen(false)
-      //   }
-      // }
-      // requestUser()
-      
-      setShowSplashScreen(false)
-    } else {
-      // Tidak ada auth, langsung hide splash screen
-      logout()
-      setShowSplashScreen(false)
-    }
-  }, [auth])
-
-  return showSplashScreen ? <LayoutSplashScreen /> : <>{children}</>
 }
 
 export {AuthProvider, useAuth}

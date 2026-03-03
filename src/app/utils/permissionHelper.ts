@@ -26,52 +26,58 @@ export const PERMISSIONS = {
   LOGS_READ: 'logs.read'
 }
 
+// Helper: pastikan nilai selalu berupa string lowercase, aman untuk semua tipe
+const toRoleString = (val: any): string => {
+  if (val == null) return ''           // null & undefined
+  if (typeof val === 'string') return val.toLowerCase().trim()
+  if (typeof val === 'object' && val.role_name) return String(val.role_name).toLowerCase().trim()
+  if (typeof val === 'object' && val.nama_role) return String(val.nama_role).toLowerCase().trim()
+  return ''
+}
+
 export const isSuperAdmin = (user: any): boolean => {
   // Bypass permission check saat testing mode
   if (isTestingMode()) {
     return true
   }
-  
-  // Check roles array
+
+  // Check roles array (dev-mode bypass tokens)
   if (user?.roles?.includes(ROLES.SUPER_ADMIN)) {
     return true
   }
-  
-  // Check nama_role (Backend convention)
-  if (user?.nama_role === 'superadmin') {
-    return true
-  }
 
-  // Check role string (for backward compatibility)
-  if (user?.role === 'SuperAdmin') {
-    return true
-  }
-  
   // Check email untuk dev mode
   if (user?.email === 'dev@example.com') {
     return true
   }
-  
-  return false
+
+  // Backend mengembalikan role_name lowercase: 'superadmin'
+  // toRoleString aman terhadap null/undefined/object
+  const roleName =
+    toRoleString(user?.role) ||
+    toRoleString(user?.nama_role) ||
+    toRoleString(user?.role_name)
+
+  return roleName === 'superadmin'
 }
 
 export const isAdmin = (user: any): boolean => {
   // Bypass permission check saat testing mode
   if (isTestingMode()) return true
-  
-  // SuperAdmin is also Admin
-  if (isSuperAdmin(user)) return true
-  
-  // Check roles array
-  if (user?.roles?.includes(ROLES.ADMIN)) return true
-  
-  // Check nama_role (Backend convention)
-  if (user?.nama_role === 'admin') return true
 
-  // Check role string
-  if (user?.role === 'Admin') return true
-  
-  return false
+  // SuperAdmin juga memiliki akses admin
+  if (isSuperAdmin(user)) return true
+
+  // Check roles array (dev-mode)
+  if (user?.roles?.includes(ROLES.ADMIN)) return true
+
+  // Backend mengembalikan role_name lowercase: 'admin'
+  const roleName =
+    toRoleString(user?.role) ||
+    toRoleString(user?.nama_role) ||
+    toRoleString(user?.role_name)
+
+  return roleName === 'admin'
 }
 
 export const hasPermission = (user: any, permission: string): boolean => {

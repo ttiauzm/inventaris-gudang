@@ -1,5 +1,5 @@
 export interface HistoryItem {
-  id: number
+  id: string
   transaction_id: string
   item_name: string
   description: string
@@ -7,6 +7,6 @@ export interface HistoryItem {
   unit: string
   date: string
   admin_name: string
-  admin_id: number
+  admin_id: string
   created_at?: string
 }

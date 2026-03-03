@@ -5,7 +5,7 @@ import {useAuth} from '../../modules/auth'
 import {UserModal} from './components/UserModal'
 import {EditUserPage} from './EditUserPage'
 import {User} from './core/_models'
-import {getUsers, deleteUser, toggleUserStatus} from './core/_requests'
+import {getUsers} from './core/_requests'
 import {isSuperAdmin as checkSuperAdmin} from '../../utils/permissionHelper'
 
 const UserManagementPage: FC = () => {
@@ -124,8 +124,8 @@ const UserManagementPage: FC = () => {
                                 </div>
                               </div>
                               <div className='d-flex flex-column'>
-                                <span className='text-dark fw-bold'>{user.fullname || `${user.first_name} ${user.last_name}`}</span>
-                                <span className='text-muted fs-7'>{user.username}</span>
+                                <span className='text-dark fw-bold'>{user.username}</span>
+                                <span className='text-muted fs-7'>{user.email}</span>
                               </div>
                             </div>
                           </td>

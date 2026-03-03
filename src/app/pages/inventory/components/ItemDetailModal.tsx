@@ -8,7 +8,7 @@ interface ItemDetailModalProps {
   item: InventoryItem
   onClose: () => void
   onEdit: (item: InventoryItem) => void
-  onTakeItem: (quantity: number, description: string) => void
+  onTakeItem: (quantity: number, description: string) => Promise<void>
 }
 
 const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTakeItem}) => {
@@ -17,6 +17,9 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
   const [takeQuantity, setTakeQuantity] = useState(0)
   const [takeDescription, setTakeDescription] = useState('')
   const [showTakeForm, setShowTakeForm] = useState(false)
+  const [takeLoading, setTakeLoading] = useState(false)
+  const [takeStatus, setTakeStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [takeErrorMsg, setTakeErrorMsg] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const handleTake = async () => {
@@ -28,13 +31,28 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
       alert(`Jumlah tidak boleh lebih dari stok tersedia (${item.quantity})`)
       return
     }
-    
+    if (!takeDescription.trim()) {
+      alert('Deskripsi pengambilan barang wajib diisi')
+      return
+    }
+
+    setTakeLoading(true)
+    setTakeStatus('idle')
+    setTakeErrorMsg('')
     try {
-      onTakeItem(takeQuantity, takeDescription)
-      alert(`Berhasil mengambil ${takeQuantity} ${item.unit} ${item.name}`)
-      onClose()
-    } catch (error) {
-      alert('Gagal mengambil barang')
+      await onTakeItem(takeQuantity, takeDescription)
+      setTakeStatus('success')
+      // Tutup modal otomatis setelah 2 detik
+      setTimeout(() => onClose(), 2000)
+    } catch (error: any) {
+      setTakeStatus('error')
+      const msg =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Gagal mengambil barang. Periksa koneksi dan coba lagi.'
+      setTakeErrorMsg(msg)
+    } finally {
+      setTakeLoading(false)
     }
   }
 
@@ -72,7 +90,7 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
                   {/* Large Image */}
                   <div className='mb-4'>
                     <img
-                      src={item.image || '/media/products/default-fabric.jpg'}
+                      src={item.image || '/media/svg/material/material-dummy.svg'}
                       alt={item.name}
                       className='w-100 rounded'
                       style={{
@@ -119,7 +137,7 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
                   {/* Image (smaller) */}
                   <div className='mb-4'>
                     <img
-                      src={item.image || '/media/products/default-fabric.jpg'}
+                      src={item.image || '/media/svg/material/material-dummy.svg'}
                       alt={item.name}
                       className='w-100 rounded'
                       style={{
@@ -173,7 +191,7 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
                   {/* Description Input */}
                   <div className='mb-4'>
                     <label className='form-label fw-semibold mb-3'>
-                      Masukkan deskripsi:
+                      Masukkan deskripsi: <span className='text-danger'>*</span>
                     </label>
                     <textarea
                       className='form-control form-control-lg'
@@ -185,6 +203,26 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
                     />
                   </div>
 
+                  {/* Status Banner */}
+                  {takeStatus === 'success' && (
+                    <div className='alert alert-success d-flex align-items-center mb-4 p-4' style={{borderRadius: '10px'}}>
+                      <KTIcon iconName='check-circle' className='fs-2 text-success me-3' />
+                      <div>
+                        <div className='fw-bold'>Berhasil!</div>
+                        <div className='fs-7'>Berhasil mengambil {takeQuantity} {item.unit} <strong>{item.name}</strong>. Modal akan ditutup otomatis...</div>
+                      </div>
+                    </div>
+                  )}
+                  {takeStatus === 'error' && (
+                    <div className='alert alert-danger d-flex align-items-center mb-4 p-4' style={{borderRadius: '10px'}}>
+                      <KTIcon iconName='cross-circle' className='fs-2 text-danger me-3' />
+                      <div>
+                        <div className='fw-bold'>Gagal mengambil barang</div>
+                        <div className='fs-7'>{takeErrorMsg}</div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Action Buttons */}
                   <div className='d-flex gap-3'>
                     <button
@@ -192,6 +230,7 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
                       className='btn btn-lg btn-light flex-fill'
                       style={{borderRadius: '8px', padding: '14px'}}
                       onClick={() => setShowTakeForm(false)}
+                      disabled={takeLoading || takeStatus === 'success'}
                     >
                       Cancel
                     </button>
@@ -199,14 +238,21 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
                       type='button'
                       className='btn btn-lg flex-fill'
                       style={{
-                        backgroundColor: '#5C8AE6',
+                        backgroundColor: takeStatus === 'success' ? '#28a745' : '#5C8AE6',
                         color: 'white',
                         borderRadius: '8px',
                         padding: '14px'
                       }}
                       onClick={handleTake}
+                      disabled={takeLoading || takeStatus === 'success'}
                     >
-                      Oke
+                      {takeLoading ? (
+                        <><span className='spinner-border spinner-border-sm me-2' />Memproses...</>
+                      ) : takeStatus === 'success' ? (
+                        'Berhasil ✓'
+                      ) : (
+                        'Oke'
+                      )}
                     </button>
                   </div>
                 </>

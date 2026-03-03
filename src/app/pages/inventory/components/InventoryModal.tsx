@@ -1,6 +1,6 @@
 import {FC, useState, useEffect} from 'react'
 import { InventoryItem } from '../core/_model'
-import {createInventory, updateInventory, deleteInventory} from '../core/_requests'
+import {createInventory, updateInventory, deleteInventory, getItemsDropdown} from '../core/_requests'
 import {KTIcon} from '../../../../_metronic/helpers'
 import { MaterialModal } from './MaterialModal'
 import { CategoryModal } from './CategoryModal'
@@ -24,11 +24,17 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  const [dropdownData, setDropdownData] = useState({
+    categories: [] as any[],
+    materials: [] as any[],
+    suppliers: [] as any[]
+  })
+
   const [formData, setFormData] = useState({
-    name: '',
-    category: '',
-    material: '',
-    supplier: '',
+    item_name: '',
+    category_id: '',
+    material_id: '',
+    supplier_ids: [] as string[],
     quantity: 0,
     unit: 'pcs',
     price: 0,
@@ -36,12 +42,24 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
   })
 
   useEffect(() => {
+    const fetchDropdownData = async () => {
+      try {
+        const data = await getItemsDropdown()
+        setDropdownData(data)
+      } catch (error) {
+        console.error('Error fetching dropdown data:', error)
+      }
+    }
+    fetchDropdownData()
+  }, [])
+
+  useEffect(() => {
     if (item) {
       setFormData({
-        name: item.name,
-        category: item.category || '',
-        material: item.description || '',
-        supplier: item.supplier,
+        item_name: item.name,
+        category_id: '', // We don't have IDs in the mapped item, but edit is not supported by backend anyway
+        material_id: '',
+        supplier_ids: [],
         quantity: item.quantity,
         unit: item.unit,
         price: item.price || 0,
@@ -53,22 +71,13 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Simple validation
-    const {validateInventoryForm, showValidationErrors} = await import('../../../utils/validationHelper')
-
-    // Validasi form
-    const validationErrors = validateInventoryForm(formData)
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors)
-      showValidationErrors(validationErrors)
-      return
-    }
-
-    // Ini aslinya di try-catch biar bisa nampung error dari server
     try {
       setLoading(true)
       
       if (item) {
+        // Backend update is for taking items, not editing details.
+        // If we want to edit details, we need a different endpoint.
+        // For now, we just pass the data.
         await updateInventory(item.id, formData)
       } else {
         await createInventory(formData)
@@ -81,16 +90,6 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleMaterialSave = (material: {name: string, description: string}) => {
-    setFormData({...formData, material: material.name})
-    setShowMaterialModal(false)
-  }
-
-  const handleCategorySave = (category: {name: string, description: string}) => {
-    setFormData({...formData, category: category.name})
-    setShowCategoryModal(false)
   }
 
   const handleDelete = async () => {
@@ -141,8 +140,8 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
                       type='text'
                       className='form-control form-control-lg'
                       placeholder='Kain Sutra Emas'
-                      value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      value={formData.item_name}
+                      onChange={(e) => setFormData({...formData, item_name: e.target.value})}
                       required
                     />
                   </div>
@@ -152,39 +151,55 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
                       {/* Kategori - Only for Add */}
                       <div className='col-12'>
                         <label className='form-label fw-semibold'>Kategori</label>
-                        <input
-                          type='text'
-                          className='form-control form-control-lg'
-                          placeholder='Kain/Pernak-pernik/Lain-lain...'
-                          value={formData.category}
-                          onChange={(e) => setFormData({...formData, category: e.target.value})}
+                        <select
+                          className='form-select form-select-lg'
+                          value={formData.category_id}
+                          onChange={(e) => setFormData({...formData, category_id: e.target.value})}
                           required
-                        />
+                        >
+                          <option value=''>Pilih Kategori</option>
+                          {dropdownData.categories.map((cat: any) => (
+                            <option key={cat.category_id} value={cat.category_id}>
+                              {cat.category_name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       {/* Material - Only for Add */}
                       <div className='col-12'>
                         <label className='form-label fw-semibold'>Material</label>
-                        <input
-                          type='text'
-                          className='form-control form-control-lg'
-                          placeholder='Jl. in aja dulu'
-                          value={formData.material}
-                          onChange={(e) => setFormData({...formData, material: e.target.value})}
-                        />
+                        <select
+                          className='form-select form-select-lg'
+                          value={formData.material_id}
+                          onChange={(e) => setFormData({...formData, material_id: e.target.value})}
+                          required
+                        >
+                          <option value=''>Pilih Material</option>
+                          {dropdownData.materials.map((mat: any) => (
+                            <option key={mat.material_id} value={mat.material_id}>
+                              {mat.material_name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       {/* Supplier - Only for Add */}
                       <div className='col-12'>
                         <label className='form-label fw-semibold'>Supplier</label>
-                        <input
-                          type='text'
-                          className='form-control form-control-lg'
-                          placeholder='jogja'
-                          value={formData.supplier}
-                          onChange={(e) => setFormData({...formData, supplier: e.target.value})}
+                        <select
+                          className='form-select form-select-lg'
+                          value={formData.supplier_ids[0] || ''}
+                          onChange={(e) => setFormData({...formData, supplier_ids: [e.target.value]})}
                           required
-                        />
+                        >
+                          <option value=''>Pilih Supplier</option>
+                          {dropdownData.suppliers.map((sup: any) => (
+                            <option key={sup.supplier_id} value={sup.supplier_id}>
+                              {sup.supplier_name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       {/* Jumlah - Only for Add */}
@@ -283,7 +298,7 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
                     className='btn btn-light'
                     onClick={onClose}
                   >
-                    Deactivate Instead
+                    Batal
                   </button>
                   <button
                     type='button'
@@ -294,7 +309,7 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
                     {loading ? (
                       <span className='spinner-border spinner-border-sm' />
                     ) : (
-                      'Delete Account'
+                      'Hapus Barang'
                     )}
                   </button>
                 </div>
@@ -308,14 +323,14 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
       {showMaterialModal && (
         <MaterialModal
           onClose={() => setShowMaterialModal(false)}
-          onSave={handleMaterialSave}
+          onSave={() => setShowMaterialModal(false)}
         />
       )}
 
       {showCategoryModal && (
         <CategoryModal
           onClose={() => setShowCategoryModal(false)}
-          onSave={handleCategorySave}
+          onSave={() => setShowCategoryModal(false)}
         />
       )}
     </>

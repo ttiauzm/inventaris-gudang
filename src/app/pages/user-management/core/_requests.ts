@@ -11,15 +11,73 @@ import {
 const API_URL = '/users'
 
 /**
+ * Build a map of userId -> latest login timestamp.
+ * Sources (in priority order):
+ *   1. GET /logs endpoint  – filters for action === 'LOGIN'
+ *   2. localStorage        – saved by Login.tsx on each successful login (per-device fallback)
+ */
+const getLastLoginMap = async (): Promise<Record<string, string>> => {
+  const map: Record<string, string> = {}
+
+  // ── 1. localStorage: pick up any login that happened on this device ──────
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (key?.startsWith('sim_last_login_')) {
+      const userId = key.replace('sim_last_login_', '')
+      const ts = localStorage.getItem(key)
+      if (ts) map[userId] = ts
+    }
+  }
+
+  // ── 2. GET /logs  – overrides localStorage if backend has richer data ─────
+  try {
+    const response = await API.get<any>('/logs')
+    // Paginated response: { data: { data: [...], current_page, ... } }
+    const logList: any[] = response.data?.data?.data ?? response.data?.data ?? []
+    for (const log of logList) {
+      if (log.action !== 'LOGIN') continue
+      const userId: string | undefined = log.user_id ?? log.user?.user_id
+      const ts: string | undefined = log.created_at
+      if (!userId || !ts) continue
+      if (!map[userId] || new Date(ts) > new Date(map[userId])) {
+        map[userId] = ts
+      }
+    }
+  } catch {
+    // /logs might require view_logs permission; silently skip if unavailable
+  }
+
+  return map
+}
+
+/**
  * Get all users
  */
 export const getUsers = async (): Promise<User[]> => {
   try {
-    const response = await API.get<UsersResponse>(API_URL)
-    return response.data.data
+    // Fetch users + last-login map in parallel
+    const [response, lastLoginMap] = await Promise.all([
+      API.get<any>(API_URL),
+      getLastLoginMap(),
+    ])
+    // Backend returns: { success: true, data: [{user_id, username}] }
+    const list: any[] = response.data?.data ?? response.data ?? []
+    return list.map((item: any) => ({
+      id: item.user_id,
+      username: item.username,
+      email: item.email || '',
+      first_name: item.username,
+      last_name: '',
+      role: item.role?.role_name || item.role_name || 'Admin',
+      roles: [],
+      permissions: [],
+      is_active: !item.is_deleted,
+      created_at: item.created_at || '',
+      // last_login: prefer backend field → logs endpoint → localStorage
+      last_login: item.last_login || lastLoginMap[item.user_id] || undefined,
+    }))
   } catch (error) {
     console.error('Error fetching users:', error)
-    // Return dummy data for development
     return getDummyUsers()
   }
 }
@@ -27,10 +85,23 @@ export const getUsers = async (): Promise<User[]> => {
 /**
  * Get user by ID
  */
-export const getUserById = async (id: number): Promise<User> => {
+export const getUserById = async (id: string): Promise<User> => {
   try {
-    const response = await API.get<UserResponse>(`${API_URL}/${id}`)
-    return response.data.data
+    const response = await API.get<any>(`${API_URL}/${id}`)
+    // Backend returns: { success: true, data: { username, email, password, role_name } }
+    const item = response.data?.data ?? response.data
+    return {
+      id: item.user_id ?? id,
+      username: item.username,
+      email: item.email || '',
+      first_name: item.username,
+      last_name: '',
+      role: item.role?.role_name || item.role_name || 'Admin',
+      roles: [],
+      permissions: [],
+      is_active: !item.is_deleted,
+      created_at: item.created_at || new Date().toISOString()
+    }
   } catch (error) {
     console.error('Error fetching user:', error)
     throw new Error('Failed to fetch user')
@@ -38,11 +109,17 @@ export const getUserById = async (id: number): Promise<User> => {
 }
 
 /**
- * Create new user
+ * Create new admin user
  */
 export const createUser = async (data: CreateUserRequest): Promise<User> => {
   try {
-    const response = await API.post<UserResponse>(API_URL, data)
+    const payload = {
+      username: data.username,
+      email: data.email,
+      password: data.password,
+      password_confirmation: data.password_confirmation
+    }
+    const response = await API.post<any>(`${API_URL}/create-admin`, payload)
     return response.data.data
   } catch (error: any) {
     console.error('Error creating user:', error)
@@ -51,11 +128,16 @@ export const createUser = async (data: CreateUserRequest): Promise<User> => {
 }
 
 /**
- * Update user
+ * Update user profile
  */
-export const updateUser = async (id: number, data: UpdateUserRequest): Promise<User> => {
+export const updateUser = async (id: string, data: UpdateUserRequest): Promise<User> => {
   try {
-    const response = await API.put<UserResponse>(`${API_URL}/${id}`, data)
+    const payload = {
+      username: data.username,
+      email: data.email,
+      password: data.password
+    }
+    const response = await API.put<any>(`${API_URL}/${id}/update-profile`, payload)
     return response.data.data
   } catch (error: any) {
     console.error('Error updating user:', error)
@@ -66,7 +148,7 @@ export const updateUser = async (id: number, data: UpdateUserRequest): Promise<U
 /**
  * Delete user
  */
-export const deleteUser = async (id: number): Promise<void> => {
+export const deleteUser = async (id: string): Promise<void> => {
   try {
     await API.delete(`${API_URL}/${id}`)
   } catch (error: any) {
@@ -78,9 +160,10 @@ export const deleteUser = async (id: number): Promise<void> => {
 /**
  * Activate/Deactivate user
  */
-export const toggleUserStatus = async (id: number, isActive: boolean): Promise<User> => {
+export const toggleUserStatus = async (id: string, isActive: boolean): Promise<User> => {
   try {
-    const response = await API.patch<UserResponse>(`${API_URL}/${id}/status`, {
+    // Using update-profile as status endpoint might not exist
+    const response = await API.put<any>(`${API_URL}/${id}/update-profile`, {
       is_active: isActive
     })
     return response.data.data
@@ -93,15 +176,44 @@ export const toggleUserStatus = async (id: number, isActive: boolean): Promise<U
 /**
  * Assign role to user
  */
-export const assignRole = async (id: number, roles: number[]): Promise<User> => {
+export const assignRole = async (id: string, roles: number[]): Promise<User> => {
   try {
-    const response = await API.post<UserResponse>(`${API_URL}/${id}/assign-role`, {
-      roles
+    // Using update-profile as assign-role endpoint might not exist
+    // Mapping 'roles' to 'role_ids' as per UpdateUserRequest
+    const response = await API.put<UserResponse>(`${API_URL}/${id}/update-profile`, {
+      role_ids: roles
     })
     return response.data.data
   } catch (error: any) {
     console.error('Error assigning role:', error)
     throw new Error(error.response?.data?.message || 'Failed to assign role')
+  }
+}
+
+/**
+ * Get all permissions
+ */
+export const getPermissions = async (): Promise<any[]> => {
+  try {
+    const response = await API.get('/permissions')
+    return response.data.data
+  } catch (error) {
+    console.error('Error fetching permissions:', error)
+    throw new Error('Failed to fetch permissions')
+  }
+}
+
+/**
+ * Toggle permission for a role
+ */
+export const toggleRolePermission = async (roleId: number, permissionId: number): Promise<void> => {
+  try {
+    await API.patch(`/roles/${roleId}/permissions`, {
+      permission_id: permissionId
+    })
+  } catch (error: any) {
+    console.error('Error toggling permission:', error)
+    throw new Error(error.response?.data?.message || 'Failed to toggle permission')
   }
 }
 
@@ -123,9 +235,9 @@ export const assignPermissions = async (id: number, permissions: string[]): Prom
 /**
  * Reset user password
  */
-export const resetPassword = async (id: number, newPassword: string): Promise<void> => {
+export const resetPassword = async (id: string, newPassword: string): Promise<void> => {
   try {
-    await API.post(`${API_URL}/${id}/reset-password`, {
+    await API.put(`${API_URL}/${id}/update-profile`, {
       password: newPassword
     })
   } catch (error: any) {
@@ -156,7 +268,7 @@ export const searchUsers = async (query: string): Promise<User[]> => {
 const getDummyUsers = (): User[] => {
   return [
     {
-      id: 1,
+      id: '1',
       username: 'superadmin',
       email: 'superadmin@fashion.com',
       first_name: 'Super',
@@ -171,10 +283,10 @@ const getDummyUsers = (): User[] => {
       is_active: true,
       created_at: '2024-01-15T10:00:00Z',
       updated_at: '2024-12-18T08:30:00Z',
-      last_login: '2025-12-18T09:15:00Z',
+      // last_login: '2025-12-18T09:15:00Z', // DUMMY – dimatikan, diganti data real dari API/localStorage
     },
     {
-      id: 2,
+      id: '2',
       username: 'admin1',
       email: 'admin@fashion.com',
       first_name: 'Ahmad',
@@ -193,10 +305,10 @@ const getDummyUsers = (): User[] => {
       is_active: true,
       created_at: '2024-03-20T14:30:00Z',
       updated_at: '2024-12-10T11:20:00Z',
-      last_login: '2025-12-17T16:45:00Z',
+      // last_login: '2025-12-17T16:45:00Z', // DUMMY – dimatikan
     },
     {
-      id: 3,
+      id: '3',
       username: 'staff1',
       email: 'staff@fashion.com',
       first_name: 'Siti',
@@ -212,10 +324,10 @@ const getDummyUsers = (): User[] => {
       is_active: true,
       created_at: '2024-06-10T09:00:00Z',
       updated_at: '2024-11-25T15:10:00Z',
-      last_login: '2025-12-16T10:30:00Z',
+      // last_login: '2025-12-16T10:30:00Z', // DUMMY – dimatikan
     },
     {
-      id: 4,
+      id: '4',
       username: 'admin2',
       email: 'budi@fashion.com',
       first_name: 'Budi',
@@ -234,10 +346,10 @@ const getDummyUsers = (): User[] => {
       is_active: false,
       created_at: '2024-08-05T13:15:00Z',
       updated_at: '2024-12-01T10:00:00Z',
-      last_login: '2025-11-30T14:20:00Z',
+      // last_login: '2025-11-30T14:20:00Z', // DUMMY – dimatikan
     },
     {
-      id: 5,
+      id: '5',
       username: 'manager1',
       email: 'rina@fashion.com',
       first_name: 'Rina',
@@ -260,7 +372,7 @@ const getDummyUsers = (): User[] => {
       is_active: true,
       created_at: '2024-02-28T11:30:00Z',
       updated_at: '2024-12-15T09:45:00Z',
-      last_login: '2025-12-18T07:00:00Z',
+      // last_login: '2025-12-18T07:00:00Z', // DUMMY – dimatikan
     },
   ]
 }

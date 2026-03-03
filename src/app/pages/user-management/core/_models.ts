@@ -1,7 +1,7 @@
 // User Management Models
 
 export interface User {
-  id: number
+  id: string
   username: string
   email: string
   first_name: string
@@ -22,24 +22,13 @@ export interface CreateUserRequest {
   username: string
   email: string
   password: string
-  first_name: string
-  last_name: string
-  phone?: string
-  role_ids: number[]
-  permission_ids?: number[]
-  is_active?: boolean
+  password_confirmation: string
 }
 
 export interface UpdateUserRequest {
   username?: string
   email?: string
   password?: string
-  first_name?: string
-  last_name?: string
-  phone?: string
-  role_ids?: number[]
-  permission_ids?: number[]
-  is_active?: boolean
 }
 
 export interface UserResponse {

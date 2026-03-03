@@ -100,26 +100,17 @@ const InventoryPage: FC = () => {
     setShowModal(true)
   }
 
-  const handleTakeItem = async (quantity: number) => {
+  const handleTakeItem = async (quantity: number, description: string) => {
     if (!selectedItem || !currentUser) return
 
-    //API here
-
-    try {
-      const {takeInventoryItem} = await import('./core/_requests')
-      await takeInventoryItem(
-        selectedItem.id,
-        quantity,
-        `Pengambilan barang oleh ${currentUser.fullname || currentUser.username}`,
-        currentUser.id,
-        currentUser.fullname || currentUser.username
-      )
-
-      alert(`Berhasil mengambil ${quantity} ${selectedItem.unit} ${selectedItem.name}`)
-      fetchInventory() // Refresh data
-    } catch (error: any) {
-      alert(error.message || 'Gagal mengambil barang')
-    }
+    const {takeInventoryItem} = await import('./core/_requests')
+    await takeInventoryItem(
+      selectedItem.id,
+      quantity,
+      description || `Pengambilan barang oleh ${currentUser.fullname || currentUser.username}`,
+      selectedItem.supplier_id
+    )
+    fetchInventory() // Refresh stok setelah berhasil
   }
 
   const handleSave = () => {
@@ -330,7 +321,7 @@ const InventoryPage: FC = () => {
                   sortedInventory.map((item) => (
                     <div key={item.id} className='col-12 col-sm-6 col-md-4 col-lg-3'>
                       <TiltedCard
-                        imageSrc={item.image || 'https://via.placeholder.com/300'}
+                        imageSrc={item.image || '/media/svg/material/material-dummy.svg'}
                         title={item.name}
                         supplier={item.supplier}
                         quantity={item.quantity}
@@ -366,9 +357,8 @@ const InventoryPage: FC = () => {
           item={selectedItem}
           onClose={() => setShowDetailModal(false)}
           onEdit={handleEdit}
-          onTakeItem={(qty, desc) => {
-            handleTakeItem(qty)
-            setShowDetailModal(false)
+          onTakeItem={async (qty, desc) => {
+            await handleTakeItem(qty, desc)
           }}
         />
       )}

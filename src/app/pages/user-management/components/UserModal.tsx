@@ -15,12 +15,7 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
     username: '',
     email: '',
     password: '',
-    first_name: '',
-    last_name: '',
-    phone: '',
-    role_ids: [1] as number[], // Default to ADMIN
-    permission_ids: [] as number[],
-    is_active: true
+    password_confirmation: '',
   })
 
   useEffect(() => {
@@ -29,24 +24,10 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
         username: user.username,
         email: user.email,
         password: '',
-        first_name: user.first_name,
-        last_name: user.last_name,
-        phone: user.phone || '',
-        role_ids: user.roles,
-        permission_ids: user.permissions,
-        is_active: user.is_active
+        password_confirmation: '',
       })
     }
   }, [user])
-
-  const handlePermissionToggle = (permissionId: number) => {
-    setFormData(prev => ({
-      ...prev,
-      permission_ids: prev.permission_ids.includes(permissionId)
-        ? prev.permission_ids.filter(p => p !== permissionId)
-        : [...prev.permission_ids, permissionId]
-    }))
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -62,13 +43,13 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
       return
     }
 
-    if (!formData.first_name.trim() || !formData.last_name.trim()) {
-      alert('Nama lengkap tidak boleh kosong!')
+    if (!user && !formData.password.trim()) {
+      alert('Password tidak boleh kosong untuk user baru!')
       return
     }
 
-    if (!user && !formData.password.trim()) {
-      alert('Password tidak boleh kosong untuk user baru!')
+    if (!user && formData.password !== formData.password_confirmation) {
+      alert('Password dan konfirmasi password tidak cocok!')
       return
     }
     
@@ -80,18 +61,8 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
         await updateUser(user.id, {
           username: formData.username,
           email: formData.email,
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          phone: formData.phone,
-          role_ids: formData.role_ids,
-          permission_ids: formData.permission_ids,
-          is_active: formData.is_active
+          password: formData.password || undefined
         })
-
-        // Update password if provided
-        if (formData.password.trim()) {
-          await resetPassword(user.id, formData.password)
-        }
 
         alert('User berhasil diupdate!')
       } else {
@@ -100,12 +71,7 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
           username: formData.username,
           email: formData.email,
           password: formData.password,
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          phone: formData.phone,
-          role_ids: formData.role_ids,
-          permission_ids: formData.permission_ids,
-          is_active: formData.is_active
+          password_confirmation: formData.password_confirmation
         }
 
         await createUser(newUserData)
@@ -138,22 +104,15 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
             <form onSubmit={handleSubmit}>
               <div className='modal-body'>
                 <div className='row g-4'>
-                  {/* Nama */}
+                  {/* Username */}
                   <div className='col-12'>
-                    <label className='form-label required'>Nama</label>
+                    <label className='form-label required'>Username</label>
                     <input
                       type='text'
                       className='form-control'
-                      placeholder='Jason Tatum'
-                      value={`${formData.first_name} ${formData.last_name}`.trim()}
-                      onChange={(e) => {
-                        const parts = e.target.value.split(' ')
-                        setFormData({
-                          ...formData, 
-                          first_name: parts[0] || '',
-                          last_name: parts.slice(1).join(' ') || ''
-                        })
-                      }}
+                      placeholder='username'
+                      value={formData.username}
+                      onChange={(e) => setFormData({...formData, username: e.target.value})}
                       required
                     />
                   </div>
@@ -162,11 +121,11 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
                   <div className='col-12'>
                     <label className='form-label required'>Email</label>
                     <input
-                      type='text'
+                      type='email'
                       className='form-control'
-                      placeholder='0812389018'
-                      value={formData.phone}
-                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      placeholder='email@example.com'
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
                       required
                     />
                   </div>
@@ -179,38 +138,29 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
                     <input
                       type='password'
                       className='form-control'
-                      placeholder={user ? 'Kosongkan jika tidak ingin mengubah' : 'Jl. in aja dulu'}
+                      placeholder={user ? 'Kosongkan jika tidak ingin mengubah' : 'Masukkan password'}
                       value={formData.password}
                       onChange={(e) => setFormData({...formData, password: e.target.value})}
                       required={!user}
                     />
                   </div>
 
-                  {/* Permissions - Simplified */}
-                  <div className='col-12'>
-                    <div className='d-flex flex-column gap-3'>
-                      {['Edit Detail Barang', 'Edit Detail Barang', 'Edit Detail Barang'].map((label, idx) => (
-                        <div key={idx} className='d-flex justify-content-between align-items-center'>
-                          <div className='form-check'>
-                            <input
-                              className='form-check-input'
-                              type='checkbox'
-                              id={`perm-${idx}`}
-                              checked={formData.permission_ids.includes(idx + 1)}
-                              onChange={() => handlePermissionToggle(idx + 1)}
-                            />
-                            <label className='form-check-label fw-semibold' htmlFor={`perm-${idx}`}>
-                              {label}
-                            </label>
-                          </div>
-                          <div className='d-flex gap-5'>
-                            <span className='text-muted'>{label}</span>
-                            <span className='text-muted'>{label}</span>
-                          </div>
-                        </div>
-                      ))}
+                  {/* Password Confirmation */}
+                  {!user && (
+                    <div className='col-12'>
+                      <label className='form-label required'>
+                        Konfirmasi Password
+                      </label>
+                      <input
+                        type='password'
+                        className='form-control'
+                        placeholder='Masukkan ulang password'
+                        value={formData.password_confirmation}
+                        onChange={(e) => setFormData({...formData, password_confirmation: e.target.value})}
+                        required
+                      />
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
 

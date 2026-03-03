@@ -1,175 +1,127 @@
-// import API from '../../../../api'
-// import {InventoryItem, InventoryResponse} from './_model'
+import API from '../../../../api'
+import { InventoryItem, InventoryResponse } from './_model'
 
-// const INVENTORY_URL = '/inventory'
-
-// // Get all inventory
-// export const getInventory = async (params?: {
-//   page?: number
-//   per_page?: number
-//   search?: string
-//   category?: string
-// }): Promise<InventoryItem[]> => {
-//   const response = await API.get<InventoryResponse>(INVENTORY_URL, {params})
-//   return response.data.data
-// }
-
-// // Get single inventory item
-// export const getInventoryById = async (id: number): Promise<InventoryItem> => {
-//   const response = await API.get<{data: InventoryItem}>(`${INVENTORY_URL}/${id}`)
-//   return response.data.data
-// }
-
-// // Create inventory
-// export const createInventory = async (data: Partial<InventoryItem>): Promise<InventoryItem> => {
-//   const response = await API.post<{data: InventoryItem}>(INVENTORY_URL, data)
-//   return response.data.data
-// }
-
-// // Update inventory
-// export const updateInventory = async (id: number, data: Partial<InventoryItem>): Promise<InventoryItem> => {
-//   const response = await API.put<{data: InventoryItem}>(`${INVENTORY_URL}/${id}`, data)
-//   return response.data.data
-// }
-
-// // Delete inventory
-// export const deleteInventory = async (id: number): Promise<void> => {
-//   await API.delete(`${INVENTORY_URL}/${id}`)
-// }
-
-// // Upload inventory image
-// export const uploadInventoryImage = async (id: number, file: File): Promise<string> => {
-//   const formData = new FormData()
-//   formData.append('image', file)
-
-//   const response = await API.post<{data: {url: string}}>(`${INVENTORY_URL}/${id}/image`, formData, {
-//     headers: {'Content-Type': 'multipart/form-data'}
-//   })
-
-//   return response.data.data.url
-// }
-
-// // Take item (reduce quantity)
-// export const takeInventoryItem = async (
-//   id: number,
-//   quantity: number,
-//   description: string,
-//   adminId: number,
-//   adminName: string
-// ): Promise<void> => {
-//   const response = await API.post(`${INVENTORY_URL}/${id}/take`, {
-//     quantity,
-//     description,
-//     admin_id: adminId,
-//     admin_name: adminName
-//   })
-//   return response.data
-// }
-
-
-import { InventoryItem } from './_model'
-import {
-  getInventoryData,
-  addInventoryItem,
-  updateInventoryItem as updateInventoryData,
-  deleteInventoryItem as deleteInventoryData
-} from '../../../data/dataManager'
+const ITEMS_URL = '/items'
 
 // Get all inventory
-export const getInventory = async (): Promise<InventoryItem[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(getInventoryData())
-    }, 300) // Simulate API delay
-  })
+export const getInventory = async (params?: {
+  page?: number
+  per_page?: number
+  search?: string
+  category?: string
+}): Promise<InventoryItem[]> => {
+  const response = await API.get<InventoryResponse>(ITEMS_URL, { params })
+  return response.data.data.map((item: any) => ({
+    id: item.item_id,
+    name: item.item_name,
+    category: item.categories?.category_name || '',
+    material: item.materials?.material_name || '',
+    supplier: item.suppliers && item.suppliers.length > 0 ? item.suppliers[0].supplier_name : '',
+    supplier_id: item.suppliers && item.suppliers.length > 0 ? item.suppliers[0].supplier_id : undefined,
+    quantity: item.quantity,
+    unit: item.unit,
+    price: item.price,
+    description: item.materials?.material_name || '',
+    created_at: item.created_at,
+    updated_at: item.updated_at
+  }))
 }
 
 // Get single inventory item
-export const getInventoryById = async (id: number): Promise<InventoryItem> => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const data = getInventoryData()
-      const item = data.find((i: any) => i.id === id)
-      if (item) {
-        resolve(item)
-      } else {
-        reject(new Error('Item not found'))
-      }
-    }, 300)
-  })
+export const getInventoryById = async (id: string): Promise<InventoryItem> => {
+  const response = await API.get<{ data: any }>(`${ITEMS_URL}/${id}`)
+  const item = response.data.data
+  return {
+    id: item.item_id,
+    name: item.item_name,
+    category: item.categories?.category_name || '',
+    material: item.materials?.material_name || '',
+    supplier: item.suppliers && item.suppliers.length > 0 ? item.suppliers[0].supplier_name : '',
+    supplier_id: item.suppliers && item.suppliers.length > 0 ? item.suppliers[0].supplier_id : undefined,
+    quantity: item.quantity,
+    unit: item.unit,
+    price: item.price,
+    description: item.materials?.material_name || '',
+    created_at: item.created_at,
+    updated_at: item.updated_at
+  }
 }
 
 // Create inventory
-export const createInventory = async (data: Partial<InventoryItem>): Promise<InventoryItem> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const newItem = addInventoryItem(data)
-      resolve(newItem)
-    }, 300)
-  })
+export const createInventory = async (data: any): Promise<any> => {
+  const response = await API.post(ITEMS_URL, data)
+  return response.data.data
 }
 
 // Update inventory
-export const updateInventory = async (id: number, data: Partial<InventoryItem>): Promise<InventoryItem> => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const updated = updateInventoryData(id, data)
-      if (updated) {
-        resolve(updated)
-      } else {
-        reject(new Error('Update failed'))
-      }
-    }, 300)
-  })
+export const updateInventory = async (id: string, data: any): Promise<any> => {
+  const response = await API.put(`${ITEMS_URL}/${id}`, data)
+  return response.data.data
 }
 
 // Delete inventory
-export const deleteInventory = async (id: number): Promise<void> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      deleteInventoryData(id)
-      resolve()
-    }, 300)
+export const deleteInventory = async (id: string): Promise<void> => {
+  await API.delete(`${ITEMS_URL}/${id}`)
+}
+
+// Get dropdown data
+export const getItemsDropdown = async () => {
+  const response = await API.get<any>(`${ITEMS_URL}/dropdown-data`)
+  // Backend: { success, data: { categories, materials, suppliers } }
+  return response.data?.data ?? response.data
+}
+
+// Take item (reduce quantity) — sends supplier_ids so backend can create the transaction
+export const takeInventoryItem = async (
+  id: string,
+  quantity: number,
+  description: string,
+  supplierId?: string
+): Promise<void> => {
+  await API.put(`${ITEMS_URL}/${id}`, {
+    quantity,
+    description,
+    ...(supplierId ? {supplier_ids: [supplierId]} : {}),
   })
 }
 
-// Take item (reduce quantity)
-export const takeInventoryItem = async (
-  id: number, 
-  quantity: number, 
-  description: string,  // Tambahkan parameter ini
-  adminId: number, 
-  adminName: string
-): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const data = getInventoryData()
-      const item = data.find((i: any) => i.id === id)
+// // Take item (reduce quantity)
+// export const takeInventoryItem = async (
+//   id: number, 
+//   quantity: number, 
+//   description: string,  // Tambahkan parameter ini
+//   adminId: number, 
+//   adminName: string
+// ): Promise<void> => {
+//   return new Promise((resolve, reject) => {
+//     setTimeout(() => {
+//       const data = getInventoryData()
+//       const item = data.find((i: any) => i.id === id)
       
-      if (!item) {
-        reject(new Error('Item not found'))
-        return
-      }
+//       if (!item) {
+//         reject(new Error('Item not found'))
+//         return
+//       }
       
-      if (item.quantity < quantity) {
-        reject(new Error('Insufficient stock'))
-        return
-      }
+//       if (item.quantity < quantity) {
+//         reject(new Error('Insufficient stock'))
+//         return
+//       }
       
-      updateInventoryData(id, {quantity: item.quantity - quantity})
+//       updateInventoryData(id, {quantity: item.quantity - quantity})
       
-      const {addHistoryRecord} = require('../../../data/dataManager')
-      addHistoryRecord({
-        transaction_id: `TRX${Date.now()}`,
-        item_name: item.name,
-        description: description || item.description, // Use provided description
-        quantity: quantity,
-        unit: item.unit,
-        admin_id: adminId,
-        admin_name: adminName
-      })
+//       const {addHistoryRecord} = require('../../../data/dataManager')
+//       addHistoryRecord({
+//         transaction_id: `TRX${Date.now()}`,
+//         item_name: item.name,
+//         description: description || item.description, // Use provided description
+//         quantity: quantity,
+//         unit: item.unit,
+//         admin_id: adminId,
+//         admin_name: adminName
+//       })
       
-      resolve()
-    }, 300)
-  })
-}
+//       resolve()
+//     }, 300)
+//   })
+// }

@@ -16,7 +16,11 @@ class RoleController extends Controller
             ->select('role_id', 'role_name')
             ->get();
 
-        return response()->json($roles);
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar role berhasil diambil',
+            'data'    => $roles
+        ], 200);
     }
 
     public function getPermissions($roleId)
@@ -39,7 +43,11 @@ class RoleController extends Controller
             ];
         });
 
-        return response()->json($mapped);
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar permission untuk role berhasil diambil',
+            'data'    => $mapped
+        ], 200);
     }
 
     public function togglePermission(Request $req)
@@ -62,7 +70,7 @@ class RoleController extends Controller
             $existing->is_deleted = !$isActive;
             $existing->save();
         } else {
-            Permissions::create([
+            $existing = Permissions::create([
                 'permission_id' => Str::uuid(),
                 'role_id' => $roleId,
                 'permission_name' => $permissionName,
@@ -75,17 +83,16 @@ class RoleController extends Controller
             'user_id' => $req->user()->user_id,
             'action' => 'UPDATE',
             'table_name' => 'permissions',
-            'row_id' => $existing ? $existing->permission_id : null,
+            'row_id' => $existing->permission_id,
         ]);
 
         return response()->json([
-            'message' => $isActive
-                ? 'Permission diaktifkan'
-                : 'Permission dinonaktifkan',
-        ]);
+            'success' => true,
+            'message' => $isActive ? 'Permission diaktifkan' : 'Permission dinonaktifkan',
+            'data'    => $existing
+        ], 200);
     }
 
-    // (Opsional) Tambah role baru
     public function createRole(Request $req)
     {
         $req->validate([
@@ -107,8 +114,9 @@ class RoleController extends Controller
         ]);
 
         return response()->json([
+            'success' => true,
             'message' => 'Role baru berhasil dibuat',
-            'role' => $role,
+            'data'    => $role
         ], 201);
     }
 
@@ -117,7 +125,11 @@ class RoleController extends Controller
         $authUser = $req->user();
 
         if ($authUser->role->role_name !== 'superadmin') {
-            return response()->json(['message' => 'Unauthorized - hanya superadmin'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - hanya superadmin',
+                'data'    => null
+            ], 403);
         }
 
         $req->validate([
@@ -127,19 +139,27 @@ class RoleController extends Controller
         $role = Role::where('role_id', $role_id)->first();
 
         if (!$role) {
-            return response()->json(['message' => 'Role tidak ditemukan'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Role tidak ditemukan',
+                'data'    => null
+            ], 404);
         }
 
         $permission = Permissions::where('permission_name', $req->permission_name)->first();
 
         if ($role->permissions()->where('permissions.permission_id', $permission->permission_id)->exists()) {
-            return response()->json(['message' => 'Role sudah memiliki permission ini'], 409);
+            return response()->json([
+                'success' => false,
+                'message' => 'Role sudah memiliki permission ini',
+                'data'    => null
+            ], 409);
         }
 
         $role->permissions()->attach($permission->permission_id);
 
         Logs::create([
-            'log_id'     => \Illuminate\Support\Str::uuid(),
+            'log_id'     => Str::uuid(),
             'user_id'    => $authUser->user_id,
             'action'     => 'CREATE',
             'table_name' => 'role_permissions',
@@ -147,6 +167,7 @@ class RoleController extends Controller
         ]);
 
         return response()->json([
+            'success' => true,
             'message' => 'Permission berhasil ditambahkan ke role',
             'data' => [
                 'role_name' => $role->role_name,
@@ -154,5 +175,4 @@ class RoleController extends Controller
             ],
         ], 201);
     }
-
 }

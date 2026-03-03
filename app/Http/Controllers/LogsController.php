@@ -16,20 +16,26 @@ class LogsController extends Controller
     {
         $authUser = Auth::user();
 
-        // Cek izin
+        // ✅ Standar Error: Unauthorized
         if (!$authUser || !$authUser->can('view_logs')) {
-            return response()->json(['message' => 'Anda tidak memiliki izin untuk melihat log'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk melihat log',
+                'data'    => null
+            ], 403);
         }
 
         // Ambil logs + relasi user (hanya username)
         $logs = Logs::with(['user:user_id,username'])
             ->orderBy('created_at', 'desc')
-            ->paginate(20); // paginator biar bagus
+            ->paginate(20); 
 
+        // ✅ Standar Sukses: Data pagination otomatis masuk ke dalam 'data'
         return response()->json([
+            'success' => true,
             'message' => 'Logs retrieved successfully',
-            'data' => $logs
-        ]);
+            'data'    => $logs
+        ], 200);
     }
 
     /**
@@ -39,12 +45,16 @@ class LogsController extends Controller
     {
         $authUser = Auth::user();
 
-        // Cek izin
+        // ✅ Standar Error untuk Export (dalam format JSON)
         if (!$authUser || !$authUser->can('view_logs')) {
-            return response()->json(['message' => 'Anda tidak memiliki izin untuk mengekspor log'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk mengekspor log',
+                'data'    => null
+            ], 403);
         }
 
-        // Ambil logs + relasi user (hanya username)
+        // Ambil logs + relasi user
         $logs = Logs::with(['user:user_id,username'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -65,11 +75,8 @@ class LogsController extends Controller
         $path = storage_path('app/logs.xlsx');
 
         // Generate file Excel
-        $writer = SimpleExcelWriter::create($path)
-            ->addRows($rows);
+        SimpleExcelWriter::create($path)->addRows($rows);
 
-        // Download + Auto delete setelah send
         return response()->download($path)->deleteFileAfterSend();
     }
-
 }

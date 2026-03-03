@@ -4,18 +4,23 @@ namespace App\Http\Controllers;
 
 use App\Models\Transactions;
 use Spatie\SimpleExcel\SimpleExcelWriter;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class TransactionController extends Controller
 {
-
     public function index()
     {
         $authUser = Auth::user();
 
- //       if (!$authUser->can('view_transaction')) {
- //           return response()->json(['message' => 'Anda tidak memiliki izin melihat transaksi'], 403);
- //       }
+        // ✅ Opsional: Buka komentar ini jika ingin mengaktifkan permission
+        // if (!$authUser->can('view_transaction')) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Anda tidak memiliki izin melihat transaksi',
+        //         'data'    => null
+        //     ], 403);
+        // }
 
         $transactions = Transactions::with([
             'items:item_id,item_name',
@@ -27,17 +32,22 @@ class TransactionController extends Controller
         ->get();
 
         return response()->json([
-            'status' => 'success',
-            'data' => $transactions
-        ]);
+            'success' => true,
+            'message' => 'Daftar transaksi berhasil diambil',
+            'data'    => $transactions
+        ], 200);
     }
 
     public function show($id)
     {
-        $authUser = Auth::users();
+        $authUser = Auth::user(); // ✅ Diperbaiki dari Auth::users()
 
         if (!$authUser->can('view_transaction')) {
-            return response()->json(['message' => 'Anda tidak memiliki izin melihat transaksi'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin melihat transaksi',
+                'data'    => null
+            ], 403);
         }
 
         $transaction = Transactions::with([
@@ -49,17 +59,33 @@ class TransactionController extends Controller
         ->find($id);
 
         if (!$transaction) {
-            return response()->json(['message' => 'Transaksi tidak ditemukan'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Transaksi tidak ditemukan',
+                'data'    => null
+            ], 404);
         }
 
         return response()->json([
-            'status' => 'success',
-            'data' => $transaction
-        ]);
+            'success' => true,
+            'message' => 'Detail transaksi ditemukan',
+            'data'    => $transaction
+        ], 200);
     }
 
     public function exportExcelTransactions()
     {
+        $authUser = Auth::user();
+
+        // ✅ Cek izin sebelum ekspor
+        if (!$authUser->can('view_transaction')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk mengekspor transaksi',
+                'data'    => null
+            ], 403);
+        }
+
         $transactions = Transactions::with(['items', 'suppliers', 'users'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -80,10 +106,9 @@ class TransactionController extends Controller
 
         $path = storage_path('app/transactions.xlsx');
 
-        $writer = SimpleExcelWriter::create($path)
-            ->addRows($rows);
+        SimpleExcelWriter::create($path)->addRows($rows);
 
+        // ✅ Untuk file download, kembalikan response download langsung
         return response()->download($path)->deleteFileAfterSend();
     }
-
 }

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use App\Models\Categories;
 use App\Models\Materials;
 use App\Models\Images;
-use App\Models\Supplier;
+use App\Models\Suppliers;
 
 class Items extends Model
 {

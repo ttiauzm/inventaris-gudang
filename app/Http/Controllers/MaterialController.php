@@ -15,7 +15,11 @@ class MaterialController extends Controller
         $authUser = Auth::user();
 
         if (!$authUser->can('view_material')) {
-            return response()->json(['message' => 'Anda tidak memiliki izin untuk melihat material'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk melihat material',
+                'data'    => null
+            ], 403);
         }
 
         $materials = Materials::where('is_deleted', 0)
@@ -23,9 +27,10 @@ class MaterialController extends Controller
             ->get();
 
         return response()->json([
-            'status' => 'success',
-            'data' => $materials
-        ]);
+            'success' => true,
+            'message' => 'Daftar material berhasil diambil',
+            'data'    => $materials
+        ], 200);
     }
 
     public function show($id)
@@ -33,16 +38,28 @@ class MaterialController extends Controller
         $authUser = Auth::user();
 
         if (!$authUser->can('view_material')) {
-            return response()->json(['message' => 'Anda tidak memiliki izin untuk melihat material'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk melihat material',
+                'data'    => null
+            ], 403);
         }
 
         $material = Materials::find($id);
 
         if (!$material || $material->is_deleted) {
-            return response()->json(['message' => 'Material tidak ditemukan'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Material tidak ditemukan',
+                'data'    => null
+            ], 404);
         }
 
-        return response()->json(['data' => $material]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Detail material ditemukan',
+            'data'    => $material
+        ], 200);
     }
 
     public function store(Request $request)
@@ -50,7 +67,11 @@ class MaterialController extends Controller
         $authUser = Auth::user();
 
         if (!$authUser->can('add_material')) {
-            return response()->json(['message' => 'Anda tidak memiliki izin untuk menambah material'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk menambah material',
+                'data'    => null
+            ], 403);
         }
 
         $request->validate([
@@ -67,7 +88,6 @@ class MaterialController extends Controller
             'updated_at'    => now(),
         ]);
 
-        // ✅ Rekam log CREATE
         Logs::create([
             'log_id'     => Str::uuid(),
             'user_id'    => $authUser->user_id,
@@ -77,6 +97,7 @@ class MaterialController extends Controller
         ]);
 
         return response()->json([
+            'success' => true,
             'message' => 'Material berhasil ditambahkan',
             'data'    => $material
         ], 201);
@@ -87,12 +108,20 @@ class MaterialController extends Controller
         $authUser = Auth::user();
 
         if (!$authUser->can('edit_material')) {
-            return response()->json(['message' => 'Anda tidak memiliki izin untuk mengedit material'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk mengedit material',
+                'data'    => null
+            ], 403);
         }
 
         $material = Materials::find($id);
         if (!$material || $material->is_deleted) {
-            return response()->json(['message' => 'Material tidak ditemukan'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Material tidak ditemukan',
+                'data'    => null
+            ], 404);
         }
 
         $request->validate([
@@ -106,7 +135,6 @@ class MaterialController extends Controller
             'updated_at'    => now(),
         ]);
 
-        // ✅ Rekam log UPDATE
         Logs::create([
             'log_id'     => Str::uuid(),
             'user_id'    => $authUser->user_id,
@@ -116,9 +144,10 @@ class MaterialController extends Controller
         ]);
 
         return response()->json([
+            'success' => true,
             'message' => 'Material berhasil diperbarui',
             'data'    => $material
-        ]);
+        ], 200);
     }
 
     public function destroy($id)
@@ -126,12 +155,20 @@ class MaterialController extends Controller
         $authUser = Auth::user();
 
         if (!$authUser->can('delete_material')) {
-            return response()->json(['message' => 'Anda tidak memiliki izin untuk menghapus material'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk menghapus material',
+                'data'    => null
+            ], 403);
         }
 
         $material = Materials::find($id);
         if (!$material || $material->is_deleted) {
-            return response()->json(['message' => 'Material tidak ditemukan'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Material tidak ditemukan',
+                'data'    => null
+            ], 404);
         }
 
         $material->update([
@@ -139,7 +176,6 @@ class MaterialController extends Controller
             'updated_at' => now(),
         ]);
 
-        // ✅ Rekam log DELETE
         Logs::create([
             'log_id'     => Str::uuid(),
             'user_id'    => $authUser->user_id,
@@ -148,7 +184,11 @@ class MaterialController extends Controller
             'row_id'     => $material->material_id,
         ]);
 
-        return response()->json(['message' => 'Material berhasil dihapus (soft delete)']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Material berhasil dihapus (soft delete)',
+            'data'    => null
+        ], 200);
     }
 
     public function dropdownData()
@@ -156,13 +196,21 @@ class MaterialController extends Controller
         $authUser = Auth::user();
 
         if (!$authUser->can('view_material')) {
-            return response()->json(['message' => 'Anda tidak memiliki izin untuk melihat dropdown material'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk melihat dropdown material',
+                'data'    => null
+            ], 403);
         }
 
         $materials = Materials::where('is_deleted', 0)
             ->orderBy('material_name', 'asc')
             ->get(['material_id', 'material_name']);
 
-        return response()->json(['materials' => $materials]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Dropdown data material berhasil diambil',
+            'data'    => $materials
+        ], 200);
     }
 }

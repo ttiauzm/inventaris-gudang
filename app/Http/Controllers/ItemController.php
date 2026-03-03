@@ -12,35 +12,41 @@ use App\Models\Materials;
 use App\Models\Suppliers;
 use App\Models\Logs;
 use App\Models\Transactions;
+use App\Models\Images;
 
 class ItemController extends Controller
 {
     public function index()
     {
-        $authUser = Auth::user();
-
-        $items = Items::with(['categories', 'materials', 'suppliers'])
+        $items = Items::with(['categories', 'materials', 'suppliers', 'images'])
             ->where('is_deleted', 0)
             ->orderBy('created_at', 'desc')
             ->get();
 
         return response()->json([
-            'status' => 'success',
-            'data' => $items
-        ]);
+            'success' => true,
+            'message' => 'Daftar barang berhasil diambil',
+            'data'    => $items
+        ], 200);
     }
 
     public function show($id)
     {
-        $authUser = Auth::user();
-
-        $item = Items::with(['categories', 'materials', 'suppliers'])->find($id);
+        $item = Items::with(['categories', 'materials', 'suppliers', 'images'])->find($id);
 
         if (!$item || $item->is_deleted) {
-            return response()->json(['message' => 'Barang tidak ditemukan'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Barang tidak ditemukan',
+                'data'    => null
+            ], 404);
         }
 
-        return response()->json(['data' => $item]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Detail barang ditemukan',
+            'data'    => $item
+        ], 200);
     }
 
     public function store(Request $request)
@@ -48,7 +54,11 @@ class ItemController extends Controller
         $authUser = Auth::user();
 
         if (!$authUser->can('add_item')) {
-            return response()->json(['message' => 'Anda tidak memiliki izin menambah barang'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin menambah barang',
+                'data'    => null
+            ], 403);
         }
 
         $request->validate([
@@ -60,6 +70,7 @@ class ItemController extends Controller
             'quantity' => 'required|integer|min:0',
             'unit' => 'required|string|max:50',
             'price' => 'required|numeric|min:0',
+            'images' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         $item = Items::create([
@@ -75,6 +86,19 @@ class ItemController extends Controller
             'updated_at' => now(),
         ]);
 
+        if ($request->hasFile('images')) {
+            $file = $request->file('images');
+            $path = $file->store('items', 'public');
+
+            Images::create([
+                'image_id' => Str::uuid(),
+                'item_id' => $item->item_id,
+                'file_path' => $path,
+                'file_size' => $file->getSize(),
+                'file_type' => $file->getClientMimeType(),
+            ]);
+        }
+
         $item->suppliers()->attach($request->supplier_ids);
 
         Logs::create([
@@ -85,19 +109,27 @@ class ItemController extends Controller
             'row_id'     => $item->item_id,
         ]);
 
+        $itemWithImage = Items::with(['images', 'suppliers'])->find($item->item_id);
+
         return response()->json([
+            'success' => true,
             'message' => 'Barang berhasil ditambahkan dengan relasi supplier',
-            'data' => $item->load('suppliers')
+            'data'    => $itemWithImage
         ], 201);
     }
 
     public function update(Request $request, $id)
     {
+
         $authUser = Auth::user();
 
         $parentItem = Items::find($id);
         if (!$parentItem || $parentItem->is_deleted) {
-            return response()->json(['message' => 'Barang tidak ditemukan'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Barang tidak ditemukan',
+                'data'    => null
+            ], 404);
         }
 
         $request->validate([
@@ -111,13 +143,21 @@ class ItemController extends Controller
         $newQty = $request->quantity;
 
         if ($newQty > $originalQty) {
-            return response()->json(['message' => 'Jumlah melebihi stok yang tersedia'], 400);
+            return response()->json([
+                'success' => false,
+                'message' => 'Jumlah melebihi stok yang tersedia',
+                'data'    => null
+            ], 400);
         }
 
         $supplierId = $request->supplier_ids[0] ?? $parentItem->suppliers()->first()?->supplier_id;
 
         if (!$supplierId) {
-            return response()->json(['message' => 'Barang ini belum memiliki supplier'], 400);
+            return response()->json([
+                'success' => false,
+                'message' => 'Barang ini belum memiliki supplier',
+                'data'    => null
+            ], 400);
         }
 
         $parentItem->update([
@@ -139,23 +179,29 @@ class ItemController extends Controller
             'updated_at' => now(),
         ]);
 
+        $parentImages = Images::where('item_id', $parentItem->item_id)->get();
+
+        if ($parentImages->count() > 0) {
+            foreach ($parentImages as $img) {
+                Images::create([
+                    'image_id'   => Str::uuid(),
+                    'item_id'    => $childItem->item_id,
+                    'file_path'  => $img->file_path,
+                    'file_size'  => $img->file_size,
+                    'file_type'  => $img->file_type,
+                ]);
+            }
+        }
+
         $supplierIds = $request->supplier_ids ?? $parentItem->suppliers->pluck('supplier_id');
         $childItem->suppliers()->attach($supplierIds);
 
+        // Logging & Transaction
         Logs::create([
-            'log_id'     => Str::uuid(),
-            'user_id'    => $authUser->user_id,
-            'action'     => 'UPDATE',
-            'table_name' => 'items',
-            'row_id'     => $parentItem->item_id,
+            'log_id' => Str::uuid(), 'user_id' => $authUser->user_id, 'action' => 'UPDATE', 'table_name' => 'items', 'row_id' => $parentItem->item_id,
         ]);
-
         Logs::create([
-            'log_id'     => Str::uuid(),
-            'user_id'    => $authUser->user_id,
-            'action'     => 'CREATE',
-            'table_name' => 'items',
-            'row_id'     => $childItem->item_id,
+            'log_id' => Str::uuid(), 'user_id' => $authUser->user_id, 'action' => 'CREATE', 'table_name' => 'items', 'row_id' => $childItem->item_id,
         ]);
 
         Transactions::create([
@@ -170,10 +216,13 @@ class ItemController extends Controller
         ]);
 
         return response()->json([
+            'success' => true,
             'message' => 'Barang berhasil diupdate dan item turunan dibuat',
-            'parent_updated' => $parentItem->load('suppliers'),
-            'child_created' => $childItem->load('suppliers'),
-        ]);
+            'data'    => [
+                'parent_updated' => $parentItem->load(['suppliers', 'images']),
+                'child_created'  => $childItem->load(['suppliers', 'images']),
+            ]
+        ], 200);
     }
 
     public function destroy($id)
@@ -181,12 +230,20 @@ class ItemController extends Controller
         $authUser = Auth::user();
 
         if (!$authUser->can('delete_item')) {
-            return response()->json(['message' => 'Anda tidak memiliki izin menghapus barang'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin menghapus barang',
+                'data'    => null
+            ], 403);
         }
 
         $item = Items::find($id);
         if (!$item || $item->is_deleted) {
-            return response()->json(['message' => 'Barang tidak ditemukan'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Barang tidak ditemukan',
+                'data'    => null
+            ], 404);
         }
 
         $item->update(['is_deleted' => 1, 'updated_at' => now()]);
@@ -199,7 +256,11 @@ class ItemController extends Controller
             'row_id'     => $item->item_id,
         ]);
 
-        return response()->json(['message' => 'Barang berhasil dihapus (soft delete)']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Barang berhasil dihapus (soft delete)',
+            'data'    => null
+        ], 200);
     }
 
     public function dropdownData()
@@ -207,17 +268,21 @@ class ItemController extends Controller
         $authUser = Auth::user();
 
         if (!$authUser->can('view_item')) {
-            return response()->json(['message' => 'Anda tidak memiliki izin mengakses data dropdown'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin mengakses data dropdown',
+                'data'    => null
+            ], 403);
         }
 
-        $categories = Categories::where('is_deleted', 0)->orderBy('created_at', 'desc')->get();
-        $materials = Materials::where('is_deleted', 0)->orderBy('created_at', 'desc')->get();
-        $suppliers = Suppliers::where('is_deleted', 0)->orderBy('created_at', 'desc')->get();
-
         return response()->json([
-            'categories' => $categories,
-            'materials' => $materials,
-            'suppliers' => $suppliers
-        ]);
+            'success' => true,
+            'message' => 'Data dropdown berhasil diambil',
+            'data'    => [
+                'categories' => Categories::where('is_deleted', 0)->orderBy('created_at', 'desc')->get(),
+                'materials'  => Materials::where('is_deleted', 0)->orderBy('created_at', 'desc')->get(),
+                'suppliers'  => Suppliers::where('is_deleted', 0)->orderBy('created_at', 'desc')->get()
+            ]
+        ], 200);
     }
 }

@@ -15,7 +15,11 @@ class CategoryController extends Controller
         $authUser = Auth::user();
 
         if (!$authUser->can('view_category')) {
-            return response()->json(['message' => 'Anda tidak memiliki izin untuk melihat kategori'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk melihat kategori',
+                'data'    => null
+            ], 403);
         }
 
         $categories = Categories::where('is_deleted', 0)
@@ -23,9 +27,10 @@ class CategoryController extends Controller
             ->get();
 
         return response()->json([
-            'status' => 'success',
-            'data' => $categories
-        ]);
+            'success' => true,
+            'message' => 'Daftar kategori berhasil diambil',
+            'data'    => $categories
+        ], 200);
     }
 
     public function show($id)
@@ -33,16 +38,28 @@ class CategoryController extends Controller
         $authUser = Auth::user();
 
         if (!$authUser->can('view_category')) {
-            return response()->json(['message' => 'Anda tidak memiliki izin untuk melihat kategori'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk melihat kategori',
+                'data'    => null
+            ], 403);
         }
 
         $category = Categories::find($id);
 
         if (!$category || $category->is_deleted) {
-            return response()->json(['message' => 'Kategori tidak ditemukan'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Kategori tidak ditemukan',
+                'data'    => null
+            ], 404);
         }
 
-        return response()->json(['data' => $category]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Detail kategori ditemukan',
+            'data'    => $category
+        ], 200);
     }
 
     public function store(Request $request)
@@ -50,7 +67,11 @@ class CategoryController extends Controller
         $authUser = Auth::user();
 
         if (!$authUser->can('add_category')) {
-            return response()->json(['message' => 'Anda tidak memiliki izin untuk menambah kategori'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk menambah kategori',
+                'data'    => null
+            ], 403);
         }
 
         $request->validate([
@@ -76,6 +97,7 @@ class CategoryController extends Controller
         ]);
 
         return response()->json([
+            'success' => true,
             'message' => 'Kategori berhasil ditambahkan',
             'data'    => $category
         ], 201);
@@ -86,12 +108,20 @@ class CategoryController extends Controller
         $authUser = Auth::user();
 
         if (!$authUser->can('edit_category')) {
-            return response()->json(['message' => 'Anda tidak memiliki izin untuk mengedit kategori'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk mengedit kategori',
+                'data'    => null
+            ], 403);
         }
 
         $category = Categories::find($id);
         if (!$category || $category->is_deleted) {
-            return response()->json(['message' => 'Kategori tidak ditemukan'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Kategori tidak ditemukan',
+                'data'    => null
+            ], 404);
         }
 
         $request->validate([
@@ -114,9 +144,10 @@ class CategoryController extends Controller
         ]);
 
         return response()->json([
+            'success' => true,
             'message' => 'Kategori berhasil diperbarui',
             'data'    => $category
-        ]);
+        ], 200);
     }
 
     public function destroy($id)
@@ -124,12 +155,20 @@ class CategoryController extends Controller
         $authUser = Auth::user();
 
         if (!$authUser->can('delete_category')) {
-            return response()->json(['message' => 'Anda tidak memiliki izin untuk menghapus kategori'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk menghapus kategori',
+                'data'    => null
+            ], 403);
         }
 
         $category = Categories::find($id);
         if (!$category || $category->is_deleted) {
-            return response()->json(['message' => 'Kategori tidak ditemukan'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Kategori tidak ditemukan',
+                'data'    => null
+            ], 404);
         }
 
         $category->update([
@@ -145,7 +184,11 @@ class CategoryController extends Controller
             'row_id'     => $category->category_id,
         ]);
 
-        return response()->json(['message' => 'Kategori berhasil dihapus (soft delete)']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Kategori berhasil dihapus (soft delete)',
+            'data'    => null
+        ], 200);
     }
 
     public function dropdownData()
@@ -153,13 +196,21 @@ class CategoryController extends Controller
         $authUser = Auth::user();
 
         if (!$authUser->can('view_category')) {
-            return response()->json(['message' => 'Anda tidak memiliki izin untuk melihat dropdown kategori'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk melihat dropdown kategori',
+                'data'    => null
+            ], 403);
         }
 
         $categories = Categories::where('is_deleted', 0)
             ->orderBy('category_name', 'asc')
             ->get(['category_id', 'category_name']);
 
-        return response()->json(['categories' => $categories]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Dropdown data kategori berhasil diambil',
+            'data'    => $categories
+        ], 200);
     }
 }

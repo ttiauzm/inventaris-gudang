@@ -16,7 +16,9 @@ class UserController extends Controller
     {
         $authUser = $req->user();
 
-        $users = User::where('is_deleted', false)->select('user_id', 'username')
+        $users = User::where('is_deleted', false)
+            ->select('user_id', 'username', 'email', 'role_id', 'is_deleted', 'created_at')
+            ->with('role:role_id,role_name')
             ->orderByRaw("CASE WHEN user_id = ? THEN 0 ELSE 1 END", [$authUser->user_id])
             ->get();
 

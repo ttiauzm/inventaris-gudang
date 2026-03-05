@@ -285,4 +285,57 @@ class ItemController extends Controller
             ]
         ], 200);
     }
+
+    public function updateDetails(Request $request, $id)
+    {
+        $authUser = Auth::user();
+
+        if ($authUser->role->role_name !== 'superadmin') { 
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya Superadmin yang diizinkan mengedit detail barang',
+                'data'    => null
+            ], 403);
+        }
+
+        $item = Items::find($id);
+        if (!$item || $item->is_deleted) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Barang tidak ditemukan',
+                'data'    => null
+            ], 404);
+        }
+
+        // Validasi data (pakai 'sometimes' agar FE bisa kirim data yang mau diubah aja)
+        $request->validate([
+            'item_name'   => 'sometimes|string|max:100',
+            'price'       => 'sometimes|numeric|min:0',
+            'unit'        => 'sometimes|string|max:50',
+        ]);
+
+        // Proses update (hanya update kolom yang dikirim FE)
+        $item->update($request->only([
+            'item_name', 'category_id', 'material_id', 'price', 'unit'
+        ]));
+        $item->update(['updated_at' => now()]);
+
+        // Catat di Logs
+        Logs::create([
+            'log_id'     => Str::uuid(),
+            'user_id'    => $authUser->user_id,
+            'action'     => 'UPDATE',
+            'table_name' => 'items',
+            'row_id'     => $item->item_id,
+        ]);
+
+        // Ambil data terbaru beserta relasinya untuk response
+        $updatedItem = Items::with(['categories', 'materials', 'suppliers', 'images'])->find($item->item_id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Detail barang berhasil diperbarui',
+            'data'    => $updatedItem
+        ], 200);
+    }
 }

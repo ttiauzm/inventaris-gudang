@@ -1,5 +1,6 @@
 import {FC, useState, useEffect} from 'react'
 import {KTIcon} from '../../../_metronic/helpers'
+import EmptyState404 from '../../components/EmptyState404'
 import { getLogs } from './core/_requests'
 import { LogItem } from './core/_model'
 import {exportLogsToExcel, exportLogsToPDF} from '../../utils/exportUtils'
@@ -38,11 +39,11 @@ const LogSystemPage: FC = () => {
   const startIndex = (currentPage - 1) * itemsPerPage
   const paginatedData = filteredLogs.slice(startIndex, startIndex + itemsPerPage)
 
-  const handleExport = (type: 'excel' | 'pdf') => {
+  const handleExport = async (type: 'excel' | 'pdf') => {
     if (type === 'excel') {
       exportLogsToExcel(filteredLogs)
     } else {
-      exportLogsToPDF(filteredLogs)
+      await exportLogsToPDF(filteredLogs)
     }
     setShowExportMenu(false)
   }
@@ -122,7 +123,7 @@ const LogSystemPage: FC = () => {
                     <th className='min-w-50px'>No</th>
                     <th className='min-w-100px'>ID</th>
                     <th className='min-w-200px'>User ID</th>
-                    <th className='min-w-100px'>Jumlah</th>
+                    {/* <th className='min-w-100px'>Jumlah</th> */}
                     <th className='min-w-100px'>Table Name</th>
                     <th className='min-w-100px'>Row ID</th>
                     <th className='min-w-100px'>Action</th>
@@ -145,11 +146,11 @@ const LogSystemPage: FC = () => {
                             </span>
                           </div>
                         </td>
-                        <td>
+                        {/* <td>
                           <span className='badge badge-light-primary'>
                             {item.quantity} pcs
                           </span>
-                        </td>
+                        </td> */}
                         <td>{item.table_name}</td>
                         <td>{item.row_id}</td>
                         <td>
@@ -167,9 +168,11 @@ const LogSystemPage: FC = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8} className='text-center py-10'>
-                        <KTIcon iconName='file-deleted' className='fs-3x text-muted mb-3' />
-                        <p className='text-muted'>Tidak ada data</p>
+                      <td colSpan={8}>
+                        <EmptyState404
+                          title='Tidak ada log ditemukan'
+                          subtitle='Pastikan kata kunci pencarian Anda benar.'
+                        />
                       </td>
                     </tr>
                   )}

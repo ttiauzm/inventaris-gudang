@@ -1,5 +1,6 @@
 import {FC, useState, useEffect} from 'react'
 import {KTIcon} from '../../../_metronic/helpers'
+import EmptyState404 from '../../components/EmptyState404'
 import {getSuppliers, deleteSupplier, Supplier} from './core/_requests'
 import {SupplierModal} from './components/SupplierModal'
 import {useAuth} from '../../modules/auth'
@@ -173,9 +174,11 @@ const SupplierPage: FC = () => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={7} className='text-center py-10'>
-                          <KTIcon iconName='file-deleted' className='fs-3x text-muted mb-3' />
-                          <p className='text-muted'>Tidak ada supplier</p>
+                        <td colSpan={7}>
+                          <EmptyState404
+                            title='Tidak ada supplier'
+                            subtitle='Pastikan kata kunci pencarian Anda benar.'
+                          />
                         </td>
                       </tr>
                     )}

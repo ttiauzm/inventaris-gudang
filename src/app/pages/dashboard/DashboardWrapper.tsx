@@ -11,6 +11,7 @@ import { Toolbar } from '../../../_metronic/layout/components/toolbar/Toolbar'
 import { Content } from '../../../_metronic/layout/components/Content'
 import { useAuth } from '../../modules/auth'
 import { KTIcon, toAbsoluteUrl } from '../../../_metronic/helpers'
+import EmptyState404 from '../../components/EmptyState404'
 import { getHistory } from '../history/core/_requests'
 import { HistoryItem } from '../history/core/_model'
 
@@ -172,7 +173,7 @@ const DashboardWrapper: FC = () => {
                         <th className='min-w-200px'>Nama Barang</th>
                         <th className='min-w-100px'>Jumlah</th>
                         <th className='min-w-150px'>Tanggal</th>
-                        <th className='min-w-125px'>Admin</th>
+                        <th className='min-w-125px'>Username</th>
                       </tr>
                     </thead>
                     <tbody className='text-gray-600 fw-semibold'>
@@ -212,9 +213,11 @@ const DashboardWrapper: FC = () => {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={5} className='text-center py-10'>
-                            <KTIcon iconName='file-deleted' className='fs-3x text-muted mb-3' />
-                            <p className='text-muted'>Tidak ada data</p>
+                          <td colSpan={5}>
+                            <EmptyState404
+                              title='Barang yang anda cari tidak ada'
+                              subtitle='Pastikan kata kunci anda benar.'
+                            />
                           </td>
                         </tr>
                       )}

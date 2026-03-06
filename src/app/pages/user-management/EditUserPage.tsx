@@ -5,6 +5,8 @@ import {useAuth} from '../../modules/auth'
 import {isSuperAdmin as checkSuperAdmin} from '../../utils/permissionHelper'
 import {User, ROLE_OPTIONS, PERMISSION_GROUPS, PERMISSION_LABELS} from './core/_models'
 import {updateUser, resetPassword, deleteUser} from './core/_requests'
+import {ConfirmModal} from '../../components/ConfirmModal'
+import {SuccessModal} from '../../components/SuccessModal'
 
 interface EditUserPageProps {
   user?: User
@@ -37,6 +39,12 @@ const EditUserPage: FC<EditUserPageProps> = ({user, onBack}) => {
   const isSuperAdmin = checkSuperAdmin(currentUser)
   const isEditingSuperAdmin = userData.roles.includes(999)
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false)
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false)
+  const [showPasswordSuccess, setShowPasswordSuccess] = useState(false)
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+
   useEffect(() => {
     if (user) {
       setUserData(user)
@@ -44,16 +52,27 @@ const EditUserPage: FC<EditUserPageProps> = ({user, onBack}) => {
   }, [user])
 
   const handleSaveChanges = async () => {
+    const newErrors: Record<string, string> = {}
+    if (!userData.username.trim()) {
+      newErrors.username = 'Data perubahan belum disimpan'
+    }
+    if (!userData.email.trim()) {
+      newErrors.email = 'Data perubahan belum disimpan'
+    }
+    if (Object.keys(newErrors).length > 0) {
+      setFormErrors(newErrors)
+      return
+    }
+    setFormErrors({})
     try {
       setLoading(true)
       await updateUser(userData.id, {
         username: userData.username,
         email: userData.email
       })
-      alert('User detail updated successfully!')
-      if (onBack) onBack()
+      setShowSaveSuccess(true)
     } catch (error: any) {
-      alert(error.message || 'Failed to update user')
+      setFormErrors({username: error?.response?.data?.message || error.message || 'Gagal memperbarui data'})
     } finally {
       setLoading(false)
     }
@@ -61,21 +80,22 @@ const EditUserPage: FC<EditUserPageProps> = ({user, onBack}) => {
 
   const handleResetPassword = async () => {
     if (!passwordData.newPassword) {
-      alert('Password baru tidak boleh kosong!')
+      setFormErrors({newPassword: 'Password baru tidak boleh kosong!'})
       return
     }
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert('Password tidak cocok!')
+      setFormErrors({confirmPassword: 'Password tidak cocok!'})
       return
     }
+    setFormErrors({})
     
     try {
       setLoading(true)
       await resetPassword(userData.id, passwordData.newPassword)
-      alert('Password reset successfully!')
       setPasswordData({newPassword: '', confirmPassword: ''})
+      setShowPasswordSuccess(true)
     } catch (error: any) {
-      alert(error.message || 'Failed to reset password')
+      setFormErrors({newPassword: error?.response?.data?.message || error.message || 'Gagal mereset password'})
     } finally {
       setLoading(false)
     }
@@ -92,24 +112,61 @@ const EditUserPage: FC<EditUserPageProps> = ({user, onBack}) => {
     }
   }
 
-  const handleDelete = async () => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus akun ini?')) {
-      try {
-        setLoading(true)
-        await deleteUser(userData.id)
-        alert('User deleted successfully!')
-        if (onBack) onBack()
-        else navigate('/apps/users')
-      } catch (error: any) {
-        alert(error.message || 'Failed to delete user')
-      } finally {
-        setLoading(false)
-      }
+  const handleDelete = () => {
+    setShowDeleteConfirm(true)
+  }
+
+  const confirmDelete = async () => {
+    setShowDeleteConfirm(false)
+    try {
+      setLoading(true)
+      await deleteUser(userData.id)
+      setShowDeleteSuccess(true)
+    } catch (error: any) {
+      setFormErrors({username: error?.response?.data?.message || error.message || 'Gagal menghapus akun'})
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
     <div className='container-fluid'>
+      {/* Modals */}
+      {showDeleteConfirm && (
+        <ConfirmModal
+          message='Apakah Anda yakin ingin menghapus akun ini? Akun yang dihapus tidak dapat dikembalikan.'
+          confirmText='Hapus'
+          cancelText='Batal'
+          confirmClass='btn-danger'
+          onConfirm={confirmDelete}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
+      {showDeleteSuccess && (
+        <SuccessModal
+          message='Akun Berhasil Dihapus'
+          onClose={() => {
+            setShowDeleteSuccess(false)
+            if (onBack) onBack()
+            else navigate('/apps/users')
+          }}
+        />
+      )}
+      {showSaveSuccess && (
+        <SuccessModal
+          message='Data admin berhasil diperbarui'
+          onClose={() => {
+            setShowSaveSuccess(false)
+            if (onBack) onBack()
+          }}
+        />
+      )}
+      {showPasswordSuccess && (
+        <SuccessModal
+          message='Password berhasil direset'
+          onClose={() => setShowPasswordSuccess(false)}
+        />
+      )}
       <div className='d-flex align-items-center mb-7'>
         <button className='btn btn-sm btn-icon btn-light-primary me-3' onClick={onBack || (() => navigate(-1))}>
           <KTIcon iconName='arrow-left' className='fs-2' />
@@ -175,11 +232,15 @@ const EditUserPage: FC<EditUserPageProps> = ({user, onBack}) => {
                 <div className='col-lg-8'>
                   <input
                     type='text'
-                    className='form-control form-control-solid'
+                    className={`form-control form-control-solid ${formErrors.username ? 'is-invalid' : ''}`}
                     placeholder='Username'
                     value={userData.username}
-                    onChange={(e) => setUserData(prev => ({...prev, username: e.target.value}))}
+                    onChange={(e) => {
+                      setUserData(prev => ({...prev, username: e.target.value}))
+                      if (formErrors.username) setFormErrors(prev => ({...prev, username: ''}))
+                    }}
                   />
+                  {formErrors.username && <div className='invalid-feedback fw-semibold'>{formErrors.username}</div>}
                 </div>
               </div>
 
@@ -188,11 +249,15 @@ const EditUserPage: FC<EditUserPageProps> = ({user, onBack}) => {
                 <div className='col-lg-8'>
                   <input
                     type='email'
-                    className='form-control form-control-solid'
+                    className={`form-control form-control-solid ${formErrors.email ? 'is-invalid' : ''}`}
                     placeholder='Email'
                     value={userData.email}
-                    onChange={(e) => setUserData(prev => ({...prev, email: e.target.value}))}
+                    onChange={(e) => {
+                      setUserData(prev => ({...prev, email: e.target.value}))
+                      if (formErrors.email) setFormErrors(prev => ({...prev, email: ''}))
+                    }}
                   />
+                  {formErrors.email && <div className='invalid-feedback fw-semibold'>{formErrors.email}</div>}
                 </div>
               </div>
 
@@ -225,11 +290,15 @@ const EditUserPage: FC<EditUserPageProps> = ({user, onBack}) => {
                 <div className='col-lg-8'>
                   <input
                     type='password'
-                    className='form-control form-control-solid'
+                    className={`form-control form-control-solid ${formErrors.newPassword ? 'is-invalid' : ''}`}
                     placeholder='New password'
                     value={passwordData.newPassword}
-                    onChange={(e) => setPasswordData(prev => ({...prev, newPassword: e.target.value}))}
+                    onChange={(e) => {
+                      setPasswordData(prev => ({...prev, newPassword: e.target.value}))
+                      if (formErrors.newPassword) setFormErrors(prev => ({...prev, newPassword: ''}))
+                    }}
                   />
+                  {formErrors.newPassword && <div className='invalid-feedback fw-semibold'>{formErrors.newPassword}</div>}
                 </div>
               </div>
 
@@ -238,11 +307,15 @@ const EditUserPage: FC<EditUserPageProps> = ({user, onBack}) => {
                 <div className='col-lg-8'>
                   <input
                     type='password'
-                    className='form-control form-control-solid'
+                    className={`form-control form-control-solid ${formErrors.confirmPassword ? 'is-invalid' : ''}`}
                     placeholder='Confirm new password'
                     value={passwordData.confirmPassword}
-                    onChange={(e) => setPasswordData(prev => ({...prev, confirmPassword: e.target.value}))}
+                    onChange={(e) => {
+                      setPasswordData(prev => ({...prev, confirmPassword: e.target.value}))
+                      if (formErrors.confirmPassword) setFormErrors(prev => ({...prev, confirmPassword: ''}))
+                    }}
                   />
+                  {formErrors.confirmPassword && <div className='invalid-feedback fw-semibold'>{formErrors.confirmPassword}</div>}
                 </div>
               </div>
 

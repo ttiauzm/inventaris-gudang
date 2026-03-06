@@ -9,13 +9,13 @@ import API from "../../../../api"
 
 const loginSchema = Yup.object().shape({
   email: Yup.string()
-    .min(3, 'Minimum 3 symbols')
-    .max(50, 'Maximum 50 symbols')
-    .required('Username or Email is required'),
+    .min(3, 'Minimum 3 karakter')
+    .max(50, 'Maksimum 50 karakter')
+    .required('Username atau Email wajib diisi'),
   password: Yup.string()
-    .min(3, 'Minimum 3 symbols')
-    .max(100, 'Maximum 100 symbols')
-    .required('Password is required'),
+    .min(3, 'Minimum 3 karakter')
+    .max(100, 'Maksimum 100 karakter')
+    .required('Password wajib diisi'),
 })
 
 const initialValues = {
@@ -310,7 +310,7 @@ export function Login() {
         console.error('Login error:', error)
         saveAuth(undefined)
         setStatus(
-          error?.response?.data?.message || error?.message || "The login details are incorrect"
+          error?.response?.data?.message || error?.message || "Password atau email salah"
         )
         setSubmitting(false)
         setLoading(false)
@@ -339,21 +339,34 @@ export function Login() {
 
       <div className='separator separator-content my-14'></div>
 
-      {formik.status ? (
-        <div className='mb-lg-15 alert alert-danger'>
-          <div className='alert-text font-weight-bold'>{formik.status}</div>
-        </div>
-      ) : (
-        <div className='mb-10 bg-light-info p-8 rounded'>
-          <div className='text-info'>
-            <strong>🔓 DEV MODE:</strong>
-            <br />
-            Super Admin: <strong>dev@example.com</strong> / <strong>1234</strong>
-            <br />
-            Admin: <strong>admin@example.com</strong> / <strong>admin</strong>
+      {formik.status && (
+        <div
+          className='mb-8 d-flex align-items-start gap-4 p-5 rounded-3'
+          style={{
+            backgroundColor: '#fff5f5',
+            border: '1.5px solid #f87171',
+            borderLeft: '5px solid #ef4444',
+            boxShadow: '0 2px 12px rgba(239,68,68,0.10)',
+            animation: 'fadeIn 0.25s ease'
+          }}
+        >
+          <span style={{fontSize: '1.5rem', lineHeight: 1}}>⚠️</span>
+          <div>
+            <div className='fw-bold text-danger fs-6 mb-1'>Login Gagal</div>
+            <div className='text-gray-700 fs-7'>{formik.status}</div>
           </div>
         </div>
       )}
+
+      <div className='mb-10 bg-light-info p-8 rounded'>
+        <div className='text-info'>
+          <strong>🔓 DEV MODE:</strong>
+          <br />
+          Super Admin: <strong>dev@example.com</strong> / <strong>1234</strong>
+          <br />
+          Admin: <strong>admin@example.com</strong> / <strong>admin</strong>
+        </div>
+      </div>
 
       <div className='fv-row mb-8'>
         <label className='form-label fs-6 fw-bolder text-gray-900'>Username / Email</label>

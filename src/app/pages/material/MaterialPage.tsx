@@ -4,6 +4,8 @@ import {KTIcon} from '../../../_metronic/helpers'
 import {useAuth} from '../../modules/auth'
 import {getMaterials, createMaterial, updateMaterial, deleteMaterial} from './core/_requests'
 import {isSuperAdmin as checkSuperAdmin} from '../../utils/permissionHelper'
+import {ConfirmModal} from '../../components/ConfirmModal'
+import {SuccessModal} from '../../components/SuccessModal'
 
 interface Material {
   id: string
@@ -19,6 +21,11 @@ const MaterialPage: FC = () => {
   const [showModal, setShowModal] = useState(false)
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null)
   const [formData, setFormData] = useState({name: '', description: ''})
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
 
   // Check superadmin - akan otomatis bypass di dev mode
   const isSuperAdmin = checkSuperAdmin(currentUser)
@@ -50,42 +57,80 @@ const MaterialPage: FC = () => {
   const handleAdd = () => {
     setSelectedMaterial(null)
     setFormData({name: '', description: ''})
+    setFormErrors({})
     setShowModal(true)
   }
 
   const handleEdit = (Material: Material) => {
     setSelectedMaterial(Material)
     setFormData({name: Material.name, description: Material.description})
+    setFormErrors({})
     setShowModal(true)
   }
 
   const handleSave = async () => {
+    if (!formData.name.trim()) {
+      setFormErrors({name: 'Semua kolom wajib diisi'})
+      return
+    }
+    setFormErrors({})
+
     try {
       if (selectedMaterial) {
         await updateMaterial(selectedMaterial.id, formData)
+        setSuccessMessage('Material berhasil diperbarui')
       } else {
         await createMaterial(formData)
+        setSuccessMessage('Material berhasil ditambahkan')
       }
       setShowModal(false)
       fetchMaterials()
+      setShowSuccess(true)
     } catch (error) {
       console.error('Error saving material:', error)
+      setFormErrors({name: 'Terjadi kesalahan saat menyimpan material. Silakan coba lagi.'})
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Hapus material ini?')) {
-      try {
-        await deleteMaterial(id)
-        fetchMaterials()
-      } catch (error) {
-        console.error('Error deleting material:', error)
-      }
+  const handleDelete = (id: string) => {
+    setDeleteTargetId(id)
+    setShowDeleteConfirm(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteTargetId) return
+    setShowDeleteConfirm(false)
+    try {
+      await deleteMaterial(deleteTargetId)
+      fetchMaterials()
+      setSuccessMessage('Material berhasil dihapus')
+      setShowSuccess(true)
+    } catch (error) {
+      console.error('Error deleting material:', error)
+    } finally {
+      setDeleteTargetId(null)
     }
   }
 
   return (
     <>
+      {/* Modals */}
+      {showDeleteConfirm && (
+        <ConfirmModal
+          message='Hapus material ini? Data yang dihapus tidak dapat dikembalikan.'
+          confirmText='Hapus'
+          cancelText='Batal'
+          confirmClass='btn-danger'
+          onConfirm={confirmDelete}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
+      {showSuccess && (
+        <SuccessModal
+          message={successMessage}
+          onClose={() => setShowSuccess(false)}
+        />
+      )}
       <div style={{borderRadius: '9px', margin: '10px', padding: '10px', backgroundColor: '#B7ADA6', minHeight: 'calc(5vh - 40px)'}}>
         <div className='card'>
           <div className='card-header border-0 pt-6'>
@@ -161,7 +206,7 @@ const MaterialPage: FC = () => {
       {/* Modal */}
       {showModal && (
         <>
-          <div className='modal-backdrop fade show' onClick={() => setShowModal(false)} />
+          <div className='modal-backdrop fade show' onClick={() => { setShowModal(false); setFormErrors({}) }} />
           <div className='modal fade show d-block' tabIndex={-1}>
             <div className='modal-dialog modal-dialog-centered'>
               <div className='modal-content'>
@@ -169,18 +214,22 @@ const MaterialPage: FC = () => {
                   <h5 className='modal-title'>
                     {selectedMaterial ? 'Edit Jenis Material' : 'Tambah Jenis Material'}
                   </h5>
-                  <button type='button' className='btn-close' onClick={() => setShowModal(false)} />
+                  <button type='button' className='btn-close' onClick={() => { setShowModal(false); setFormErrors({}) }} />
                 </div>
                 <div className='modal-body'>
                   <div className='mb-5'>
                     <label className='form-label required'>Nama</label>
                     <input
                       type='text'
-                      className='form-control'
+                      className={`form-control ${formErrors.name ? 'is-invalid' : ''}`}
                       placeholder='Kain Sutra Emas'
                       value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      onChange={(e) => {
+                        setFormData({...formData, name: e.target.value})
+                        if (formErrors.name) setFormErrors(prev => ({...prev, name: ''}))
+                      }}
                     />
+                    {formErrors.name && <div className='invalid-feedback fw-semibold'>{formErrors.name}</div>}
                   </div>
                   <div className='mb-5'>
                     <label className='form-label'>Deskripsi</label>
@@ -194,7 +243,7 @@ const MaterialPage: FC = () => {
                   </div>
                 </div>
                 <div className='modal-footer'>
-                  <button className='btn btn-light' onClick={() => setShowModal(false)}>
+                  <button className='btn btn-light' onClick={() => { setShowModal(false); setFormErrors({}) }}>
                     Batal
                   </button>
                   <button 

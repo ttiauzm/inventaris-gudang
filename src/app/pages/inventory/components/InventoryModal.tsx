@@ -1,11 +1,13 @@
 import {FC, useState, useEffect} from 'react'
 import { InventoryItem } from '../core/_model'
-import {createInventory, updateInventory, deleteInventory, getItemsDropdown} from '../core/_requests'
+import {createInventory, updateInventory, updateInventoryDetails, deleteInventory, getItemsDropdown} from '../core/_requests'
 import {KTIcon} from '../../../../_metronic/helpers'
 import { MaterialModal } from './MaterialModal'
 import { CategoryModal } from './CategoryModal'
 import {useAuth} from '../../../modules/auth'
 import {isSuperAdmin as checkSuperAdmin} from '../../../utils/permissionHelper'
+import {ConfirmModal} from '../../../components/ConfirmModal'
+import {SuccessModal} from '../../../components/SuccessModal'
 
 interface InventoryModalProps {
   item: InventoryItem | null
@@ -22,6 +24,9 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [showDeleteSection, setShowDeleteSection] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const [dropdownData, setDropdownData] = useState({
@@ -70,53 +75,97 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Inline validation
+    const newErrors: Record<string, string> = {}
+    if (!formData.item_name.trim()) {
+      newErrors.item_name = 'Semua kolom wajib diisi'
+    }
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
+    }
+    setErrors({})
     
     try {
       setLoading(true)
       
       if (item) {
-        // Backend update is for taking items, not editing details.
-        // If we want to edit details, we need a different endpoint.
-        // For now, we just pass the data.
-        await updateInventory(item.id, formData)
+        // Gunakan endpoint /details khusus untuk edit nama, harga, unit
+        // (PUT /items/{id} adalah untuk operasi pengambilan stok, bukan edit detail)
+        await updateInventoryDetails(item.id, {
+          item_name: formData.item_name,
+          unit: formData.unit,
+          price: formData.price,
+        })
+        setSuccessMessage('Barang berhasil diperbarui')
       } else {
         await createInventory(formData)
+        setSuccessMessage('Barang berhasil ditambahkan')
       }
-      
-      onSave()
+      setShowSuccess(true)
     } catch (error) {
       console.error('Error saving inventory:', error)
-      alert('Gagal menyimpan data')
+      setErrors({item_name: 'Gagal menyimpan data. Periksa koneksi dan coba lagi.'})
     } finally {
       setLoading(false)
     }
   }
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!confirmDelete) {
-      alert('Silakan centang konfirmasi penghapusan barang')
+      setErrors({item_name: 'Silakan centang konfirmasi penghapusan barang terlebih dahulu'})
       return
     }
+    setErrors({})
+    setShowDeleteConfirm(true)
+  }
 
-    if (window.confirm('Apakah Anda yakin ingin menghapus barang ini?')) {
-      try {
-        setLoading(true)
-        if (item) {
-          await deleteInventory(item.id)
-          onDelete?.()
-          onClose()
-        }
-      } catch (error) {
-        console.error('Error deleting item:', error)
-        alert('Gagal menghapus barang')
-      } finally {
-        setLoading(false)
+  const confirmDeleteAction = async () => {
+    setShowDeleteConfirm(false)
+    try {
+      setLoading(true)
+      if (item) {
+        await deleteInventory(item.id)
+        setSuccessMessage('Barang berhasil dihapus')
+        setShowSuccess(true)
       }
+    } catch (error) {
+      console.error('Error deleting item:', error)
+      alert('Gagal menghapus barang')
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
     <>
+      {/* Modal konfirmasi hapus */}
+      {showDeleteConfirm && (
+        <ConfirmModal
+          message='Apakah Anda yakin ingin menghapus barang ini? Data yang dihapus tidak dapat dikembalikan.'
+          confirmText='Hapus Barang'
+          cancelText='Batal'
+          confirmClass='btn-danger'
+          onConfirm={confirmDeleteAction}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
+      {/* Modal sukses */}
+      {showSuccess && (
+        <SuccessModal
+          message={successMessage}
+          onClose={() => {
+            setShowSuccess(false)
+            if (successMessage.includes('dihapus')) {
+              onDelete?.()
+              onClose()
+            } else {
+              onSave()
+            }
+          }}
+        />
+      )}
       <div className='modal-backdrop fade show' onClick={onClose} />
 
       <div className='modal fade show d-block' tabIndex={-1}>
@@ -138,12 +187,17 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
                     <label className='form-label fw-semibold'>Nama</label>
                     <input
                       type='text'
-                      className='form-control form-control-lg'
+                      className={`form-control form-control-lg ${errors.item_name ? 'is-invalid' : ''}`}
                       placeholder='Kain Sutra Emas'
                       value={formData.item_name}
-                      onChange={(e) => setFormData({...formData, item_name: e.target.value})}
-                      required
+                      onChange={(e) => {
+                        setFormData({...formData, item_name: e.target.value})
+                        if (errors.item_name) setErrors(prev => ({...prev, item_name: ''}))
+                      }}
                     />
+                    {errors.item_name && (
+                      <div className='invalid-feedback fw-semibold'>{errors.item_name}</div>
+                    )}
                   </div>
 
                   {!item && (

@@ -1,10 +1,12 @@
 
 import {useIntl} from 'react-intl'
+import {useState} from 'react'
 import {AsideMenuItemWithSubMain} from './AsideMenuItemWithSubMain'
 import {AsideMenuItemWithSub} from './AsideMenuItemWithSub'
 import {AsideMenuItem} from './AsideMenuItem'
 import { useAuth } from '../../../../app/modules/auth'
 import { isSuperAdmin as checkSuperAdmin, isAdmin as checkIsAdmin } from '../../../../app/utils/permissionHelper'
+import {ConfirmModal} from '../../../../app/components/ConfirmModal'
 
 export function AsideMenuMain() {
   const intl = useIntl()
@@ -14,12 +16,18 @@ export function AsideMenuMain() {
   const isSuperAdmin = checkSuperAdmin(currentUser)
   const isAdmin = checkIsAdmin(currentUser)
 
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+
   const handleLogout = () => {
+    setShowLogoutConfirm(true)
+  }
+
+  const confirmLogout = () => {
+    setShowLogoutConfirm(false)
     logout()
     window.location.href = '/auth/login'
   }
 
-  
   return (
     <>
       <AsideMenuItem
@@ -30,6 +38,7 @@ export function AsideMenuMain() {
         className='py-3'
       />
       
+      {/* Nav Account dinonaktifkan sementara
       <AsideMenuItem
         to='/crafted/account/overview'
         title='Account'
@@ -37,6 +46,7 @@ export function AsideMenuMain() {
         customIcon='/media/icons/custom/delova_account.svg'
         className='py-3'
       />
+      */}
       
       {/* Inventory - Available for both Admin and SuperAdmin */}
       <AsideMenuItem
@@ -69,14 +79,16 @@ export function AsideMenuMain() {
         />
       )}
       
-      {/* Supplier - Available for both */}
-      <AsideMenuItem
-        to='/apps/supplier'
-        title='Supplier'
-        bsTitle='Supplier'
-        customIcon='/media/icons/custom/delova_supplier.svg'
-        className='py-3'
-      />
+      {/* Supplier - SuperAdmin only */}
+      {isSuperAdmin && (
+        <AsideMenuItem
+          to='/apps/supplier'
+          title='Supplier'
+          bsTitle='Supplier'
+          customIcon='/media/icons/custom/delova_supplier.svg'
+          className='py-3'
+        />
+      )}
       
       {/* SuperAdmin Only - User Management */}
       {isSuperAdmin && (
@@ -114,6 +126,18 @@ export function AsideMenuMain() {
           </span>
         </button>
       </div>
+
+      {/* Modal konfirmasi logout */}
+      {showLogoutConfirm && (
+        <ConfirmModal
+          message='Apakah anda yakin untuk logout dan kembali ke halaman login?'
+          confirmText='Logout'
+          cancelText='Batal'
+          confirmClass='btn-danger'
+          onConfirm={confirmLogout}
+          onCancel={() => setShowLogoutConfirm(false)}
+        />
+      )}
 
       {/* <AsideMenuItemWithSubMain
         to='/crafted/pages'

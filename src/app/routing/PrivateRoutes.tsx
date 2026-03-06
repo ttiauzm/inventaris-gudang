@@ -24,7 +24,7 @@ const PrivateRoutes = () => {
   
   const ProfilePage = lazy(() => import('../modules/profile/ProfilePage'))
   const WizardsPage = lazy(() => import('../modules/wizards/WizardsPage'))
-  const AccountPage = lazy(() => import('../modules/accounts/AccountPage'))
+  // const AccountPage = lazy(() => import('../modules/accounts/AccountPage')) // dinonaktifkan sementara
   const WidgetsPage = lazy(() => import('../modules/widgets/WidgetsPage'))
   const ChatPage = lazy(() => import('../modules/apps/chat/ChatPage'))
   const UsersPage = lazy(() => import('../modules/apps/user-management/UsersPage'))
@@ -109,6 +109,7 @@ const PrivateRoutes = () => {
             </SuspensedView>
           }
         />
+        {/* Route account dinonaktifkan sementara
         <Route
           path='crafted/account/*'
           element={
@@ -117,6 +118,7 @@ const PrivateRoutes = () => {
             </SuspensedView>
           }
         />
+        */}
         <Route
           path='apps/chat/*'
           element={

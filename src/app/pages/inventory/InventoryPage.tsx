@@ -1,6 +1,7 @@
 //InventoryPage.tsx
 import {FC, useState, useEffect} from 'react'
 import {KTIcon} from '../../../_metronic/helpers'
+import EmptyState404 from '../../components/EmptyState404'
 import TiltedCard from '../../components/TiltedCard'
 import {InventoryModal} from './components/InventoryModal'
 import {ItemDetailModal} from './components/ItemDetailModal'
@@ -118,11 +119,11 @@ const InventoryPage: FC = () => {
     fetchInventory()
   }
 
-  const handleExport = (type: 'excel' | 'pdf') => {
+  const handleExport = async (type: 'excel' | 'pdf') => {
     if (type === 'excel') {
       exportInventoryToExcel(sortedInventory)
     } else {
-      exportInventoryToPDF(sortedInventory)
+      await exportInventoryToPDF(sortedInventory)
     }
     setShowExportMenu(false)
   }
@@ -332,9 +333,11 @@ const InventoryPage: FC = () => {
                     </div>
                   ))
                 ) : (
-                  <div className='col-12 text-center py-10'>
-                    <KTIcon iconName='file-deleted' className='fs-3x text-muted mb-3' />
-                    <p className='text-muted'>Tidak ada barang ditemukan</p>
+                  <div className='col-12'>
+                    <EmptyState404
+                      title='Tidak ada barang ditemukan'
+                      subtitle='Pastikan kata kunci pencarian Anda benar.'
+                    />
                   </div>
                 )}
               </div>

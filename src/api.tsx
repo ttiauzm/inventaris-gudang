@@ -8,6 +8,7 @@ const API_URL = import.meta.env.MODE === 'development' ? '/api' : (import.meta.e
 const API = axios.create({
   baseURL: API_URL,
   withCredentials: false, // false karena pakai Bearer Token, bukan session/cookie auth
+  timeout: 8000, // 8 detik - agar tidak hang selamanya jika backend tidak merespons
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -50,6 +51,13 @@ API.interceptors.response.use(
       // Jika menggunakan bypass token (dev-token atau admin-token), jangan redirect ke login
       if (auth?.token?.includes('-token')) {
         console.warn(`⚠️ 401 Unauthorized detected with bypass token (${auth.token}). Skipping redirect to login.`)
+        return Promise.reject(error)
+      }
+
+      // Jika 401 berasal dari endpoint /login itu sendiri (kredensial salah),
+      // jangan redirect — biarkan catch di Login.tsx yang menampilkan pesan error
+      const requestUrl = error.config?.url || ''
+      if (requestUrl.includes('/login')) {
         return Promise.reject(error)
       }
 

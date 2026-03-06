@@ -2,6 +2,7 @@ import {FC, useState, useEffect} from 'react'
 import {KTIcon} from '../../../../_metronic/helpers'
 import {User, CreateUserRequest, ROLE_OPTIONS, PERMISSION_GROUPS, PERMISSION_LABELS} from '../core/_models'
 import {createUser, updateUser, resetPassword} from '../core/_requests'
+import {SuccessModal} from '../../../components/SuccessModal'
 
 interface UserModalProps {
   user: User | null
@@ -11,6 +12,9 @@ interface UserModalProps {
 
 const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
   const [loading, setLoading] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -32,26 +36,25 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Validation
+    // Inline validation
+    const newErrors: Record<string, string> = {}
     if (!formData.username.trim()) {
-      alert('Username tidak boleh kosong!')
-      return
+      newErrors.username = 'Username tidak boleh kosong!'
     }
-
     if (!formData.email.trim()) {
-      alert('Email tidak boleh kosong!')
-      return
+      newErrors.email = 'Email tidak boleh kosong!'
     }
-
     if (!user && !formData.password.trim()) {
-      alert('Password tidak boleh kosong untuk user baru!')
+      newErrors.password = 'Password tidak boleh kosong untuk user baru!'
+    }
+    if (!user && formData.password && formData.password !== formData.password_confirmation) {
+      newErrors.password_confirmation = 'Password dan konfirmasi password tidak cocok!'
+    }
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
       return
     }
-
-    if (!user && formData.password !== formData.password_confirmation) {
-      alert('Password dan konfirmasi password tidak cocok!')
-      return
-    }
+    setErrors({})
     
     try {
       setLoading(true)
@@ -63,8 +66,8 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
           email: formData.email,
           password: formData.password || undefined
         })
-
-        alert('User berhasil diupdate!')
+        setSuccessMessage('User berhasil diupdate!')
+        setShowSuccess(true)
       } else {
         // Create new user
         const newUserData: CreateUserRequest = {
@@ -73,15 +76,19 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
           password: formData.password,
           password_confirmation: formData.password_confirmation
         }
-
         await createUser(newUserData)
-        alert('User berhasil ditambahkan!')
+        setSuccessMessage('User berhasil ditambahkan!')
+        setShowSuccess(true)
       }
-      
-      onSave()
     } catch (error: any) {
       console.error('Error saving user:', error)
-      alert(error.message || 'Gagal menyimpan data user')
+      const status = error?.response?.status
+      const serverMsg: string = error?.response?.data?.message || error?.message || ''
+      if (status === 409 || serverMsg.toLowerCase().includes('username') || serverMsg.toLowerCase().includes('duplicate') || serverMsg.toLowerCase().includes('already')) {
+        setErrors({username: 'Username sudah digunakan'})
+      } else {
+        setErrors({username: serverMsg || 'Gagal menyimpan data user'})
+      }
     } finally {
       setLoading(false)
     }
@@ -89,6 +96,17 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
 
   return (
     <>
+      {/* Modal sukses */}
+      {showSuccess && (
+        <SuccessModal
+          message={successMessage}
+          onClose={() => {
+            setShowSuccess(false)
+            onSave()
+          }}
+        />
+      )}
+
       <div className='modal-backdrop fade show' onClick={onClose} />
 
       <div className='modal fade show d-block' tabIndex={-1}>
@@ -109,12 +127,15 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
                     <label className='form-label required'>Username</label>
                     <input
                       type='text'
-                      className='form-control'
+                      className={`form-control ${errors.username ? 'is-invalid' : ''}`}
                       placeholder='username'
                       value={formData.username}
-                      onChange={(e) => setFormData({...formData, username: e.target.value})}
-                      required
+                      onChange={(e) => {
+                        setFormData({...formData, username: e.target.value})
+                        if (errors.username) setErrors(prev => ({...prev, username: ''}))
+                      }}
                     />
+                    {errors.username && <div className='invalid-feedback fw-semibold'>{errors.username}</div>}
                   </div>
 
                   {/* Email */}
@@ -122,12 +143,15 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
                     <label className='form-label required'>Email</label>
                     <input
                       type='email'
-                      className='form-control'
+                      className={`form-control ${errors.email ? 'is-invalid' : ''}`}
                       placeholder='email@example.com'
                       value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      required
+                      onChange={(e) => {
+                        setFormData({...formData, email: e.target.value})
+                        if (errors.email) setErrors(prev => ({...prev, email: ''}))
+                      }}
                     />
+                    {errors.email && <div className='invalid-feedback fw-semibold'>{errors.email}</div>}
                   </div>
 
                   {/* Password */}
@@ -137,12 +161,15 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
                     </label>
                     <input
                       type='password'
-                      className='form-control'
+                      className={`form-control ${errors.password ? 'is-invalid' : ''}`}
                       placeholder={user ? 'Kosongkan jika tidak ingin mengubah' : 'Masukkan password'}
                       value={formData.password}
-                      onChange={(e) => setFormData({...formData, password: e.target.value})}
-                      required={!user}
+                      onChange={(e) => {
+                        setFormData({...formData, password: e.target.value})
+                        if (errors.password) setErrors(prev => ({...prev, password: ''}))
+                      }}
                     />
+                    {errors.password && <div className='invalid-feedback fw-semibold'>{errors.password}</div>}
                   </div>
 
                   {/* Password Confirmation */}
@@ -153,12 +180,15 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
                       </label>
                       <input
                         type='password'
-                        className='form-control'
+                        className={`form-control ${errors.password_confirmation ? 'is-invalid' : ''}`}
                         placeholder='Masukkan ulang password'
                         value={formData.password_confirmation}
-                        onChange={(e) => setFormData({...formData, password_confirmation: e.target.value})}
-                        required
+                        onChange={(e) => {
+                          setFormData({...formData, password_confirmation: e.target.value})
+                          if (errors.password_confirmation) setErrors(prev => ({...prev, password_confirmation: ''}))
+                        }}
                       />
+                      {errors.password_confirmation && <div className='invalid-feedback fw-semibold'>{errors.password_confirmation}</div>}
                     </div>
                   )}
                 </div>

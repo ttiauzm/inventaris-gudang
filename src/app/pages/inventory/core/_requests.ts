@@ -53,9 +53,15 @@ export const createInventory = async (data: any): Promise<any> => {
   return response.data.data
 }
 
-// Update inventory
+// Update inventory (take item — untuk operasi pengambilan stok)
 export const updateInventory = async (id: string, data: any): Promise<any> => {
   const response = await API.put(`${ITEMS_URL}/${id}`, data)
+  return response.data.data
+}
+
+// Update detail barang (nama, harga, unit) — endpoint khusus edit detail
+export const updateInventoryDetails = async (id: string, data: {item_name?: string; price?: number; unit?: string}): Promise<any> => {
+  const response = await API.put(`${ITEMS_URL}/${id}/details`, data)
   return response.data.data
 }
 

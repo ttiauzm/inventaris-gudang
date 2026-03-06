@@ -5,7 +5,7 @@ import {useAuth} from './Auth'
 import API from '../../../../api'
 
 export const AuthInit: FC<WithChildren> = ({children}) => {
-  const {auth, logout, setCurrentUser} = useAuth()
+  const {auth, logout, setCurrentUser, currentUser} = useAuth()
   const [showSplashScreen, setShowSplashScreen] = useState(true)
 
   useEffect(() => {
@@ -25,11 +25,44 @@ export const AuthInit: FC<WithChildren> = ({children}) => {
         return
       }
 
-      // Token nyata → validasi ke backend (/profile)
-      // Jika token sudah expired/invalid → paksa logout & login ulang
+      // Sudah ada data user dari localStorage → tampilkan app langsung,
+      // refresh profil di background tanpa menahan loading screen
+      if (currentUser?.id || currentUser?.email) {
+        console.log('⚡ AuthInit - User already cached, showing app immediately')
+        setShowSplashScreen(false)
+        // Background refresh (tidak menahan render)
+        API.get('/profile').then(res => {
+          const userData = res.data
+          const extractRole = (u: any) => {
+            const raw = u?.role
+            if (raw && typeof raw === 'object') return String(raw.role_name ?? '').toLowerCase()
+            if (typeof raw === 'string') return raw.toLowerCase()
+            return (u?.nama_role ?? u?.role_name ?? '').toLowerCase()
+          }
+          setCurrentUser(prev => ({
+            ...prev,
+            id: userData.user_id ?? userData.id ?? prev?.id ?? '',
+            username: userData.username ?? prev?.username ?? '',
+            email: userData.email ?? prev?.email ?? '',
+            first_name: userData.first_name ?? userData.username ?? prev?.first_name ?? '',
+            role: extractRole(userData) || prev?.role || '',
+            nama_role: extractRole(userData) || prev?.nama_role || '',
+          } as any))
+        }).catch((err: any) => {
+          console.warn('⚠️ Background profile refresh failed:', err?.response?.status)
+          if (err?.response?.status === 401) logout()
+        })
+        return
+      }
+
+      // Token nyata, tidak ada cache user → validasi ke backend (/profile)
+      // Batas waktu 5 detik agar tidak stuck jika backend tidak merespons
       try {
         console.log('🔍 AuthInit - Validating token with backend...')
-        const res = await API.get('/profile')
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Auth init timeout')), 5000)
+        )
+        const res = await Promise.race([API.get('/profile'), timeoutPromise]) as any
         const userData = res.data
 
         // Ekstrak nama role dari relasi role object atau langsung dari field

@@ -4,6 +4,8 @@ import {createSupplier, updateSupplier, deleteSupplier} from '../core/_requests'
 import {KTIcon} from '../../../../_metronic/helpers'
 import {useAuth} from '../../../modules/auth'
 import {isSuperAdmin as checkSuperAdmin} from '../../../utils/permissionHelper'
+import {ConfirmModal} from '../../../components/ConfirmModal'
+import {SuccessModal} from '../../../components/SuccessModal'
 
 interface SupplierModalProps {
   supplier: Supplier | null
@@ -17,6 +19,10 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
   const isSuperAdmin = checkSuperAdmin(currentUser)
   const [loading, setLoading] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState({
     name: '',
     contact_person: '',
@@ -45,50 +51,91 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Inline validation
+    const newErrors: Record<string, string> = {}
+    if (!formData.name.trim()) {
+      newErrors.name = 'Semua kolom wajib diisi'
+    }
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
+    }
+    setErrors({})
     
     try {
       setLoading(true)
       
       if (supplier) {
         await updateSupplier(supplier.id, formData)
+        setSuccessMessage('Supplier berhasil diperbarui')
       } else {
         await createSupplier(formData)
+        setSuccessMessage('Supplier berhasil ditambahkan')
       }
-      
-      onSave()
+      setShowSuccess(true)
     } catch (error) {
       console.error('Error saving supplier:', error)
-      alert('Gagal menyimpan data supplier')
+      setErrors({name: 'Gagal menyimpan data supplier. Periksa koneksi dan coba lagi.'})
     } finally {
       setLoading(false)
     }
   }
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!confirmDelete) {
-      alert('Silakan centang konfirmasi penghapusan supplier')
+      setErrors({name: 'Silakan centang konfirmasi penghapusan supplier terlebih dahulu'})
       return
     }
+    setErrors({})
+    setShowDeleteConfirm(true)
+  }
 
-    if (window.confirm('Apakah Anda yakin ingin menghapus supplier ini?')) {
-      try {
-        setLoading(true)
-        if (supplier) {
-          await deleteSupplier(supplier.id)
-          onDelete?.()
-          onClose()
-        }
-      } catch (error) {
-        console.error('Error deleting supplier:', error)
-        alert('Gagal menghapus supplier')
-      } finally {
-        setLoading(false)
+  const confirmDeleteAction = async () => {
+    setShowDeleteConfirm(false)
+    try {
+      setLoading(true)
+      if (supplier) {
+        await deleteSupplier(supplier.id)
+        setSuccessMessage('Supplier berhasil dihapus')
+        setShowSuccess(true)
       }
+    } catch (error) {
+      console.error('Error deleting supplier:', error)
+      alert('Gagal menghapus supplier')
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
     <>
+      {/* Modal konfirmasi hapus */}
+      {showDeleteConfirm && (
+        <ConfirmModal
+          message='Apakah Anda yakin ingin menghapus supplier ini? Data yang dihapus tidak dapat dikembalikan.'
+          confirmText='Hapus'
+          cancelText='Batal'
+          confirmClass='btn-danger'
+          onConfirm={confirmDeleteAction}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
+      {/* Modal sukses */}
+      {showSuccess && (
+        <SuccessModal
+          message={successMessage}
+          onClose={() => {
+            setShowSuccess(false)
+            if (successMessage.includes('dihapus')) {
+              onDelete?.()
+              onClose()
+            } else {
+              onSave()
+            }
+          }}
+        />
+      )}
       <div className='modal-backdrop fade show' onClick={onClose}></div>
 
       <div className='modal fade show d-block' tabIndex={-1}>
@@ -110,12 +157,17 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
                     <label className='form-label fw-semibold'>Nama</label>
                     <input
                       type='text'
-                      className='form-control form-control-lg'
+                      className={`form-control form-control-lg ${errors.name ? 'is-invalid' : ''}`}
                       placeholder='Jason Tatum'
                       value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      required
+                      onChange={(e) => {
+                        setFormData({...formData, name: e.target.value})
+                        if (errors.name) setErrors(prev => ({...prev, name: ''}))
+                      }}
                     />
+                    {errors.name && (
+                      <div className='invalid-feedback fw-semibold'>{errors.name}</div>
+                    )}
                   </div>
 
                   {/* Contact Info */}
@@ -213,8 +265,8 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
               </div>
             </form>
 
-            {/* Delete Section - Only show when editing and user is SuperAdmin */}
-            {supplier && isSuperAdmin && (
+            {/* Delete Section - dinonaktifkan sementara */}
+            {false && supplier && isSuperAdmin && (
               <div style={{
                 borderTop: '1px solid #e0e0e0',
                 padding: '30px',

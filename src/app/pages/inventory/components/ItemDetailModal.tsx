@@ -3,6 +3,7 @@ import {KTIcon} from '../../../../_metronic/helpers'
 import { InventoryItem } from '../core/_model'
 import {useAuth} from '../../../modules/auth'
 import {isSuperAdmin as checkSuperAdmin} from '../../../utils/permissionHelper'
+import {SuccessModal} from '../../../components/SuccessModal'
 
 interface ItemDetailModalProps {
   item: InventoryItem
@@ -14,7 +15,7 @@ interface ItemDetailModalProps {
 const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTakeItem}) => {
   const {currentUser} = useAuth()
   const isSuperAdmin = checkSuperAdmin(currentUser)
-  const [takeQuantity, setTakeQuantity] = useState(0)
+  const [takeQuantity, setTakeQuantity] = useState('')
   const [takeDescription, setTakeDescription] = useState('')
   const [showTakeForm, setShowTakeForm] = useState(false)
   const [takeLoading, setTakeLoading] = useState(false)
@@ -23,27 +24,40 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const handleTake = async () => {
-    if (takeQuantity <= 0) {
-      alert('Jumlah harus lebih dari 0')
-      return
+    const newErrors: Record<string, string> = {}
+
+    // Validate quantity: must be numeric
+    const qtyStr = String(takeQuantity).trim()
+    const isNumeric = /^\d+$/.test(qtyStr)
+    const qty = parseInt(qtyStr, 10)
+
+    if (!isNumeric || isNaN(qty)) {
+      newErrors.quantity = 'Stok harus berupa angka'
+    } else if (qty <= 0 || !qtyStr) {
+      newErrors.quantity = 'Stok dan Deskripsi Wajib diisi'
+    } else if (qty > item.quantity) {
+      newErrors.quantity = `Jumlah tidak boleh lebih dari stok tersedia (${item.quantity})`
     }
-    if (takeQuantity > item.quantity) {
-      alert(`Jumlah tidak boleh lebih dari stok tersedia (${item.quantity})`)
-      return
-    }
+
     if (!takeDescription.trim()) {
-      alert('Deskripsi pengambilan barang wajib diisi')
+      if (newErrors.quantity === 'Stok dan Deskripsi Wajib diisi' || !qtyStr || qty <= 0) {
+        newErrors.quantity = 'Stok dan Deskripsi Wajib diisi'
+      }
+      newErrors.description = 'Stok dan Deskripsi Wajib diisi'
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
       return
     }
 
+    setErrors({})
     setTakeLoading(true)
     setTakeStatus('idle')
     setTakeErrorMsg('')
     try {
-      await onTakeItem(takeQuantity, takeDescription)
+      await onTakeItem(qty, takeDescription)
       setTakeStatus('success')
-      // Tutup modal otomatis setelah 2 detik
-      setTimeout(() => onClose(), 2000)
     } catch (error: any) {
       setTakeStatus('error')
       const msg =
@@ -58,6 +72,14 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
 
   return (
     <>
+      {/* Modal sukses pengambilan barang */}
+      {takeStatus === 'success' && (
+        <SuccessModal
+          message={`Berhasil mengambil ${parseInt(String(takeQuantity), 10)} ${item.unit} dari ${item.name}`}
+          onClose={onClose}
+        />
+      )}
+
       {/* Backdrop */}
       <div 
         className='modal-backdrop fade show' 
@@ -175,14 +197,18 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
                       Masukkan jumlah:
                     </label>
                     <input
-                      type='number'
-                      className='form-control form-control-lg text-center'
+                      type='text'
+                      className={`form-control form-control-lg text-center ${errors.quantity ? 'is-invalid' : ''}`}
                       value={takeQuantity}
-                      onChange={(e) => setTakeQuantity(parseInt(e.target.value) || 0)}
-                      min={0}
-                      max={item.quantity}
+                      onChange={(e) => {
+                        setTakeQuantity(e.target.value)
+                        if (errors.quantity) setErrors(prev => ({...prev, quantity: ''}))
+                      }}
                       style={{fontSize: '1.5rem', padding: '20px'}}
                     />
+                    {errors.quantity && (
+                      <div className='invalid-feedback fw-semibold'>{errors.quantity}</div>
+                    )}
                     <small className='text-muted'>
                       Stok tersedia: {item.quantity} {item.unit}
                     </small>
@@ -194,25 +220,22 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
                       Masukkan deskripsi: <span className='text-danger'>*</span>
                     </label>
                     <textarea
-                      className='form-control form-control-lg'
+                      className={`form-control form-control-lg ${errors.description ? 'is-invalid' : ''}`}
                       rows={4}
                       placeholder='Masukkan deskripsi pengambilan barang...'
                       value={takeDescription}
-                      onChange={(e) => setTakeDescription(e.target.value)}
+                      onChange={(e) => {
+                        setTakeDescription(e.target.value)
+                        if (errors.description) setErrors(prev => ({...prev, description: ''}))
+                      }}
                       style={{resize: 'none'}}
                     />
+                    {errors.description && (
+                      <div className='invalid-feedback fw-semibold'>{errors.description}</div>
+                    )}
                   </div>
 
                   {/* Status Banner */}
-                  {takeStatus === 'success' && (
-                    <div className='alert alert-success d-flex align-items-center mb-4 p-4' style={{borderRadius: '10px'}}>
-                      <KTIcon iconName='check-circle' className='fs-2 text-success me-3' />
-                      <div>
-                        <div className='fw-bold'>Berhasil!</div>
-                        <div className='fs-7'>Berhasil mengambil {takeQuantity} {item.unit} <strong>{item.name}</strong>. Modal akan ditutup otomatis...</div>
-                      </div>
-                    </div>
-                  )}
                   {takeStatus === 'error' && (
                     <div className='alert alert-danger d-flex align-items-center mb-4 p-4' style={{borderRadius: '10px'}}>
                       <KTIcon iconName='cross-circle' className='fs-2 text-danger me-3' />

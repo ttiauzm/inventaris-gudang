@@ -4,6 +4,8 @@ import {KTIcon} from '../../../_metronic/helpers'
 import {useAuth} from '../../modules/auth'
 import {getCategories, updateCategory, deleteCategory, createCategory} from './core/_requests'
 import {isSuperAdmin as checkSuperAdmin} from '../../utils/permissionHelper'
+import {ConfirmModal} from '../../components/ConfirmModal'
+import {SuccessModal} from '../../components/SuccessModal'
 
 interface Category {
   id: string
@@ -19,6 +21,11 @@ const CategoryPage: FC = () => {
   const [showModal, setShowModal] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [formData, setFormData] = useState({name: '', description: ''})
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
 
   // Check superadmin - akan otomatis bypass di dev mode
   const isSuperAdmin = checkSuperAdmin(currentUser)
@@ -50,48 +57,80 @@ const CategoryPage: FC = () => {
   const handleAdd = () => {
     setSelectedCategory(null)
     setFormData({name: '', description: ''})
+    setFormErrors({})
     setShowModal(true)
   }
 
   const handleEdit = (category: Category) => {
     setSelectedCategory(category)
     setFormData({name: category.name, description: category.description})
+    setFormErrors({})
     setShowModal(true)
   }
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      alert('Nama kategori tidak boleh kosong!')
+      setFormErrors({name: 'Semua kolom wajib diisi'})
       return
     }
+    setFormErrors({})
 
     try {
       if (selectedCategory) {
         await updateCategory(selectedCategory.id, formData)
+        setSuccessMessage('Kategori berhasil diperbarui')
       } else {
         await createCategory(formData)
+        setSuccessMessage('Kategori berhasil ditambahkan')
       }
       setShowModal(false)
       fetchCategories()
+      setShowSuccess(true)
     } catch (error) {
       console.error('Error saving category:', error)
-      alert('Terjadi kesalahan saat menyimpan kategori. Silakan coba lagi.')
+      setFormErrors({name: 'Terjadi kesalahan saat menyimpan kategori. Silakan coba lagi.'})
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Hapus kategori ini?')) {
-      try {
-        await deleteCategory(id)
-        fetchCategories()
-      } catch (error) {
-        console.error('Error deleting category:', error)
-      }
+  const handleDelete = (id: string) => {
+    setDeleteTargetId(id)
+    setShowDeleteConfirm(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteTargetId) return
+    setShowDeleteConfirm(false)
+    try {
+      await deleteCategory(deleteTargetId)
+      fetchCategories()
+      setSuccessMessage('Kategori berhasil dihapus')
+      setShowSuccess(true)
+    } catch (error) {
+      console.error('Error deleting category:', error)
+    } finally {
+      setDeleteTargetId(null)
     }
   }
 
   return (
     <>
+      {/* Modals */}
+      {showDeleteConfirm && (
+        <ConfirmModal
+          message='Hapus kategori ini? Data yang dihapus tidak dapat dikembalikan.'
+          confirmText='Hapus'
+          cancelText='Batal'
+          confirmClass='btn-danger'
+          onConfirm={confirmDelete}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
+      {showSuccess && (
+        <SuccessModal
+          message={successMessage}
+          onClose={() => setShowSuccess(false)}
+        />
+      )}
       <div style={{borderRadius: '9px', margin: '10px', padding: '10px', backgroundColor: '#B7ADA6', minHeight: 'calc(5vh - 40px)'}}>
         <div className='card'>
           <div className='card-header border-0 pt-6'>
@@ -167,7 +206,7 @@ const CategoryPage: FC = () => {
       {/* Modal */}
       {showModal && (
         <>
-          <div className='modal-backdrop fade show' onClick={() => setShowModal(false)} />
+          <div className='modal-backdrop fade show' onClick={() => { setShowModal(false); setFormErrors({}) }} />
           <div className='modal fade show d-block' tabIndex={-1}>
             <div className='modal-dialog modal-dialog-centered'>
               <div className='modal-content'>
@@ -175,18 +214,22 @@ const CategoryPage: FC = () => {
                   <h5 className='modal-title'>
                     {selectedCategory ? 'Edit Kategori Barang' : 'Tambah Kategori Barang'}
                   </h5>
-                  <button type='button' className='btn-close' onClick={() => setShowModal(false)} />
+                  <button type='button' className='btn-close' onClick={() => { setShowModal(false); setFormErrors({}) }} />
                 </div>
                 <div className='modal-body'>
                   <div className='mb-5'>
                     <label className='form-label required'>Nama</label>
                     <input
                       type='text'
-                      className='form-control'
+                      className={`form-control ${formErrors.name ? 'is-invalid' : ''}`}
                       placeholder='Kain Sutra Emas'
                       value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      onChange={(e) => {
+                        setFormData({...formData, name: e.target.value})
+                        if (formErrors.name) setFormErrors(prev => ({...prev, name: ''}))
+                      }}
                     />
+                    {formErrors.name && <div className='invalid-feedback fw-semibold'>{formErrors.name}</div>}
                   </div>
                   <div className='mb-5'>
                     <label className='form-label'>Deskripsi</label>
@@ -200,7 +243,7 @@ const CategoryPage: FC = () => {
                   </div>
                 </div>
                 <div className='modal-footer'>
-                  <button className='btn btn-light' onClick={() => setShowModal(false)}>
+                  <button className='btn btn-light' onClick={() => { setShowModal(false); setFormErrors({}) }}>
                     Batal
                   </button>
                   <button 

@@ -32,7 +32,7 @@ const MetronicSplashScreenProvider: FC<WithChildren> = ({children}) => {
     if (!visible) {
       timeout = window.setTimeout(() => {
         document.body.classList.add('page-loading')
-      }, 3000)
+      }, 100)
     }
 
     return () => {

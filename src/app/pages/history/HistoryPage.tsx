@@ -1,5 +1,6 @@
 import {FC, useState, useEffect} from 'react'
 import {KTIcon} from '../../../_metronic/helpers'
+import EmptyState404 from '../../components/EmptyState404'
 import { getHistory } from './core/_requests'
 import { HistoryItem } from './core/_model'
 import {exportHistoryToExcel, exportHistoryToPDF} from '../../utils/exportUtils'
@@ -37,11 +38,11 @@ const HistoryPage: FC = () => {
   const startIndex = (currentPage - 1) * itemsPerPage
   const paginatedData = filteredHistory.slice(startIndex, startIndex + itemsPerPage)
 
-  const handleExport = (type: 'excel' | 'pdf') => {
+  const handleExport = async (type: 'excel' | 'pdf') => {
     if (type === 'excel') {
       exportHistoryToExcel(filteredHistory)
     } else {
-      exportHistoryToPDF(filteredHistory)
+      await exportHistoryToPDF(filteredHistory)
     }
     setShowExportMenu(false)
   }
@@ -149,9 +150,11 @@ const HistoryPage: FC = () => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={6} className='text-center py-10'>
-                          <KTIcon iconName='file-deleted' className='fs-3x text-muted mb-3' />
-                          <p className='text-muted'>Tidak ada data</p>
+                        <td colSpan={6}>
+                          <EmptyState404
+                            title='Histori pengambilan tidak ada'
+                            subtitle='Pastikan kata kunci pencarian Anda benar.'
+                          />
                         </td>
                       </tr>
                     )}

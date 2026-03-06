@@ -1,11 +1,14 @@
 import {FC, useState, useEffect} from 'react'
 import {Navigate} from 'react-router-dom'
 import {KTIcon} from '../../../_metronic/helpers'
+import EmptyState404 from '../../components/EmptyState404'
 import {useAuth} from '../../modules/auth'
 import {getCategories, createCategory, updateCategory, deleteCategory} from '../category/core/_requests'
 import {getMaterials, createMaterial, updateMaterial, deleteMaterial} from '../material/core/_requests'
 import {isSuperAdmin as checkSuperAdmin} from '../../utils/permissionHelper'
 import {exportMasterDataToExcel, exportMasterDataToPDF} from '../../utils/exportUtils'
+import {ConfirmModal} from '../../components/ConfirmModal'
+import {SuccessModal} from '../../components/SuccessModal'
 
 interface Item {
   id: string
@@ -33,6 +36,16 @@ const MasterDataPage: FC = () => {
   const [showExportMaterial, setShowExportMaterial] = useState(false)
   const [selectedMaterial, setSelectedMaterial] = useState<Item | null>(null)
   const [formDataMaterial, setFormDataMaterial] = useState({name: '', description: ''})
+
+  // Confirm & Success State
+  const [deleteTarget, setDeleteTarget] = useState<{id: string; type: 'category' | 'material'} | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+
+  // Inline error state untuk form modal
+  const [errorCategory, setErrorCategory] = useState('')
+  const [errorMaterial, setErrorMaterial] = useState('')
 
   // Check superadmin - akan otomatis bypass di dev mode
   const isSuperAdmin = checkSuperAdmin(currentUser)
@@ -91,29 +104,31 @@ const MasterDataPage: FC = () => {
 
   const handleSaveCategory = async () => {
     if (!formDataCategory.name.trim()) {
-      alert('Nama kategori tidak boleh kosong!')
+      setErrorCategory('Nama kategori tidak boleh kosong!')
       return
     }
+    setErrorCategory('')
 
     try {
       if (selectedCategory) {
         await updateCategory(selectedCategory.id, formDataCategory)
+        setSuccessMessage('Kategori berhasil diperbarui')
       } else {
         await createCategory(formDataCategory)
+        setSuccessMessage('Kategori berhasil ditambahkan')
       }
       setShowModalCategory(false)
       fetchCategories()
+      setShowSuccess(true)
     } catch (error) {
       console.error('Error saving category:', error)
-      alert('Terjadi kesalahan saat menyimpan kategori. Silakan coba lagi.')
+      setErrorCategory('Terjadi kesalahan saat menyimpan kategori. Silakan coba lagi.')
     }
   }
 
-  const handleDeleteCategory = async (id: string) => {
-    if (window.confirm('Hapus kategori ini?')) {
-      await deleteCategory(id)
-      fetchCategories()
-    }
+  const handleDeleteCategory = (id: string) => {
+    setDeleteTarget({id, type: 'category'})
+    setShowDeleteConfirm(true)
   }
 
   // Material Handlers
@@ -131,52 +146,94 @@ const MasterDataPage: FC = () => {
 
   const handleSaveMaterial = async () => {
     if (!formDataMaterial.name.trim()) {
-      alert('Nama material tidak boleh kosong!')
+      setErrorMaterial('Nama material tidak boleh kosong!')
       return
     }
+    setErrorMaterial('')
 
     try {
       if (selectedMaterial) {
         await updateMaterial(selectedMaterial.id, formDataMaterial)
+        setSuccessMessage('Material berhasil diperbarui')
       } else {
         await createMaterial(formDataMaterial)
+        setSuccessMessage('Material berhasil ditambahkan')
       }
       setShowModalMaterial(false)
       fetchMaterials()
+      setShowSuccess(true)
     } catch (error) {
       console.error('Error saving material:', error)
-      alert('Terjadi kesalahan saat menyimpan material. Silakan coba lagi.')
+      setErrorMaterial('Terjadi kesalahan saat menyimpan material. Silakan coba lagi.')
     }
   }
 
-  const handleDeleteMaterial = async (id: string) => {
-    if (window.confirm('Hapus material ini?')) {
-      await deleteMaterial(id)
-      fetchMaterials()
+  const handleDeleteMaterial = (id: string) => {
+    setDeleteTarget({id, type: 'material'})
+    setShowDeleteConfirm(true)
+  }
+
+  const confirmDeleteAction = async () => {
+    if (!deleteTarget) return
+    setShowDeleteConfirm(false)
+    try {
+      if (deleteTarget.type === 'category') {
+        await deleteCategory(deleteTarget.id)
+        fetchCategories()
+        setSuccessMessage('Kategori berhasil dihapus')
+      } else {
+        await deleteMaterial(deleteTarget.id)
+        fetchMaterials()
+        setSuccessMessage('Material berhasil dihapus')
+      }
+      setShowSuccess(true)
+    } catch (error) {
+      console.error('Error deleting:', error)
+    } finally {
+      setDeleteTarget(null)
     }
   }
 
   // Export Functions
-  const handleExportCategory = (type: 'excel' | 'pdf') => {
+  const handleExportCategory = async (type: 'excel' | 'pdf') => {
     if (type === 'excel') {
       exportMasterDataToExcel(filteredCategories, 'Category')
     } else {
-      exportMasterDataToPDF(filteredCategories, 'Category')
+      await exportMasterDataToPDF(filteredCategories, 'Category')
     }
     setShowExportCategory(false)
   }
 
-  const handleExportMaterial = (type: 'excel' | 'pdf') => {
+  const handleExportMaterial = async (type: 'excel' | 'pdf') => {
     if (type === 'excel') {
       exportMasterDataToExcel(filteredMaterials, 'Material')
     } else {
-      exportMasterDataToPDF(filteredMaterials, 'Material')
+      await exportMasterDataToPDF(filteredMaterials, 'Material')
     }
     setShowExportMaterial(false)
   }
 
   return (
     <>
+      {/* Modal konfirmasi hapus */}
+      {showDeleteConfirm && (
+        <ConfirmModal
+          message={`Hapus ${deleteTarget?.type === 'category' ? 'kategori' : 'material'} ini? Data yang dihapus tidak dapat dikembalikan.`}
+          confirmText='Hapus'
+          cancelText='Batal'
+          confirmClass='btn-danger'
+          onConfirm={confirmDeleteAction}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
+      {/* Modal sukses */}
+      {showSuccess && (
+        <SuccessModal
+          message={successMessage}
+          onClose={() => setShowSuccess(false)}
+        />
+      )}
+
       <div style={{borderRadius: '9px',margin: '10px' ,paddingTop: '2vh',padding: '10px', backgroundColor: '#B7ADA6', minHeight: 'calc(5vh - 40px)'}}>
         <div className='row g-3'>
           {/* Category Section */}
@@ -253,7 +310,16 @@ const MasterDataPage: FC = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredCategories.slice(0, 10).map((category, index) => (
+                        {filteredCategories.length === 0 ? (
+                          <tr>
+                            <td colSpan={5}>
+                              <EmptyState404
+                                title='Tidak ada kategori ditemukan'
+                                subtitle='Pastikan kata kunci pencarian Anda benar.'
+                              />
+                            </td>
+                          </tr>
+                        ) : filteredCategories.slice(0, 10).map((category, index) => (
                           <tr key={category.id}>
                             <td>{index + 1}</td>
                             <td className='text-dark fw-bold'>{category.id}</td>
@@ -385,7 +451,16 @@ const MasterDataPage: FC = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredMaterials.slice(0, 10).map((material, index) => (
+                        {filteredMaterials.length === 0 ? (
+                          <tr>
+                            <td colSpan={5}>
+                              <EmptyState404
+                                title='Tidak ada material ditemukan'
+                                subtitle='Pastikan kata kunci pencarian Anda benar.'
+                              />
+                            </td>
+                          </tr>
+                        ) : filteredMaterials.slice(0, 10).map((material, index) => (
                           <tr key={material.id}>
                             <td>{index + 1}</td>
                             <td className='text-dark fw-bold'>{material.id}</td>
@@ -456,17 +531,20 @@ const MasterDataPage: FC = () => {
                   <h5 className='modal-title'>
                     {selectedCategory ? 'Edit Kategori Barang' : 'Tambah Kategori Barang'}
                   </h5>
-                  <button type='button' className='btn-close' onClick={() => setShowModalCategory(false)} />
+                  <button type='button' className='btn-close' onClick={() => { setShowModalCategory(false); setErrorCategory('') }} />
                 </div>
                 <div className='modal-body'>
+                  {errorCategory && (
+                    <div className='alert alert-danger py-3 mb-4'>{errorCategory}</div>
+                  )}
                   <div className='mb-5'>
                     <label className='form-label required'>Nama</label>
                     <input
                       type='text'
-                      className='form-control'
+                      className={`form-control ${errorCategory && !formDataCategory.name.trim() ? 'is-invalid' : ''}`}
                       placeholder='Kain Sutra Emas'
                       value={formDataCategory.name}
-                      onChange={(e) => setFormDataCategory({...formDataCategory, name: e.target.value})}
+                      onChange={(e) => { setFormDataCategory({...formDataCategory, name: e.target.value}); if (errorCategory) setErrorCategory('') }}
                     />
                   </div>
                   <div className='mb-5'>
@@ -509,17 +587,20 @@ const MasterDataPage: FC = () => {
                   <h5 className='modal-title'>
                     {selectedMaterial ? 'Edit Jenis Material' : 'Tambah Jenis Material'}
                   </h5>
-                  <button type='button' className='btn-close' onClick={() => setShowModalMaterial(false)} />
+                  <button type='button' className='btn-close' onClick={() => { setShowModalMaterial(false); setErrorMaterial('') }} />
                 </div>
                 <div className='modal-body'>
+                  {errorMaterial && (
+                    <div className='alert alert-danger py-3 mb-4'>{errorMaterial}</div>
+                  )}
                   <div className='mb-5'>
                     <label className='form-label required'>Nama</label>
                     <input
                       type='text'
-                      className='form-control'
+                      className={`form-control ${errorMaterial && !formDataMaterial.name.trim() ? 'is-invalid' : ''}`}
                       placeholder='Kain Sutra Emas'
                       value={formDataMaterial.name}
-                      onChange={(e) => setFormDataMaterial({...formDataMaterial, name: e.target.value})}
+                      onChange={(e) => { setFormDataMaterial({...formDataMaterial, name: e.target.value}); if (errorMaterial) setErrorMaterial('') }}
                     />
                   </div>
                   <div className='mb-5'>

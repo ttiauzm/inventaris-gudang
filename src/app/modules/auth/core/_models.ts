@@ -56,6 +56,7 @@ export interface UserModel {
   phone?: string
   roles?: Array<number>
   role?: string
+  role_id?: string | number
   nama_role?: string
   pic?: string
   language?: 'en' | 'de' | 'es' | 'fr' | 'ja' | 'zh' | 'ru'

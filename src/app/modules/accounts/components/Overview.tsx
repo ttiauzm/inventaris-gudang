@@ -3,6 +3,8 @@ import React, {useState, useEffect} from 'react'
 import {useAuth} from '../../../../app/modules/auth'
 import {toAbsoluteUrl, KTIcon} from '../../../../_metronic/helpers'
 import { isSuperAdmin as checkSuperAdmin } from '../../../../app/utils/permissionHelper'
+import {SuccessModal} from '../../../../app/components/SuccessModal'
+import API from '../../../../api'
 
 export function Overview() {
   const {currentUser} = useAuth()
@@ -33,6 +35,10 @@ export function Overview() {
   ])
 
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false)
+  const [showPasswordSuccess, setShowPasswordSuccess] = useState(false)
+  const [saveLoading, setSaveLoading] = useState(false)
 
   useEffect(() => {
     if (currentUser) {
@@ -51,8 +57,71 @@ export function Overview() {
     ))
   }
 
+  const handleSaveChanges = async () => {
+    const newErrors: Record<string, string> = {}
+    if (!formData.name.trim()) {
+      newErrors.name = 'Mohon isi fieldnya!'
+    }
+    if (!formData.email.trim()) {
+      newErrors.email = 'Mohon isi fieldnya!'
+    }
+    if (Object.keys(newErrors).length > 0) {
+      setFormErrors(newErrors)
+      return
+    }
+    setFormErrors({})
+    try {
+      setSaveLoading(true)
+      await API.put('/profile', {name: formData.name, email: formData.email})
+      setShowSaveSuccess(true)
+    } catch (error: any) {
+      setFormErrors({name: error?.response?.data?.message || 'Gagal menyimpan perubahan. Coba lagi.'})
+    } finally {
+      setSaveLoading(false)
+    }
+  }
+
+  const handleResetPassword = async () => {
+    const newErrors: Record<string, string> = {}
+    if (!formData.password.trim()) {
+      newErrors.password = 'Mohon isi fieldnya!'
+    }
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Password tidak cocok!'
+    }
+    if (Object.keys(newErrors).length > 0) {
+      setFormErrors(newErrors)
+      return
+    }
+    setFormErrors({})
+    try {
+      setSaveLoading(true)
+      await API.put('/profile/password', {password: formData.password, password_confirmation: formData.confirmPassword})
+      setFormData(prev => ({...prev, password: '', confirmPassword: ''}))
+      setShowPasswordSuccess(true)
+    } catch (error: any) {
+      setFormErrors({password: error?.response?.data?.message || 'Gagal mereset password. Coba lagi.'})
+    } finally {
+      setSaveLoading(false)
+    }
+  }
+
   return (
     <>
+      {/* Success Modals */}
+      {showSaveSuccess && (
+        <SuccessModal
+          message='Data profil berhasil disimpan'
+          onClose={() => setShowSaveSuccess(false)}
+        />
+      )}
+      {showPasswordSuccess && (
+        <SuccessModal
+          message='Password berhasil diperbarui'
+          onClose={() => setShowPasswordSuccess(false)}
+        />
+      )}
+
       {/* Card 1: Edit Detail Admin */}
       <div className='card mb-5 mb-xl-10'>
         <div className='card-header border-0 cursor-pointer'>
@@ -89,8 +158,8 @@ export function Overview() {
                 className='form-control form-control-lg form-control-solid'
                 placeholder='Nama'
                 value={formData.name}
-                disabled={!canEdit}
-                onChange={e => setFormData({...formData, name: e.target.value})}
+                disabled
+                readOnly
               />
             </div>
           </div>
@@ -103,19 +172,13 @@ export function Overview() {
                 className='form-control form-control-lg form-control-solid'
                 placeholder='Email'
                 value={formData.email}
-                disabled={!canEdit}
-                onChange={e => setFormData({...formData, email: e.target.value})}
+                disabled
+                readOnly
               />
             </div>
           </div>
 
-          {canEdit && (
-            <div className='card-footer d-flex justify-content-end py-6 px-9'>
-              <button type='button' className='btn btn-primary'>
-                Save Changes
-              </button>
-            </div>
-          )}
+          {/* Save Changes button dinonaktifkan sementara */}
         </div>
       </div>
 
@@ -133,12 +196,16 @@ export function Overview() {
             <div className='col-lg-8 fv-row'>
               <input
                 type='password'
-                className='form-control form-control-lg form-control-solid'
+                className={`form-control form-control-lg form-control-solid ${formErrors.password ? 'is-invalid' : ''}`}
                 placeholder='New password'
                 value={formData.password}
                 disabled={!canEdit}
-                onChange={e => setFormData({...formData, password: e.target.value})}
+                onChange={e => {
+                  setFormData({...formData, password: e.target.value})
+                  if (formErrors.password) setFormErrors(prev => ({...prev, password: ''}))
+                }}
               />
+              {formErrors.password && <div className='invalid-feedback fw-semibold'>{formErrors.password}</div>}
             </div>
           </div>
 
@@ -147,18 +214,23 @@ export function Overview() {
             <div className='col-lg-8 fv-row'>
               <input
                 type='password'
-                className='form-control form-control-lg form-control-solid'
+                className={`form-control form-control-lg form-control-solid ${formErrors.confirmPassword ? 'is-invalid' : ''}`}
                 placeholder='Confirm new password'
                 value={formData.confirmPassword}
                 disabled={!canEdit}
-                onChange={e => setFormData({...formData, confirmPassword: e.target.value})}
+                onChange={e => {
+                  setFormData({...formData, confirmPassword: e.target.value})
+                  if (formErrors.confirmPassword) setFormErrors(prev => ({...prev, confirmPassword: ''}))
+                }}
               />
+              {formErrors.confirmPassword && <div className='invalid-feedback fw-semibold'>{formErrors.confirmPassword}</div>}
             </div>
           </div>
 
           {canEdit && (
             <div className='card-footer d-flex justify-content-end py-6 px-9'>
-              <button type='button' className='btn btn-primary'>
+              <button type='button' className='btn btn-primary' onClick={handleResetPassword} disabled={saveLoading}>
+                {saveLoading ? <span className='spinner-border spinner-border-sm me-2' /> : null}
                 Reset Password
               </button>
             </div>

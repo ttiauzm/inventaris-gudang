@@ -6,6 +6,7 @@ use App\Models\Transactions;
 use Spatie\SimpleExcel\SimpleExcelWriter;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class TransactionController extends Controller
 {
@@ -110,5 +111,29 @@ class TransactionController extends Controller
 
         // ✅ Untuk file download, kembalikan response download langsung
         return response()->download($path)->deleteFileAfterSend();
+    }
+
+    public function exportPDF()
+    {
+        $authUser = Auth::user();
+
+        if (!$authUser->can('view_transaction')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk mengekspor transaksi',
+                'data'    => null
+            ], 403);
+        }
+
+        $transactions = Transactions::with(['items', 'suppliers', 'users'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $pdf = Pdf::loadView('exports.transactions', [
+            'transactions' => $transactions,
+            'generated_at' => now()->format('d/m/Y H:i'),
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('History_' . now()->format('Y-m-d') . '.pdf');
     }
 }

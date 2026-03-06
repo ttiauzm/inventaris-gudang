@@ -6,7 +6,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use App\Models\Categories;
+use App\Models\Materials;
 use App\Models\Logs;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class CategoryController extends Controller
 {
@@ -212,5 +214,53 @@ class CategoryController extends Controller
             'message' => 'Dropdown data kategori berhasil diambil',
             'data'    => $categories
         ], 200);
+    }
+
+    public function exportPDF()
+    {
+        $authUser = Auth::user();
+
+        if (!$authUser->can('view_category')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk mengekspor kategori',
+                'data'    => null
+            ], 403);
+        }
+
+        $categories = Categories::where('is_deleted', 0)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $pdf = Pdf::loadView('exports.categories', [
+            'categories'   => $categories,
+            'generated_at' => now()->format('d/m/Y H:i'),
+        ]);
+
+        return $pdf->download('Category_' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    public function exportMasterDataPDF()
+    {
+        $authUser = Auth::user();
+
+        if (!$authUser->can('view_category') && !$authUser->can('view_material')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk mengekspor master data',
+                'data'    => null
+            ], 403);
+        }
+
+        $categories = Categories::where('is_deleted', 0)->orderBy('created_at', 'desc')->get();
+        $materials  = Materials::where('is_deleted', 0)->orderBy('created_at', 'desc')->get();
+
+        $pdf = Pdf::loadView('exports.masterdata', [
+            'categories'   => $categories,
+            'materials'    => $materials,
+            'generated_at' => now()->format('d/m/Y H:i'),
+        ]);
+
+        return $pdf->download('MasterData_' . now()->format('Y-m-d') . '.pdf');
     }
 }

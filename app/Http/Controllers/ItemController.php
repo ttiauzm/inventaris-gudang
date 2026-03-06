@@ -13,6 +13,7 @@ use App\Models\Suppliers;
 use App\Models\Logs;
 use App\Models\Transactions;
 use App\Models\Images;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ItemController extends Controller
 {
@@ -337,5 +338,31 @@ class ItemController extends Controller
             'message' => 'Detail barang berhasil diperbarui',
             'data'    => $updatedItem
         ], 200);
+    }
+
+    public function exportPDF()
+    {
+        $authUser = Auth::user();
+
+        if (!$authUser->can('view_item')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk mengekspor barang',
+                'data'    => null
+            ], 403);
+        }
+
+        $items = Items::with(['categories', 'materials', 'suppliers'])
+            ->where('is_deleted', 0)
+            ->whereNull('parent_item_id')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $pdf = Pdf::loadView('exports.items', [
+            'items'        => $items,
+            'generated_at' => now()->format('d/m/Y H:i'),
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('Inventory_' . now()->format('Y-m-d') . '.pdf');
     }
 }

@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use App\Models\Materials;
 use App\Models\Logs;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class MaterialController extends Controller
 {
@@ -212,5 +213,29 @@ class MaterialController extends Controller
             'message' => 'Dropdown data material berhasil diambil',
             'data'    => $materials
         ], 200);
+    }
+
+    public function exportPDF()
+    {
+        $authUser = Auth::user();
+
+        if (!$authUser->can('view_material')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk mengekspor material',
+                'data'    => null
+            ], 403);
+        }
+
+        $materials = Materials::where('is_deleted', 0)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $pdf = Pdf::loadView('exports.materials', [
+            'materials'    => $materials,
+            'generated_at' => now()->format('d/m/Y H:i'),
+        ]);
+
+        return $pdf->download('Material_' . now()->format('Y-m-d') . '.pdf');
     }
 }

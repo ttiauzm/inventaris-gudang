@@ -44,6 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/transactions', [TransactionController::class, 'index']);
     Route::get('/transactions/{id}', [TransactionController::class, 'show']);
     Route::get('/export/transactions', [TransactionController::class, 'exportExcelTransactions']);
+    Route::get('/export/transactions/pdf', [TransactionController::class, 'exportPDF']);
 
     Route::get('/suppliers', [SupplierController::class, 'index']);
     Route::post('/suppliers', [SupplierController::class, 'store']);
@@ -66,5 +67,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/logs', [LogsController::class, 'index']);
     Route::get('/export/logs', [LogsController::class, 'exportExcelLogs']);
+    Route::get('/export/logs/pdf', [LogsController::class, 'exportPDF']);
+
+    Route::get('/export/categories/pdf', [CategoryController::class, 'exportPDF']);
+    Route::get('/export/materials/pdf', [MaterialController::class, 'exportPDF']);
+    Route::get('/export/master-data/pdf', [CategoryController::class, 'exportMasterDataPDF']);
+    Route::get('/export/items/pdf', [ItemController::class, 'exportPDF']);
 });
 

@@ -6,6 +6,7 @@ use App\Models\Logs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Spatie\SimpleExcel\SimpleExcelWriter;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class LogsController extends Controller
 {
@@ -78,5 +79,29 @@ class LogsController extends Controller
         SimpleExcelWriter::create($path)->addRows($rows);
 
         return response()->download($path)->deleteFileAfterSend();
+    }
+
+    public function exportPDF()
+    {
+        $authUser = Auth::user();
+
+        if (!$authUser->can('view_logs')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk mengekspor log',
+                'data'    => null
+            ], 403);
+        }
+
+        $logs = Logs::with(['user:user_id,username'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $pdf = Pdf::loadView('exports.logs', [
+            'logs'         => $logs,
+            'generated_at' => now()->format('d/m/Y H:i'),
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('SystemLog_' . now()->format('Y-m-d') . '.pdf');
     }
 }

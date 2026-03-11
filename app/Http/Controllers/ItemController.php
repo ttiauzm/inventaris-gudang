@@ -19,6 +19,15 @@ class ItemController extends Controller
 {
     public function index()
     {
+        $authUser = Auth::user();
+        if (!$authUser->hasPermission('view_item')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk melihat barang',
+                'data'    => null
+            ], 403);
+        }
+
         $items = Items::with(['categories', 'materials', 'suppliers', 'images'])
             ->where('is_deleted', 0)
             ->orderBy('created_at', 'desc')
@@ -33,6 +42,16 @@ class ItemController extends Controller
 
     public function show($id)
     {
+
+        $authUser = Auth::user();
+        if (!$authUser->hasPermission('view_item')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk melihat detail barang',
+                'data'    => null
+            ], 403);
+        }
+
         $item = Items::with(['categories', 'materials', 'suppliers', 'images'])->find($id);
 
         if (!$item || $item->is_deleted) {
@@ -54,7 +73,7 @@ class ItemController extends Controller
     {
         $authUser = Auth::user();
 
-        if (!$authUser->can('add_item')) {
+        if (!$authUser->hasPermission('add_item')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin menambah barang',
@@ -123,6 +142,14 @@ class ItemController extends Controller
     {
 
         $authUser = Auth::user();
+
+        if (!$authUser->hasPermission('update_item')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin mengupdate barang',
+                'data'    => null
+            ], 403);
+        }
 
         $parentItem = Items::find($id);
         if (!$parentItem || $parentItem->is_deleted) {
@@ -230,7 +257,7 @@ class ItemController extends Controller
     {
         $authUser = Auth::user();
 
-        if (!$authUser->can('delete_item')) {
+        if (!$authUser->hasPermission('delete_item')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin menghapus barang',
@@ -268,7 +295,7 @@ class ItemController extends Controller
     {
         $authUser = Auth::user();
 
-        if (!$authUser->can('view_item')) {
+        if (!$authUser->hasPermission('view_item')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin mengakses data dropdown',
@@ -291,7 +318,7 @@ class ItemController extends Controller
     {
         $authUser = Auth::user();
 
-        if ($authUser->role->role_name !== 'superadmin') { 
+        if (!$authUser->hasPermission('update_item_detail')) { 
             return response()->json([
                 'success' => false,
                 'message' => 'Hanya Superadmin yang diizinkan mengedit detail barang',
@@ -344,7 +371,7 @@ class ItemController extends Controller
     {
         $authUser = Auth::user();
 
-        if (!$authUser->can('view_item')) {
+        if (!$authUser->hasPermission('view_item')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin untuk mengekspor barang',

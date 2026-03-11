@@ -7,11 +7,23 @@ use App\Models\Role;
 use App\Models\Permissions;
 use App\Models\Logs;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class RoleController extends Controller
 {
     public function index()
     {
+        $authUser = Auth::user();
+
+        // ✅ Hanya yang punya izin manage_users/add_role (Superadmin)
+        if (!$authUser->hasPermission('add_role')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - Anda tidak memiliki izin mengakses daftar role',
+                'data'    => null
+            ], 403);
+        }
+
         $roles = Role::where('is_deleted', false)
             ->select('role_id', 'role_name')
             ->get();
@@ -25,18 +37,24 @@ class RoleController extends Controller
 
     public function getPermissions($roleId)
     {
-        $permissionList = [
-            'update_profile_admin',
-            'update_profile_self',
-            'delete_user',
-            'create_admin',
-            'view_logs',
-        ];
+        $authUser = Auth::user();
 
-        $permissions = Permissions::where('role_id', $roleId)->get();
+        if (!$authUser->hasPermission('update_permission')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+                'data'    => null
+            ], 403);
+        }
 
-        $mapped = collect($permissionList)->map(function ($name) use ($permissions) {
-            $found = $permissions->firstWhere('permission_name', $name);
+        // Ambil semua nama permission unik yang ada di sistem
+        $allPermissions = Permissions::distinct()->pluck('permission_name');
+
+        // Ambil permission yang nempel di role ini
+        $rolePermissions = Permissions::where('role_id', $roleId)->get();
+
+        $mapped = $allPermissions->map(function ($name) use ($rolePermissions) {
+            $found = $rolePermissions->firstWhere('permission_name', $name);
             return [
                 'permission_name' => $name,
                 'is_active' => $found ? !$found->is_deleted : false,
@@ -52,6 +70,12 @@ class RoleController extends Controller
 
     public function togglePermission(Request $req)
     {
+        $authUser = Auth::user();
+
+        if (!$authUser->hasPermission('update_permission')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
         $req->validate([
             'role_id' => 'required|uuid',
             'permission_name' => 'required|string',
@@ -80,7 +104,7 @@ class RoleController extends Controller
 
         Logs::create([
             'log_id' => Str::uuid(),
-            'user_id' => $req->user()->user_id,
+            'user_id' => $authUser->user_id,
             'action' => 'UPDATE',
             'table_name' => 'permissions',
             'row_id' => $existing->permission_id,
@@ -95,6 +119,12 @@ class RoleController extends Controller
 
     public function createRole(Request $req)
     {
+        $authUser = Auth::user();
+
+        if (!$authUser->hasPermission('add_role')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
         $req->validate([
             'role_name' => 'required|string|unique:roles,role_name',
         ]);
@@ -107,7 +137,7 @@ class RoleController extends Controller
 
         Logs::create([
             'log_id' => Str::uuid(),
-            'user_id' => $req->user()->user_id,
+            'user_id' => $authUser->user_id,
             'action' => 'CREATE',
             'table_name' => 'roles',
             'row_id' => $role->role_id,
@@ -120,50 +150,38 @@ class RoleController extends Controller
         ], 201);
     }
 
+    // Fungsi ini biasanya dipakai kalau kamu pakai tabel pivot role_permissions
     public function addPermissionToRole(Request $req, $role_id)
     {
-        $authUser = $req->user();
+        $authUser = Auth::user();
 
-        if ($authUser->role->role_name !== 'superadmin') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized - hanya superadmin',
-                'data'    => null
-            ], 403);
+        if (!$authUser->hasPermission('update_permission')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
         $req->validate([
-            'permission_name' => 'required|string|exists:permissions,permission_name',
+            'permission_name' => 'required|string',
         ]);
 
         $role = Role::where('role_id', $role_id)->first();
 
         if (!$role) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Role tidak ditemukan',
-                'data'    => null
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Role tidak ditemukan'], 404);
         }
 
-        $permission = Permissions::where('permission_name', $req->permission_name)->first();
-
-        if ($role->permissions()->where('permissions.permission_id', $permission->permission_id)->exists()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Role sudah memiliki permission ini',
-                'data'    => null
-            ], 409);
-        }
-
-        $role->permissions()->attach($permission->permission_id);
+        // Karena struktur kamu permission nempel ke role_id di tabel permissions, 
+        // kita insert/update saja di sana
+        $permission = Permissions::updateOrCreate(
+            ['role_id' => $role_id, 'permission_name' => $req->permission_name],
+            ['permission_id' => Str::uuid(), 'is_deleted' => false]
+        );
 
         Logs::create([
             'log_id'     => Str::uuid(),
             'user_id'    => $authUser->user_id,
             'action'     => 'CREATE',
-            'table_name' => 'role_permissions',
-            'row_id'     => $role->role_id,
+            'table_name' => 'permissions',
+            'row_id'     => $permission->permission_id,
         ]);
 
         return response()->json([

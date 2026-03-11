@@ -13,10 +13,12 @@ class SupplierController extends Controller
     public function index()
     {
         $authUser = Auth::user();
-        if (!$authUser->can('management_supplier')) {
+        
+        // ✅ Admin & Superadmin boleh lihat (shared)
+        if (!$authUser->hasPermission('view_supplier')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki izin mengelola supplier',
+                'message' => 'Anda tidak memiliki izin melihat supplier',
                 'data'    => null
             ], 403);
         }
@@ -33,7 +35,9 @@ class SupplierController extends Controller
     public function store(Request $request)
     {
         $authUser = Auth::user();
-        if (!$authUser->can('management_supplier')) {
+        
+        // ✅ Hanya Superadmin (superOnly)
+        if (!$authUser->hasPermission('add_supplier')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin menambah supplier',
@@ -68,7 +72,9 @@ class SupplierController extends Controller
     public function update(Request $request, $id)
     {
         $authUser = Auth::user();
-        if (!$authUser->can('management_supplier')) {
+        
+        // ✅ Hanya Superadmin (superOnly)
+        if (!$authUser->hasPermission('update_supplier')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin mengedit supplier',
@@ -109,7 +115,9 @@ class SupplierController extends Controller
     public function destroy($id)
     {
         $authUser = Auth::user();
-        if (!$authUser->can('management_supplier')) {
+        
+        // ✅ Hanya Superadmin (superOnly)
+        if (!$authUser->hasPermission('delete_supplier')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin menghapus supplier',

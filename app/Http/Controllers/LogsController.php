@@ -17,11 +17,11 @@ class LogsController extends Controller
     {
         $authUser = Auth::user();
 
-        // ✅ Standar Error: Unauthorized
-        if (!$authUser || !$authUser->can('view_logs')) {
+        // ✅ GANTI can() -> hasPermission()
+        if (!$authUser || !$authUser->hasPermission('view_logs')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki izin untuk melihat log',
+                'message' => 'Anda tidak memiliki izin untuk melihat log aktivitas sistem.',
                 'data'    => null
             ], 403);
         }
@@ -31,7 +31,6 @@ class LogsController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(20); 
 
-        // ✅ Standar Sukses: Data pagination otomatis masuk ke dalam 'data'
         return response()->json([
             'success' => true,
             'message' => 'Logs retrieved successfully',
@@ -46,8 +45,8 @@ class LogsController extends Controller
     {
         $authUser = Auth::user();
 
-        // ✅ Standar Error untuk Export (dalam format JSON)
-        if (!$authUser || !$authUser->can('view_logs')) {
+        // ✅ GANTI can() -> hasPermission()
+        if (!$authUser || !$authUser->hasPermission('view_logs')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin untuk mengekspor log',
@@ -55,12 +54,10 @@ class LogsController extends Controller
             ], 403);
         }
 
-        // Ambil logs + relasi user
         $logs = Logs::with(['user:user_id,username'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Format baris untuk Excel
         $rows = $logs->map(function ($log) {
             return [
                 'Log ID'     => $log->log_id,
@@ -72,23 +69,25 @@ class LogsController extends Controller
             ];
         })->toArray();
 
-        // Path penyimpanan sementara
         $path = storage_path('app/logs.xlsx');
 
-        // Generate file Excel
         SimpleExcelWriter::create($path)->addRows($rows);
 
         return response()->download($path)->deleteFileAfterSend();
     }
 
+    /**
+     * Export Logs PDF
+     */
     public function exportPDF()
     {
         $authUser = Auth::user();
 
-        if (!$authUser->can('view_logs')) {
+        // ✅ GANTI can() -> hasPermission()
+        if (!$authUser || !$authUser->hasPermission('view_logs')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki izin untuk mengekspor log',
+                'message' => 'Anda tidak memiliki izin untuk mengekspor log ke PDF',
                 'data'    => null
             ], 403);
         }

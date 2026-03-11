@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -15,7 +16,7 @@ class MaterialController extends Controller
     {
         $authUser = Auth::user();
 
-        if (!$authUser->can('view_material')) {
+        if (!$authUser->hasPermission('view_material')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin untuk melihat material',
@@ -38,7 +39,7 @@ class MaterialController extends Controller
     {
         $authUser = Auth::user();
 
-        if (!$authUser->can('view_material')) {
+        if (!$authUser->hasPermission('view_material')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin untuk melihat material',
@@ -67,7 +68,7 @@ class MaterialController extends Controller
     {
         $authUser = Auth::user();
 
-        if (!$authUser->can('add_material')) {
+        if (!$authUser->hasPermission('add_material')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin untuk menambah material',
@@ -108,7 +109,7 @@ class MaterialController extends Controller
     {
         $authUser = Auth::user();
 
-        if (!$authUser->can('edit_material')) {
+        if (!$authUser->hasPermission('update_material')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin untuk mengedit material',
@@ -155,7 +156,7 @@ class MaterialController extends Controller
     {
         $authUser = Auth::user();
 
-        if (!$authUser->can('delete_material')) {
+        if (!$authUser->hasPermission('delete_material')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin untuk menghapus material',
@@ -196,7 +197,7 @@ class MaterialController extends Controller
     {
         $authUser = Auth::user();
 
-        if (!$authUser->can('view_material')) {
+        if (!$authUser->hasPermission('view_material')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin untuk melihat dropdown material',
@@ -219,7 +220,7 @@ class MaterialController extends Controller
     {
         $authUser = Auth::user();
 
-        if (!$authUser->can('view_material')) {
+        if (!$authUser->hasPermission('view_material')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin untuk mengekspor material',

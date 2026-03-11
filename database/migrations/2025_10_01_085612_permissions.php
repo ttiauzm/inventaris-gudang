@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('permissions', function (Blueprint $table) {
             $table->uuid('permission_id')->primary();
             $table->foreignUuiD('role_id')->constrained('roles', 'role_id');
-            $table->string('permission_name', 50)->unique();
+            $table->string('permission_name', 50);
             $table->boolean('is_deleted')->default(false);
             $table->timestamps(); 
 

@@ -16,7 +16,8 @@ class CategoryController extends Controller
     {
         $authUser = Auth::user();
 
-        if (!$authUser->can('view_category')) {
+        // ✅ Ubah can() menjadi hasPermission()
+        if (!$authUser->hasPermission('view_category')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin untuk melihat kategori',
@@ -39,10 +40,10 @@ class CategoryController extends Controller
     {
         $authUser = Auth::user();
 
-        if (!$authUser->can('view_category')) {
+        if (!$authUser->hasPermission('view_category')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki izin untuk melihat kategori',
+                'message' => 'Anda tidak memiliki izin untuk melihat detail kategori',
                 'data'    => null
             ], 403);
         }
@@ -68,7 +69,7 @@ class CategoryController extends Controller
     {
         $authUser = Auth::user();
 
-        if (!$authUser->can('add_category')) {
+        if (!$authUser->hasPermission('add_category')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin untuk menambah kategori',
@@ -109,7 +110,8 @@ class CategoryController extends Controller
     {
         $authUser = Auth::user();
 
-        if (!$authUser->can('edit_category')) {
+        // ✅ Ganti 'edit_category' jadi 'update_category' biar sama persis kayak di Seeder
+        if (!$authUser->hasPermission('update_category')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin untuk mengedit kategori',
@@ -156,7 +158,7 @@ class CategoryController extends Controller
     {
         $authUser = Auth::user();
 
-        if (!$authUser->can('delete_category')) {
+        if (!$authUser->hasPermission('delete_category')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin untuk menghapus kategori',
@@ -197,7 +199,7 @@ class CategoryController extends Controller
     {
         $authUser = Auth::user();
 
-        if (!$authUser->can('view_category')) {
+        if (!$authUser->hasPermission('view_category')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin untuk melihat dropdown kategori',
@@ -220,7 +222,7 @@ class CategoryController extends Controller
     {
         $authUser = Auth::user();
 
-        if (!$authUser->can('view_category')) {
+        if (!$authUser->hasPermission('view_category')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin untuk mengekspor kategori',
@@ -244,10 +246,11 @@ class CategoryController extends Controller
     {
         $authUser = Auth::user();
 
-        if (!$authUser->can('view_category') && !$authUser->can('view_material')) {
+        // ✅ Modifikasi dikit: Kalau dia ga punya salah satu izinnya, tolak.
+        if (!$authUser->hasPermission('view_category') || !$authUser->hasPermission('view_material')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki izin untuk mengekspor master data',
+                'message' => 'Anda tidak memiliki izin penuh untuk mengekspor master data',
                 'data'    => null
             ], 403);
         }

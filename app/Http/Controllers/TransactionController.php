@@ -14,14 +14,14 @@ class TransactionController extends Controller
     {
         $authUser = Auth::user();
 
-        // ✅ Opsional: Buka komentar ini jika ingin mengaktifkan permission
-        // if (!$authUser->can('view_transaction')) {
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => 'Anda tidak memiliki izin melihat transaksi',
-        //         'data'    => null
-        //     ], 403);
-        // }
+        // ✅ SEKARANG AKTIF: Pakai hasPermission dan view_transaction
+        if (!$authUser->hasPermission('view_transaction')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin melihat riwayat transaksi',
+                'data'    => null
+            ], 403);
+        }
 
         $transactions = Transactions::with([
             'items:item_id,item_name',
@@ -41,12 +41,12 @@ class TransactionController extends Controller
 
     public function show($id)
     {
-        $authUser = Auth::user(); // ✅ Diperbaiki dari Auth::users()
+        $authUser = Auth::user();
 
-        if (!$authUser->can('view_transaction')) {
+        if (!$authUser->hasPermission('view_transaction')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki izin melihat transaksi',
+                'message' => 'Anda tidak memiliki izin melihat detail transaksi',
                 'data'    => null
             ], 403);
         }
@@ -78,11 +78,10 @@ class TransactionController extends Controller
     {
         $authUser = Auth::user();
 
-        // ✅ Cek izin sebelum ekspor
-        if (!$authUser->can('view_transaction')) {
+        if (!$authUser->hasPermission('view_transaction')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki izin untuk mengekspor transaksi',
+                'message' => 'Anda tidak memiliki izin untuk mengekspor data transaksi',
                 'data'    => null
             ], 403);
         }
@@ -109,7 +108,6 @@ class TransactionController extends Controller
 
         SimpleExcelWriter::create($path)->addRows($rows);
 
-        // ✅ Untuk file download, kembalikan response download langsung
         return response()->download($path)->deleteFileAfterSend();
     }
 
@@ -117,10 +115,10 @@ class TransactionController extends Controller
     {
         $authUser = Auth::user();
 
-        if (!$authUser->can('view_transaction')) {
+        if (!$authUser->hasPermission('view_transaction')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki izin untuk mengekspor transaksi',
+                'message' => 'Anda tidak memiliki izin untuk mengekspor riwayat transaksi ke PDF',
                 'data'    => null
             ], 403);
         }

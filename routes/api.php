@@ -12,10 +12,14 @@ use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\LogsController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/email/verify/{id}/{hash}', [UserController::class, 'verifyEmail'])->name('verification.verify');
+
+Route::post('/password/forgot', [ForgotPasswordController::class, 'sendResetLink']);
+Route::post('/password/reset', [ForgotPasswordController::class, 'resetPassword']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);

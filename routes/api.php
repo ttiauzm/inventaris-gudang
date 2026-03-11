@@ -15,6 +15,7 @@ use App\Http\Controllers\LogsController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/email/verify/{id}/{hash}', [UserController::class, 'verifyEmail'])->name('verification.verify');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -26,7 +27,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users', [UserController::class, 'index']);
     Route::get('/users/{user_id}', [UserController::class, 'show']);
     Route::post('/users/create-admin', [UserController::class, 'createAdmin']);
-    Route::patch('/users/self', [UserController::class, 'updateSelf']);
     Route::put('/users/{user_id}/update-profile', [UserController::class, 'updateProfile']);
 
     Route::get('/permissions', [PermissionController::class, 'index']);

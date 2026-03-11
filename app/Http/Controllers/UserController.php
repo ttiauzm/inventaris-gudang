@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Logs;
-use App\Models\Permissions;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -15,6 +14,15 @@ class UserController extends Controller
     public function index(Request $req)
     {
         $authUser = $req->user();
+
+        // ✅ Pakai hasPermission ('manage_users' ini cuma ada di $superOnly di Seeder)
+        if (!$authUser->hasPermission('manage_users')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - Anda tidak memiliki izin melihat daftar user',
+                'data'    => null
+            ], 403);
+        }
 
         $users = User::where('is_deleted', false)
             ->select('user_id', 'username', 'email', 'role_id', 'is_deleted', 'created_at')
@@ -29,8 +37,19 @@ class UserController extends Controller
         ], 200);
     }
 
-    public function show($id)
+    public function show(Request $req, $id)
     {
+        $authUser = $req->user();
+
+        // ✅ Boleh lihat kalau dia Superadmin (manage_users) ATAU kalau dia lagi ngecek profilnya sendiri
+        if (!$authUser->hasPermission('manage_users') && $authUser->user_id !== $id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - Anda tidak memiliki izin melihat detail user ini',
+                'data'    => null
+            ], 403);
+        }
+
         $user = User::where('user_id', $id)
             ->where('is_deleted', false)
             ->with('role:role_id,role_name')
@@ -60,10 +79,11 @@ class UserController extends Controller
     {
         $authUser = $req->user();
 
-        if ($authUser->role->role_name !== 'superadmin') {
+        // ✅ Ganti hardcode jadi hasPermission
+        if (!$authUser->hasPermission('create_admin')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized - hanya superadmin',
+                'message' => 'Unauthorized - hanya Superadmin yang dapat membuat admin',
                 'data'    => null
             ], 403);
         }
@@ -91,6 +111,8 @@ class UserController extends Controller
             'role_id'  => $adminRoleId,
         ]);
 
+        $admin->sendEmailVerificationNotification();
+
         Logs::create([
             'log_id'     => Str::uuid(),
             'user_id'    => $authUser->user_id,
@@ -103,70 +125,38 @@ class UserController extends Controller
             'success' => true,
             'message' => 'Admin berhasil dibuat',
             'data'    => [
+                'user_id'  => $admin->user_id,
                 'username' => $admin->username,
                 'email'    => $admin->email,
             ],
         ], 201);
     }
 
-    public function updateSelf(Request $req)
-    {
-        $authUser = $req->user();
-
-        if (!$authUser->hasPermission('update_profile_self')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized - tidak punya izin update_profile_self',
-                'data'    => null
-            ], 403);
-        }
-
-        $req->validate([
-            'username' => 'nullable|string',
-            'email'    => 'nullable|email|unique:users,email,' . $authUser->user_id . ',user_id',
-            'password' => 'nullable|string|min:6',
-        ]);
-
-        if (!$req->filled('username') && !$req->filled('email') && !$req->filled('password')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Minimal satu field harus diisi untuk update',
-                'data'    => null
-            ], 422);
-        }
-
-        $data = [];
-        if ($req->filled('username')) $data['username'] = $req->username;
-        if ($req->filled('email')) $data['email'] = $req->email;
-        if ($req->filled('password')) $data['password'] = Hash::make($req->password);
-
-        $authUser->update($data);
-
-        Logs::create([
-            'log_id'     => Str::uuid(), // ✅ Tambahkan UUID agar tidak error
-            'user_id'    => $authUser->user_id,
-            'action'     => 'UPDATE',
-            'table_name' => 'users',
-            'row_id'     => $authUser->user_id,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Profil kamu berhasil diperbarui',
-            'data'    => $data,
-        ], 200);
-    }
-
+    // ✅ FUNGSI GABUNGAN YANG PINTAR
     public function updateProfile(Request $req, $user_id)
     {
         $authUser = $req->user();
 
-        if (!$authUser->can('update_profile_admin')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized - tidak punya izin update_profile_admin',
-                'data'    => null
-            ], 403);
+        // 1. CEK IDENTITAS
+        $isEditingSelf = ($authUser->user_id === $user_id);
+
+        // 2. CEK IZIN
+        if ($isEditingSelf) {
+            if (!$authUser->hasPermission('update_profile_self')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized - tidak punya izin update_profile_self',
+                    'data'    => null
+                ], 403);
+            }
+        } else {
+            if (!$authUser->hasPermission('update_profile_admin')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized - tidak punya izin update_profile_admin',
+                    'data'    => null
+                ], 403);
+            }
         }
 
         $user = User::where('user_id', $user_id)
@@ -174,33 +164,57 @@ class UserController extends Controller
             ->first();
 
         if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'User tidak ditemukan',
-                'data'    => null
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'User tidak ditemukan', 'data' => null], 404);
         }
 
-        $req->validate([
+        // 3. VALIDASI (Beda aturan kalau ngedit diri sendiri vs ngeditin orang)
+        $rules = [
             'username' => 'nullable|string',
             'email'    => 'nullable|email|unique:users,email,' . $user_id . ',user_id',
             'password' => 'nullable|string|min:6',
-        ]);
+        ];
 
-        if (!$req->filled('username') && !$req->filled('email') && !$req->filled('password')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Minimal satu field harus diisi untuk update',
-                'data'    => null
-            ], 422);
+        // Kalau ngedit diri sendiri dan mau ganti password, wajib masukin password lama
+        if ($isEditingSelf && $req->filled('password')) {
+            $rules['old_password'] = 'required|string';
         }
 
+        $req->validate($rules);
+
         $data = [];
+        $isEmailChanging = false;
+
         if ($req->filled('username')) $data['username'] = $req->username;
-        if ($req->filled('email')) $data['email'] = $req->email;
-        if ($req->filled('password')) $data['password'] = Hash::make($req->password);
+
+        if ($req->filled('password')) {
+            if ($isEditingSelf) {
+                if (!Hash::check($req->old_password, $user->password)) {
+                    return response()->json(['success' => false, 'message' => 'Password lama salah!'], 422);
+                }
+            }
+            $data['password'] = Hash::make($req->password);
+        }
+
+        // 4. LOGIKA EMAIL PENDING
+        if ($req->filled('email') && $req->email !== $user->email) {
+            if ($isEditingSelf) {
+                $data['email_pending'] = $req->email;
+                $isEmailChanging = true;
+            } else {
+                $data['email'] = $req->email; // Superadmin bypass verifikasi
+            }
+        }
+
+        if (empty($data)) {
+            return response()->json(['success' => false, 'message' => 'Tidak ada perubahan data', 'data' => null], 422);
+        }
 
         $user->update($data);
+
+        // Kirim verifikasi HANYA ke email baru jika yang edit akunnya sendiri
+        if ($isEmailChanging) {
+            $user->sendEmailVerificationNotification(); 
+        }
 
         Logs::create([
             'log_id' => Str::uuid(),
@@ -212,8 +226,10 @@ class UserController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Profil user berhasil diperbarui oleh superadmin',
-            'data'    => $data,
+            'message' => $isEmailChanging 
+                ? 'Profil diperbarui. Silakan cek email baru Anda untuk konfirmasi perubahan email.' 
+                : 'Profil berhasil diperbarui.',
+            'data'    => $user->only(['user_id', 'username', 'email', 'email_pending']),
         ], 200);
     }
 
@@ -221,10 +237,11 @@ class UserController extends Controller
     {
         $authUser = $req->user();
 
-        if (!$authUser->can('delete_user')) {
+        // ✅ Ganti can() jadi hasPermission()
+        if (!$authUser->hasPermission('delete_user')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized',
+                'message' => 'Unauthorized - Anda tidak memiliki izin menghapus user',
                 'data'    => null
             ], 403);
         }
@@ -268,5 +285,31 @@ class UserController extends Controller
                 'email' => $user->email,
             ],
         ], 200);
+    }
+
+    public function verifyEmail(Request $req, $id, $hash)
+    {
+        if (!$req->hasValidSignature()) {
+            return response()->json(['success' => false, 'message' => 'Link tidak valid.'], 403);
+        }
+
+        $user = User::find($id);
+
+        if (!$user) return response()->json(['success' => false, 'message' => 'User tidak ditemukan.'], 404);
+
+        if ($user->email_pending) {
+            $user->email = $user->email_pending;
+            $user->email_pending = null;
+            $user->email_verified_at = now();
+            $user->save();
+
+            return response()->json(['success' => true, 'message' => 'Email baru Anda berhasil diverifikasi!'], 200);
+        }
+
+        if (!$user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
+        }
+
+        return response()->json(['success' => true, 'message' => 'Email berhasil diverifikasi!'], 200);
     }
 }

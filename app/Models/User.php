@@ -9,8 +9,9 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use App\Models\Permissions;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens, HasUuids, HasFactory, Notifiable;
@@ -30,6 +31,7 @@ class User extends Authenticatable
         'password',
         'role_id',
         'is_deleted',
+        'email_pending'
     ];
 
     public function role() {
@@ -65,6 +67,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'email_pending' => 'string',
         ];
     }
 
@@ -76,6 +79,12 @@ class User extends Authenticatable
             ->where('permission_name', $permissionName)
             ->where('is_deleted', false)
             ->exists();
+    }
+
+    public function routeNotificationForMail($notification)
+    {
+        // Jika ada email_pending, kirim notifikasi ke sana. Jika tidak, kirim ke email utama.
+        return $this->email_pending ?? $this->email;
     }
 
 }

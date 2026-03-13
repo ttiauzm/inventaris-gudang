@@ -1,4 +1,4 @@
-import {FC, useState, useEffect} from 'react'
+import {FC, useState, useEffect, useRef} from 'react'
 import { InventoryItem } from '../core/_model'
 import {createInventory, updateInventory, updateInventoryDetails, deleteInventory, getItemsDropdown} from '../core/_requests'
 import {KTIcon} from '../../../../_metronic/helpers'
@@ -28,6 +28,9 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
   const [showSuccess, setShowSuccess] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
 
   const [dropdownData, setDropdownData] = useState({
     categories: [] as any[],
@@ -70,6 +73,9 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
         price: item.price || 0,
         description: item.description || ''
       })
+      if (item.image) {
+        setImagePreview(item.image)
+      }
     }
   }, [item])
 
@@ -100,7 +106,7 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
         })
         setSuccessMessage('Barang berhasil diperbarui')
       } else {
-        await createInventory(formData)
+        await createInventory(formData, imageFile)
         setSuccessMessage('Barang berhasil ditambahkan')
       }
       setShowSuccess(true)
@@ -112,8 +118,17 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
     }
   }
 
-  const handleDelete = () => {
-    if (!confirmDelete) {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null
+    setImageFile(file)
+    if (file) {
+      setImagePreview(URL.createObjectURL(file))
+    } else {
+      setImagePreview(null)
+    }
+  }
+
+  const handleDelete = () => {    if (!confirmDelete) {
       setErrors({item_name: 'Silakan centang konfirmasi penghapusan barang terlebih dahulu'})
       return
     }
@@ -268,6 +283,58 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
                           required
                         />
                       </div>
+
+                      {/* Foto Barang - Only for Add */}
+                      <div className='col-12'>
+                        <label className='form-label fw-semibold'>Foto Barang</label>
+                        <input
+                          ref={imageInputRef}
+                          type='file'
+                          accept='image/jpeg,image/png,image/jpg'
+                          className='d-none'
+                          onChange={handleImageChange}
+                        />
+                        {imagePreview ? (
+                          <div className='position-relative d-inline-block'>
+                            <img
+                              src={imagePreview}
+                              alt='Preview'
+                              style={{
+                                width: '100%',
+                                maxHeight: '180px',
+                                objectFit: 'cover',
+                                borderRadius: '8px',
+                                border: '1px solid #e0d8d0',
+                                display: 'block',
+                              }}
+                            />
+                            <button
+                              type='button'
+                              className='btn btn-sm btn-icon btn-light-danger position-absolute top-0 end-0 m-1'
+                              style={{borderRadius: '50%', width: '24px', height: '24px', minWidth: 'unset', padding: 0}}
+                              onClick={() => { setImageFile(null); setImagePreview(null); if (imageInputRef.current) imageInputRef.current.value = '' }}
+                              title='Hapus foto'
+                            >
+                              <KTIcon iconName='cross' className='fs-6' />
+                            </button>
+                          </div>
+                        ) : (
+                          <div
+                            className='d-flex flex-column align-items-center justify-content-center gap-2 cursor-pointer'
+                            style={{
+                              border: '2px dashed #C8B8AE',
+                              borderRadius: '8px',
+                              padding: '24px',
+                              backgroundColor: '#FAF6F1',
+                              cursor: 'pointer',
+                            }}
+                            onClick={() => imageInputRef.current?.click()}
+                          >
+                            <KTIcon iconName='picture' className='fs-2x text-muted' />
+                            <span className='text-muted fs-7'>Klik untuk unggah foto (JPG/PNG, maks 2MB)</span>
+                          </div>
+                        )}
+                      </div>
                     </>
                   )}
 
@@ -301,12 +368,7 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
                 <div className='text-end mt-6'>
                   <button
                     type='submit'
-                    className='btn btn-lg px-8'
-                    style={{
-                      backgroundColor: '#5C8AE6',
-                      color: 'white',
-                      borderRadius: '8px'
-                    }}
+                    className='btn btn-lg px-8 btn-product'
                     disabled={loading}
                   >
                     {loading ? (

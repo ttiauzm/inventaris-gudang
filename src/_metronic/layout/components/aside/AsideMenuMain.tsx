@@ -94,7 +94,7 @@ export function AsideMenuMain() {
       {isSuperAdmin && (
         <AsideMenuItem
           to='/apps/users'
-          customIcon='/media/icons/custom/delova_account.svg'
+          customIcon='/media/icons/custom/delova_people.svg'
           bsTitle='Manajemen Akun'
           title='Manajemen Akun'
           className='py-3'

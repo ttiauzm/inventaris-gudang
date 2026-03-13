@@ -105,6 +105,7 @@ const UserManagementPage: FC = () => {
                         <th className='min-w-100px'>ID</th>
                         <th className='min-w-150px'>Nama</th>
                         <th className='min-w-100px'>Role</th>
+                        <th className='min-w-130px'>Status Akun</th>
                         <th className='min-w-150px'>Tanggal Dibuat</th>
                         <th className='min-w-150px'>Terakhir Login</th>
                         <th className='text-end min-w-100px'>Actions</th>
@@ -126,11 +127,37 @@ const UserManagementPage: FC = () => {
                               <div className='d-flex flex-column'>
                                 <span className='text-dark fw-bold'>{user.username}</span>
                                 <span className='text-muted fs-7'>{user.email}</span>
+                                {user.email_pending && (
+                                  <span className='text-warning fs-8'>Pending email baru: {user.email_pending}</span>
+                                )}
                               </div>
                             </div>
                           </td>
                           <td>
                             <span className='text-dark fw-semibold'>{user.role}</span>
+                          </td>
+                          <td>
+                            {(() => {
+                              if (user.email_pending) {
+                                return (
+                                  <span className='badge badge-light-warning fw-semibold fs-8 px-3 py-2'>
+                                    Pending
+                                  </span>
+                                )
+                              } else if (user.email_verified_at) {
+                                return (
+                                  <span className='badge badge-light-success fw-semibold fs-8 px-3 py-2'>
+                                    Terverifikasi
+                                  </span>
+                                )
+                              } else {
+                                return (
+                                  <span className='badge badge-light-danger fw-semibold fs-8 px-3 py-2'>
+                                    Belum Terverifikasi
+                                  </span>
+                                )
+                              }
+                            })()}
                           </td>
                           <td>
                             <span className='text-muted'>

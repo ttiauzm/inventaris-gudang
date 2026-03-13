@@ -26,3 +26,34 @@
 #root {
   display: contents;
 }
+
+// ── Product brand button classes ──────────────────────────────
+.btn-product {
+  background-color: #8B7B6E;
+  border-color: #8B7B6E;
+  color: #fff;
+
+  &:hover,
+  &:focus,
+  &:active,
+  &.active {
+    background-color: #7A6A5E !important;
+    border-color: #7A6A5E !important;
+    color: #fff !important;
+  }
+}
+
+.btn-product-light {
+  background-color: #EDE8E3;
+  border-color: #D4C8BE;
+  color: #7A6A5E;
+
+  &:hover,
+  &:focus,
+  &:active,
+  &.active {
+    background-color: #D4C8BE !important;
+    border-color: #C8B8AE !important;
+    color: #5C4D44 !important;
+  }
+}

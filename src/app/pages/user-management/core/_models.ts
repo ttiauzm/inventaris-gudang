@@ -16,6 +16,8 @@ export interface User {
   updated_at?: string
   last_login?: string
   avatar?: string
+  email_verified_at?: string | null
+  email_pending?: string | null
 }
 
 export interface CreateUserRequest {

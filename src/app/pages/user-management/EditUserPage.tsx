@@ -43,6 +43,7 @@ const EditUserPage: FC<EditUserPageProps> = ({user, onBack}) => {
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false)
   const [showSaveSuccess, setShowSaveSuccess] = useState(false)
   const [showPasswordSuccess, setShowPasswordSuccess] = useState(false)
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState('Data admin berhasil diperbarui')
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
@@ -54,10 +55,10 @@ const EditUserPage: FC<EditUserPageProps> = ({user, onBack}) => {
   const handleSaveChanges = async () => {
     const newErrors: Record<string, string> = {}
     if (!userData.username.trim()) {
-      newErrors.username = 'Data perubahan belum disimpan'
+      newErrors.username = 'Username tidak boleh kosong'
     }
     if (!userData.email.trim()) {
-      newErrors.email = 'Data perubahan belum disimpan'
+      newErrors.email = 'Email tidak boleh kosong'
     }
     if (Object.keys(newErrors).length > 0) {
       setFormErrors(newErrors)
@@ -66,13 +67,27 @@ const EditUserPage: FC<EditUserPageProps> = ({user, onBack}) => {
     setFormErrors({})
     try {
       setLoading(true)
-      await updateUser(userData.id, {
+      const res = await updateUser(userData.id, {
         username: userData.username,
         email: userData.email
-      })
+      }) as any
+      if (res?.email_pending) {
+        setSaveSuccessMessage(`Data admin berhasil diperbarui. Email lama tetap aktif sampai ${res.email_pending} diverifikasi.`)
+      } else {
+        setSaveSuccessMessage('Data admin berhasil diperbarui')
+      }
       setShowSaveSuccess(true)
     } catch (error: any) {
-      setFormErrors({username: error?.response?.data?.message || error.message || 'Gagal memperbarui data'})
+      const fieldErrors = error?.response?.data?.errors || {}
+      const serverMsg: string = error?.response?.data?.message || error?.message || ''
+      const msgLower = serverMsg.toLowerCase()
+      if (fieldErrors.email?.[0]) {
+        setFormErrors({email: fieldErrors.email[0]})
+      } else if (msgLower.includes('email') && (msgLower.includes('taken') || msgLower.includes('unique') || msgLower.includes('sudah') || msgLower.includes('already'))) {
+        setFormErrors({email: 'Email sudah digunakan oleh akun lain.'})
+      } else {
+        setFormErrors({username: serverMsg || 'Gagal memperbarui data'})
+      }
     } finally {
       setLoading(false)
     }
@@ -154,7 +169,7 @@ const EditUserPage: FC<EditUserPageProps> = ({user, onBack}) => {
       )}
       {showSaveSuccess && (
         <SuccessModal
-          message='Data admin berhasil diperbarui'
+          message={saveSuccessMessage}
           onClose={() => {
             setShowSaveSuccess(false)
             if (onBack) onBack()

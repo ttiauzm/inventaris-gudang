@@ -32,6 +32,11 @@ export default defineConfig({
           })
         },
       },
+      '/storage': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        secure: false,
+      },
       '/sanctum/csrf-cookie': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,

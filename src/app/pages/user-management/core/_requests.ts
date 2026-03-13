@@ -75,6 +75,8 @@ export const getUsers = async (): Promise<User[]> => {
       created_at: item.created_at || '',
       // last_login: prefer backend field → logs endpoint → localStorage
       last_login: item.last_login || lastLoginMap[item.user_id] || undefined,
+      email_verified_at: item.email_verified_at ?? null,
+      email_pending: item.email_pending ?? null,
     }))
   } catch (error) {
     console.error('Error fetching users:', error)
@@ -123,7 +125,7 @@ export const createUser = async (data: CreateUserRequest): Promise<User> => {
     return response.data.data
   } catch (error: any) {
     console.error('Error creating user:', error)
-    throw new Error(error.response?.data?.message || 'Failed to create user')
+    throw error
   }
 }
 
@@ -141,7 +143,7 @@ export const updateUser = async (id: string, data: UpdateUserRequest): Promise<U
     return response.data.data
   } catch (error: any) {
     console.error('Error updating user:', error)
-    throw new Error(error.response?.data?.message || 'Failed to update user')
+    throw error
   }
 }
 
@@ -153,7 +155,7 @@ export const deleteUser = async (id: string): Promise<void> => {
     await API.delete(`${API_URL}/${id}`)
   } catch (error: any) {
     console.error('Error deleting user:', error)
-    throw new Error(error.response?.data?.message || 'Failed to delete user')
+    throw error
   }
 }
 
@@ -242,7 +244,7 @@ export const resetPassword = async (id: string, newPassword: string): Promise<vo
     })
   } catch (error: any) {
     console.error('Error resetting password:', error)
-    throw new Error(error.response?.data?.message || 'Failed to reset password')
+    throw error
   }
 }
 

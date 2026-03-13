@@ -50,7 +50,7 @@ export const ConfirmModal: FC<ConfirmModalProps> = ({
               <div className='d-flex justify-content-center gap-4'>
                 <button
                   type='button'
-                  className='btn btn-primary px-10'
+                  className='btn btn-light px-10'
                   style={{borderRadius: '8px'}}
                   onClick={onCancel}
                 >
@@ -58,7 +58,7 @@ export const ConfirmModal: FC<ConfirmModalProps> = ({
                 </button>
                 <button
                   type='button'
-                  className={`btn ${confirmClass} px-10`}
+                  className='btn btn-danger px-10'
                   style={{borderRadius: '8px'}}
                   onClick={onConfirm}
                 >

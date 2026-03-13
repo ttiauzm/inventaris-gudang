@@ -243,13 +243,12 @@ const CategoryPage: FC = () => {
                   </div>
                 </div>
                 <div className='modal-footer'>
-                  <button className='btn btn-light' onClick={() => { setShowModal(false); setFormErrors({}) }}>
+                  <button className='btn btn-product-light' onClick={() => { setShowModal(false); setFormErrors({}) }}>
                     Batal
                   </button>
                   <button 
-                    className='btn btn-primary' 
+                    className='btn btn-product' 
                     onClick={handleSave}
-                    style={{backgroundColor: '#007bff', borderColor: '#007bff'}}
                   >
                     Tambah
                   </button>

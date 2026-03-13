@@ -34,12 +34,7 @@ export function register(
 
 // Server should return object => { result: boolean } (Is Email in DB)
 export function requestPassword(email: string) {
-  // Endpoint not available in backend
-  console.warn("Forgot Password endpoint not implemented in backend");
-  return Promise.reject("Feature not available");
-  // return API.post<{ result: boolean }>(REQUEST_PASSWORD_URL, {
-  //   email,
-  // });
+  return API.post('/password/forgot', { email })
 }
 
 export function logout() {

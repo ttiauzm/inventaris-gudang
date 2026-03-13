@@ -178,6 +178,7 @@ const InventoryPage: FC = () => {
               </button>
 
               {/* Export Dropdown */}
+              {isSuperAdmin && (
               <div className='position-relative'>
                 <button
                   className='btn btn-sm btn-light-success'
@@ -203,6 +204,7 @@ const InventoryPage: FC = () => {
                   </div>
                 )}
               </div>
+              )}
 
               {isSuperAdmin && (
                 <button className='btn btn-sm btn-primary' onClick={handleAdd}>
@@ -322,7 +324,7 @@ const InventoryPage: FC = () => {
                   sortedInventory.map((item) => (
                     <div key={item.id} className='col-12 col-sm-6 col-md-4 col-lg-3'>
                       <TiltedCard
-                        imageSrc={item.image || '/media/svg/material/material-dummy.svg'}
+                        imageSrc={item.image}
                         title={item.name}
                         supplier={item.supplier}
                         quantity={item.quantity}

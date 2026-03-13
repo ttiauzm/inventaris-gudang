@@ -4,8 +4,12 @@ import EmptyState404 from '../../components/EmptyState404'
 import { getHistory } from './core/_requests'
 import { HistoryItem } from './core/_model'
 import {exportHistoryToExcel, exportHistoryToPDF} from '../../utils/exportUtils'
+import {useAuth} from '../../modules/auth'
+import {isSuperAdmin as checkSuperAdmin} from '../../utils/permissionHelper'
 
 const HistoryPage: FC = () => {
+  const {currentUser} = useAuth()
+  const isSuperAdmin = checkSuperAdmin(currentUser)
   const [history, setHistory] = useState<HistoryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -71,6 +75,7 @@ const HistoryPage: FC = () => {
             </div>
 
             {/* Export Dropdown */}
+            {isSuperAdmin && (
             <div className='position-relative'>
               <button
                 className='btn btn-sm btn-light-success'
@@ -96,6 +101,7 @@ const HistoryPage: FC = () => {
                 </div>
               )}
             </div>
+            )}
           </div>
         </div>
 

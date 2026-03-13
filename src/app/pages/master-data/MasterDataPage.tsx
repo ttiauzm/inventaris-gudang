@@ -246,6 +246,7 @@ const MasterDataPage: FC = () => {
                 
                 <div className='card-toolbar gap-2'>
                   {/* Export Dropdown */}
+                  {isSuperAdmin && (
                   <div className='position-relative'>
                     <button
                       className='btn btn-sm btn-light-success'
@@ -271,6 +272,7 @@ const MasterDataPage: FC = () => {
                       </div>
                     )}
                   </div>
+                  )}
 
                   <button className='btn btn-sm btn-primary' onClick={handleAddCategory}>
                     <KTIcon iconName='plus' className='fs-3' />
@@ -387,6 +389,7 @@ const MasterDataPage: FC = () => {
                 
                 <div className='card-toolbar gap-2'>
                   {/* Export Dropdown */}
+                  {isSuperAdmin && (
                   <div className='position-relative'>
                     <button
                       className='btn btn-sm btn-light-success'
@@ -412,6 +415,7 @@ const MasterDataPage: FC = () => {
                       </div>
                     )}
                   </div>
+                  )}
 
                   <button className='btn btn-sm btn-primary' onClick={handleAddMaterial}>
                     <KTIcon iconName='plus' className='fs-3' />
@@ -559,13 +563,12 @@ const MasterDataPage: FC = () => {
                   </div>
                 </div>
                 <div className='modal-footer'>
-                  <button className='btn btn-light' onClick={() => setShowModalCategory(false)}>
+                  <button className='btn btn-product-light' onClick={() => setShowModalCategory(false)}>
                     Batal
                   </button>
                   <button 
-                    className='btn btn-primary' 
+                    className='btn btn-product' 
                     onClick={handleSaveCategory}
-                    style={{backgroundColor: '#007bff', borderColor: '#007bff'}}
                   >
                     {selectedCategory ? 'Simpan' : 'Tambah'}
                   </button>
@@ -615,13 +618,12 @@ const MasterDataPage: FC = () => {
                   </div>
                 </div>
                 <div className='modal-footer'>
-                  <button className='btn btn-light' onClick={() => setShowModalMaterial(false)}>
+                  <button className='btn btn-product-light' onClick={() => setShowModalMaterial(false)}>
                     Batal
                   </button>
                   <button 
-                    className='btn btn-primary' 
+                    className='btn btn-product' 
                     onClick={handleSaveMaterial}
-                    style={{backgroundColor: '#007bff', borderColor: '#007bff'}}
                   >
                     {selectedMaterial ? 'Simpan' : 'Tambah'}
                   </button>

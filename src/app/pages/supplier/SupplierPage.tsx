@@ -3,6 +3,7 @@ import {KTIcon} from '../../../_metronic/helpers'
 import EmptyState404 from '../../components/EmptyState404'
 import {getSuppliers, deleteSupplier, Supplier} from './core/_requests'
 import {SupplierModal} from './components/SupplierModal'
+import {ConfirmModal} from '../../components/ConfirmModal'
 import {useAuth} from '../../modules/auth'
 import {isSuperAdmin as checkSuperAdmin} from '../../utils/permissionHelper'
 
@@ -14,6 +15,8 @@ const SupplierPage: FC = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
 
@@ -53,15 +56,21 @@ const SupplierPage: FC = () => {
     setShowModal(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus supplier ini?')) {
-      try {
-        await deleteSupplier(id)
-        fetchSuppliers()
-      } catch (error) {
-        console.error('Error deleting supplier:', error)
-        alert('Gagal menghapus supplier')
-      }
+  const handleDelete = (id: string) => {
+    setDeleteTargetId(id)
+    setShowDeleteConfirm(true)
+  }
+
+  const confirmSupplierDelete = async () => {
+    if (!deleteTargetId) return
+    setShowDeleteConfirm(false)
+    try {
+      await deleteSupplier(deleteTargetId)
+      fetchSuppliers()
+    } catch (error) {
+      console.error('Error deleting supplier:', error)
+    } finally {
+      setDeleteTargetId(null)
     }
   }
 
@@ -232,6 +241,16 @@ const SupplierPage: FC = () => {
           onClose={() => setShowModal(false)}
           onSave={handleSave}
           onDelete={handleSave}
+        />
+      )}
+
+      {showDeleteConfirm && (
+        <ConfirmModal
+          message='Hapus supplier ini? Data yang dihapus tidak dapat dikembalikan.'
+          confirmText='Hapus'
+          cancelText='Batal'
+          onConfirm={confirmSupplierDelete}
+          onCancel={() => { setShowDeleteConfirm(false); setDeleteTargetId(null) }}
         />
       )}
       </div>

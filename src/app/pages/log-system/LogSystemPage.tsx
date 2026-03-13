@@ -4,8 +4,12 @@ import EmptyState404 from '../../components/EmptyState404'
 import { getLogs } from './core/_requests'
 import { LogItem } from './core/_model'
 import {exportLogsToExcel, exportLogsToPDF} from '../../utils/exportUtils'
+import {useAuth} from '../../modules/auth'
+import {isSuperAdmin as checkSuperAdmin} from '../../utils/permissionHelper'
 
 const LogSystemPage: FC = () => {
+  const {currentUser} = useAuth()
+  const isSuperAdmin = checkSuperAdmin(currentUser)
   const [logs, setLogs] = useState<LogItem[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -81,6 +85,7 @@ const LogSystemPage: FC = () => {
           </div>
 
           {/* Export Dropdown */}
+          {isSuperAdmin && (
           <div className='position-relative'>
             <button
               className='btn btn-sm btn-light-success'
@@ -106,6 +111,7 @@ const LogSystemPage: FC = () => {
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
 

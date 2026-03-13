@@ -27,6 +27,7 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
     name: '',
     contact_person: '',
     phone: '',
+    email: '',
     address: '',
     city: '',
     province: '',
@@ -40,6 +41,7 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
         name: supplier.name,
         contact_person: supplier.contact_person || '',
         phone: supplier.phone || '',
+        email: supplier.email || '',
         address: supplier.address || '',
         city: supplier.city || '',
         province: supplier.province || '',
@@ -55,8 +57,15 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
     // Inline validation
     const newErrors: Record<string, string> = {}
     if (!formData.name.trim()) {
-      newErrors.name = 'Semua kolom wajib diisi'
+      newErrors.name = 'Nama supplier wajib diisi'
     }
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Contact info / telepon wajib diisi'
+    }
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Format email tidak valid'
+    }
+    
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return
@@ -74,9 +83,34 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
         setSuccessMessage('Supplier berhasil ditambahkan')
       }
       setShowSuccess(true)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving supplier:', error)
-      setErrors({name: 'Gagal menyimpan data supplier. Periksa koneksi dan coba lagi.'})
+      const serverMsg: string = error?.response?.data?.message || error?.message || ''
+      
+      // Parse validation errors dari backend
+      const backendErrors = error?.response?.data?.errors || {}
+      if (Object.keys(backendErrors).length > 0) {
+        const parsedErrors: Record<string, string> = {}
+        for (const [fieldName, fieldErrors] of Object.entries(backendErrors)) {
+          if (Array.isArray(fieldErrors)) {
+            parsedErrors[fieldName] = (fieldErrors as string[])[0]
+          } else if (typeof fieldErrors === 'string') {
+            parsedErrors[fieldName] = fieldErrors
+          }
+        }
+        // Map backend field names to frontend field names
+        if (parsedErrors['supplier_name']) {
+          parsedErrors['name'] = parsedErrors['supplier_name']
+          delete parsedErrors['supplier_name']
+        }
+        if (parsedErrors['contact_info']) {
+          parsedErrors['phone'] = parsedErrors['contact_info']
+          delete parsedErrors['contact_info']
+        }
+        setErrors(parsedErrors)
+      } else {
+        setErrors({general: serverMsg || 'Gagal menyimpan data supplier. Periksa koneksi dan coba lagi.'})
+      }
     } finally {
       setLoading(false)
     }
@@ -151,6 +185,13 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
 
             <form onSubmit={handleSubmit}>
               <div className='modal-body' style={{padding: '20px 30px'}}>
+                {/* General Error Message */}
+                {errors.general && (
+                  <div className='alert alert-danger' role='alert'>
+                    {errors.general}
+                  </div>
+                )}
+                
                 <div className='row g-4'>
                   {/* Nama */}
                   <div className='col-12'>
@@ -172,14 +213,38 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
 
                   {/* Contact Info */}
                   <div className='col-12'>
-                    <label className='form-label fw-semibold'>Contact Info</label>
+                    <label className='form-label fw-semibold'>Contact Info / Telepon <span style={{color: 'red'}}>*</span></label>
                     <input
                       type='text'
-                      className='form-control form-control-lg'
+                      className={`form-control form-control-lg ${errors.phone ? 'is-invalid' : ''}`}
                       placeholder='0812389016'
                       value={formData.phone}
-                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      onChange={(e) => {
+                        setFormData({...formData, phone: e.target.value})
+                        if (errors.phone) setErrors(prev => ({...prev, phone: ''}))
+                      }}
                     />
+                    {errors.phone && (
+                      <div className='invalid-feedback fw-semibold'>{errors.phone}</div>
+                    )}
+                  </div>
+
+                  {/* Email */}
+                  <div className='col-12'>
+                    <label className='form-label fw-semibold'>Email</label>
+                    <input
+                      type='email'
+                      className={`form-control form-control-lg ${errors.email ? 'is-invalid' : ''}`}
+                      placeholder='supplier@example.com'
+                      value={formData.email}
+                      onChange={(e) => {
+                        setFormData({...formData, email: e.target.value})
+                        if (errors.email) setErrors(prev => ({...prev, email: ''}))
+                      }}
+                    />
+                    {errors.email && (
+                      <div className='invalid-feedback fw-semibold'>{errors.email}</div>
+                    )}
                   </div>
 
                   {/* Jalan */}

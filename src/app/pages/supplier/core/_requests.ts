@@ -8,6 +8,7 @@ const mapSupplier = (item: any): Supplier => ({
   name: item.supplier_name,
   contact_person: item.contact_info,
   phone: item.contact_info,
+  email: item.email,
   address: item.street,
   city: item.city,
   province: item.province,
@@ -43,6 +44,7 @@ export const getSupplierById = async (id: string): Promise<Supplier> => {
     name: item.supplier_name,
     contact_person: item.contact_info,
     phone: item.contact_info,
+    email: item.email,
     address: item.street,
     city: item.city,
     province: item.province,
@@ -57,6 +59,7 @@ export const createSupplier = async (data: Partial<Supplier>): Promise<Supplier>
   const payload = {
     supplier_name: data.name,
     contact_info: data.phone || data.contact_person,
+    email: data.email,
     street: data.address,
     city: data.city,
     province: data.province,
@@ -71,6 +74,7 @@ export const updateSupplier = async (id: string, data: Partial<Supplier>): Promi
   const payload = {
     supplier_name: data.name,
     contact_info: data.phone || data.contact_person,
+    email: data.email,
     street: data.address,
     city: data.city,
     province: data.province,

@@ -228,8 +228,10 @@ export function Login() {
         API.defaults.headers.common["Authorization"] = `Bearer ${token}`
 
         // Data user dari login response (fallback minimal)
-        // Backend: data.user = { username, email, role: { role_id, role_name } } (lazy-loaded)
+        // Backend: data.user = { username, email } dan data.role = 'superadmin' (string)
         const loginUserData = responseData?.data?.user ?? {}
+        // Role string langsung dari login response (mis: 'superadmin', 'admin')
+        const loginRoleFromResponse: string = responseData?.data?.role ?? ''
 
         // Ekstrak nama role dari berbagai bentuk data
         // Backend Role model menggunakan field 'role_name' (bukan 'nama_role')
@@ -242,11 +244,12 @@ export function Login() {
 
         // Helper untuk mapping data user ke UserModel
         const buildUserModel = (userData: any) => {
-          // Role name: coba dari userData dulu, fallback ke loginUserData
-          // Profile endpoint tidak eager-load role, jadi role hanya ada di loginUserData
+          // Role name: coba dari userData (profile response eager-loads role),
+          // lalu fallback ke loginRoleFromResponse (data.role dari login)
           const roleName =
             extractRoleName(userData.role) ||
             userData.nama_role ||
+            loginRoleFromResponse ||
             extractRoleName(loginUserData.role) ||
             loginUserData.nama_role ||
             ''
@@ -414,7 +417,7 @@ export function Login() {
       <div className='d-flex flex-stack flex-wrap gap-3 fs-base fw-semibold mb-8'>
         <div />
         <Link to='/auth/forgot-password' className='link-primary'>
-          Forgot Password ?
+          Lupa Password?
         </Link>
       </div>
 

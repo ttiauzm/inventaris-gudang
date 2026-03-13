@@ -22,6 +22,7 @@ export const getInventory = async (params?: {
     unit: item.unit,
     price: item.price,
     description: item.materials?.material_name || '',
+    image: item.images && item.images.length > 0 ? `/storage/${item.images[0].file_path}` : undefined,
     created_at: item.created_at,
     updated_at: item.updated_at
   }))
@@ -42,14 +43,28 @@ export const getInventoryById = async (id: string): Promise<InventoryItem> => {
     unit: item.unit,
     price: item.price,
     description: item.materials?.material_name || '',
+    image: item.images && item.images.length > 0 ? `/storage/${item.images[0].file_path}` : undefined,
     created_at: item.created_at,
     updated_at: item.updated_at
   }
 }
 
 // Create inventory
-export const createInventory = async (data: any): Promise<any> => {
-  const response = await API.post(ITEMS_URL, data)
+export const createInventory = async (data: any, imageFile?: File | null): Promise<any> => {
+  const form = new FormData()
+  Object.entries(data).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      ;(value as string[]).forEach(v => form.append(`${key}[]`, v))
+    } else {
+      form.append(key, String(value ?? ''))
+    }
+  })
+  if (imageFile) {
+    form.append('images', imageFile)
+  }
+  const response = await API.post(ITEMS_URL, form, {
+    headers: {'Content-Type': 'multipart/form-data'},
+  })
   return response.data.data
 }
 

@@ -14,6 +14,7 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
   const [loading, setLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
+  const [verificationNotice, setVerificationNotice] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState({
     username: '',
@@ -61,12 +62,18 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
       
       if (user) {
         // Update existing user
-        await updateUser(user.id, {
+        const updatedUser = await updateUser(user.id, {
           username: formData.username,
           email: formData.email,
           password: formData.password || undefined
         })
-        setSuccessMessage('User berhasil diupdate!')
+        if (updatedUser.email_pending) {
+          setSuccessMessage(`User berhasil diupdate. Email lama tetap aktif sampai ${updatedUser.email_pending} diverifikasi.`)
+          setVerificationNotice(true)
+        } else {
+          setSuccessMessage('User berhasil diupdate!')
+          setVerificationNotice(false)
+        }
         setShowSuccess(true)
       } else {
         // Create new user
@@ -77,15 +84,23 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
           password_confirmation: formData.password_confirmation
         }
         await createUser(newUserData)
-        setSuccessMessage('User berhasil ditambahkan!')
+        setSuccessMessage('Admin berhasil dibuat!')
+        setVerificationNotice(true)
         setShowSuccess(true)
       }
     } catch (error: any) {
       console.error('Error saving user:', error)
-      const status = error?.response?.status
+      const fieldErrors = error?.response?.data?.errors || {}
       const serverMsg: string = error?.response?.data?.message || error?.message || ''
-      if (status === 409 || serverMsg.toLowerCase().includes('username') || serverMsg.toLowerCase().includes('duplicate') || serverMsg.toLowerCase().includes('already')) {
-        setErrors({username: 'Username sudah digunakan'})
+      const msgLower = serverMsg.toLowerCase()
+      if (fieldErrors.email?.[0]) {
+        setErrors({email: fieldErrors.email[0]})
+      } else if (fieldErrors.username?.[0]) {
+        setErrors({username: fieldErrors.username[0]})
+      } else if (msgLower.includes('email') && (msgLower.includes('taken') || msgLower.includes('unique') || msgLower.includes('sudah') || msgLower.includes('already'))) {
+        setErrors({email: 'Email sudah digunakan oleh akun lain.'})
+      } else if (msgLower.includes('username') || msgLower.includes('duplicate') || msgLower.includes('already')) {
+        setErrors({username: 'Username sudah digunakan.'})
       } else {
         setErrors({username: serverMsg || 'Gagal menyimpan data user'})
       }
@@ -99,7 +114,11 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
       {/* Modal sukses */}
       {showSuccess && (
         <SuccessModal
-          message={successMessage}
+          message={
+            verificationNotice
+              ? `${successMessage}\n\nLink verifikasi telah dikirim ke ${formData.email}. Status akun akan tetap Pending sampai link tersebut dibuka.`
+              : successMessage
+          }
           onClose={() => {
             setShowSuccess(false)
             onSave()
@@ -197,7 +216,7 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
               <div className='modal-footer'>
                 <button
                   type='button'
-                  className='btn btn-light'
+                  className='btn btn-product-light'
                   onClick={onClose}
                   disabled={loading}
                 >
@@ -205,8 +224,7 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
                 </button>
                 <button
                   type='submit'
-                  className='btn btn-primary'
-                  style={{backgroundColor: '#007bff', borderColor: '#007bff'}}
+                  className='btn btn-product'
                   disabled={loading}
                 >
                   {loading ? (
@@ -215,7 +233,7 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
                       Menyimpan...
                     </>
                   ) : (
-                    <>Tambah</>
+                    <>{user ? 'Simpan' : 'Tambah'}</>
                   )}
                 </button>
               </div>

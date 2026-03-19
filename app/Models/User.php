@@ -87,4 +87,9 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->email_pending ?? $this->email;
     }
 
+    public function getEmailForVerification()
+    {
+        return $this->email_pending ?? $this->email;
+    }
+
 }

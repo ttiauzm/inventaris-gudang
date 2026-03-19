@@ -19,15 +19,26 @@ class UserSeeder extends Seeder
         $superadminRole = Role::where('role_name', 'superadmin')->first();
 
         // Akun superadmin tambahan
-        User::updateOrCreate(
-            ['email' => 'superadmin2@example.com'],
-            [
-                'user_id' => Str::uuid(),
+        $existing = User::where('email', 'superadmin2@example.com')->first();
+        if ($existing) {
+            // Update tanpa mengubah user_id (hindari FK violation pada logs)
+            $existing->update([
                 'username' => 'superadmin2',
                 'password' => Hash::make('password456'),
                 'role_id'  => $superadminRole->role_id,
                 'is_deleted' => false,
-            ]
-        );
+                'email_verified_at' => now(),
+            ]);
+        } else {
+            User::create([
+                'user_id' => Str::uuid(),
+                'email'   => 'superadmin2@example.com',
+                'username' => 'superadmin2',
+                'password' => Hash::make('password456'),
+                'role_id'  => $superadminRole->role_id,
+                'is_deleted' => false,
+                'email_verified_at' => now(),
+            ]);
+        }
     }
 }

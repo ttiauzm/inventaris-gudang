@@ -46,8 +46,8 @@ class SupplierController extends Controller
         }
 
         $validated = $request->validate([
-            'supplier_name' => 'required|string|max:100',
-            'contact_info'  => 'nullable|string|max:50',
+            'supplier_name' => 'required|string|max:100|unique:suppliers,supplier_name,NULL,supplier_id,is_deleted,0',
+            'contact_info'  => 'required|string|max:50',
             'street'        => 'nullable|string|max:100',
             'city'          => 'nullable|string|max:50',
             'province'      => 'nullable|string|max:50',
@@ -92,8 +92,8 @@ class SupplierController extends Controller
         }
 
         $validated = $request->validate([
-            'supplier_name' => 'required|string|max:100',
-            'contact_info'  => 'nullable|string|max:50',
+            'supplier_name' => 'required|string|max:100|unique:suppliers,supplier_name,' . $id . ',supplier_id,is_deleted,0',
+            'contact_info'  => 'required|string|max:50',
             'street'        => 'nullable|string|max:100',
             'city'          => 'nullable|string|max:50',
             'province'      => 'nullable|string|max:50',

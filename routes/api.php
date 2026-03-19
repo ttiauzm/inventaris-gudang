@@ -25,7 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     
     Route::get('/profile', function (Request $request) {
-        return $request->user();
+        return $request->user()->load('role');
     });
 
     Route::get('/users', [UserController::class, 'index']);

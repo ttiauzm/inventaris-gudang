@@ -8,6 +8,7 @@ use App\Models\Logs;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
@@ -25,7 +26,7 @@ class UserController extends Controller
         }
 
         $users = User::where('is_deleted', false)
-            ->select('user_id', 'username', 'email', 'role_id', 'is_deleted', 'created_at')
+            ->select('user_id', 'username', 'email', 'email_verified_at', 'email_pending', 'role_id', 'is_deleted', 'created_at')
             ->with('role:role_id,role_name')
             ->orderByRaw("CASE WHEN user_id = ? THEN 0 ELSE 1 END", [$authUser->user_id])
             ->get();
@@ -183,6 +184,7 @@ class UserController extends Controller
 
         $data = [];
         $isEmailChanging = false;
+        $newEmail = $req->filled('email') ? trim((string) $req->email) : null;
 
         if ($req->filled('username')) $data['username'] = $req->username;
 
@@ -196,13 +198,23 @@ class UserController extends Controller
         }
 
         // 4. LOGIKA EMAIL PENDING
-        if ($req->filled('email') && $req->email !== $user->email) {
-            if ($isEditingSelf) {
-                $data['email_pending'] = $req->email;
-                $isEmailChanging = true;
-            } else {
-                $data['email'] = $req->email; // Superadmin bypass verifikasi
+        if ($newEmail && $newEmail !== $user->email && $newEmail !== $user->email_pending) {
+            $emailAlreadyUsed = User::where('user_id', '!=', $user_id)
+                ->where('is_deleted', false)
+                ->where(function ($query) use ($newEmail) {
+                    $query->where('email', $newEmail)
+                        ->orWhere('email_pending', $newEmail);
+                })
+                ->exists();
+
+            if ($emailAlreadyUsed) {
+                throw ValidationException::withMessages([
+                    'email' => 'Email sudah digunakan atau sedang menunggu verifikasi pada akun lain.',
+                ]);
             }
+
+            $data['email_pending'] = $newEmail;
+            $isEmailChanging = true;
         }
 
         if (empty($data)) {
@@ -210,8 +222,8 @@ class UserController extends Controller
         }
 
         $user->update($data);
+        $user->refresh();
 
-        // Kirim verifikasi HANYA ke email baru jika yang edit akunnya sendiri
         if ($isEmailChanging) {
             $user->sendEmailVerificationNotification(); 
         }
@@ -227,9 +239,9 @@ class UserController extends Controller
         return response()->json([
             'success' => true,
             'message' => $isEmailChanging 
-                ? 'Profil diperbarui. Silakan cek email baru Anda untuk konfirmasi perubahan email.' 
+                ? 'Profil diperbarui. Email baru masih pending dan link verifikasi telah dikirim ke alamat email baru.' 
                 : 'Profil berhasil diperbarui.',
-            'data'    => $user->only(['user_id', 'username', 'email', 'email_pending']),
+            'data'    => $user->only(['user_id', 'username', 'email', 'email_pending', 'email_verified_at']),
         ], 200);
     }
 
@@ -297,7 +309,28 @@ class UserController extends Controller
 
         if (!$user) return response()->json(['success' => false, 'message' => 'User tidak ditemukan.'], 404);
 
+        $emailForVerification = $user->email_pending ?: $user->email;
+
+        if (!hash_equals((string) $hash, sha1($emailForVerification))) {
+            return response()->json(['success' => false, 'message' => 'Hash verifikasi email tidak valid.'], 403);
+        }
+
         if ($user->email_pending) {
+            $pendingEmailConflict = User::where('user_id', '!=', $user->user_id)
+                ->where('is_deleted', false)
+                ->where(function ($query) use ($user) {
+                    $query->where('email', $user->email_pending)
+                        ->orWhere('email_pending', $user->email_pending);
+                })
+                ->exists();
+
+            if ($pendingEmailConflict) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Email baru tidak dapat diverifikasi karena sudah digunakan akun lain.',
+                ], 422);
+            }
+
             $user->email = $user->email_pending;
             $user->email_pending = null;
             $user->email_verified_at = now();

@@ -13,6 +13,7 @@ use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\LogsController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\DashboardController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -77,5 +78,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/export/materials/pdf', [MaterialController::class, 'exportPDF']);
     Route::get('/export/master-data/pdf', [CategoryController::class, 'exportMasterDataPDF']);
     Route::get('/export/items/pdf', [ItemController::class, 'exportPDF']);
+
+    Route::get('/dashboard/cards', [DashboardController::class, 'getCards']);
+    Route::get('/dashboard/most-active', [DashboardController::class, 'getMostActive']);
+    Route::get('/dashboard/least-active', [DashboardController::class, 'getLeastActive']);
+    Route::get('/dashboard/highest-value', [DashboardController::class, 'getHighestValue']);
 });
 

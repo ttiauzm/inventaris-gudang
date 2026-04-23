@@ -9,14 +9,15 @@ return Application::configure(basePath: dirname(__DIR__))
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
+        api: __DIR__.'/../routes/api.php',
+        
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->validateCsrfTokens(except: [
-            '/api/*',
-            '/login',
-            '/register',
-        ]);
+        $middleware->group('api', [
+        \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        \Illuminate\Routing\Middleware\SubstituteBindings::class,
+    ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

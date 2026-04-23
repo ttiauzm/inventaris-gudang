@@ -83,5 +83,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/most-active', [DashboardController::class, 'getMostActive']);
     Route::get('/dashboard/least-active', [DashboardController::class, 'getLeastActive']);
     Route::get('/dashboard/highest-value', [DashboardController::class, 'getHighestValue']);
+
+    Route::get('/items/{id}/qrcode', [ItemController::class, 'generateQr']);
 });
 

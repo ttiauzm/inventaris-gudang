@@ -14,6 +14,7 @@ use App\Models\Logs;
 use App\Models\Transactions;
 use App\Models\Images;
 use Barryvdh\DomPDF\Facade\Pdf;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class ItemController extends Controller
 {
@@ -392,4 +393,30 @@ class ItemController extends Controller
 
         return $pdf->download('Inventory_' . now()->format('Y-m-d') . '.pdf');
     }
+
+    public function generateQr($id)
+    {
+        $item = Items::where('item_id', $id)->where('is_deleted', 0)->first();
+
+        if (!$item) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Barang tidak ditemukan',
+            ], 404);
+        }
+
+        //JANGAN LUPA DISESUAIKAN LAGI
+        // Ngambil alamat web dari file .env
+        $baseUrl = env('FRONTEND_URL', 'http://localhost:3000'); 
+
+        // Gabungin sama path form transaksi dan ID barangnya
+        $frontendUrl = $baseUrl . "/input-transaksi?item_id=" . $item->item_id;
+        //SAMPAI SINI
+
+        $qrCode = QrCode::size(300)
+            ->margin(1)
+            ->generate($frontendUrl);
+
+        return response($qrCode)->header('Content-Type', 'image/png');
+}
 }

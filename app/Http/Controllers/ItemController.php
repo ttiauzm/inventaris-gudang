@@ -18,7 +18,7 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class ItemController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $authUser = Auth::user();
         if (!$authUser->hasPermission('view_item')) {
@@ -29,10 +29,27 @@ class ItemController extends Controller
             ], 403);
         }
 
-        $items = Items::with(['categories', 'materials', 'suppliers', 'images'])
-            ->where('is_deleted', 0)
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $query = Items::with(['categories', 'materials', 'suppliers', 'images'])
+            ->where('is_deleted', 0);
+            // ->whereNull('parent_item_id'); // Hanya tampilkan item utama (bukan turunan)
+
+        // Filter by category_id if provided
+        if ($request->has('category_id') && $request->category_id !== 'all') {
+            $query->where('category_id', $request->category_id);
+        }
+
+        // Filter by search keyword if provided
+        if ($request->has('search') && !empty($request->search)) {
+            $query->where('item_name', 'like', '%' . $request->search . '%');
+        }
+
+        // Pagination support
+        if ($request->has('per_page')) {
+            $perPage = $request->per_page;
+            $items = $query->orderBy('created_at', 'desc')->paginate($perPage);
+        } else {
+            $items = $query->orderBy('created_at', 'desc')->get();
+        }
 
         return response()->json([
             'success' => true,

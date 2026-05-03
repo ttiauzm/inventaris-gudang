@@ -16,7 +16,7 @@
 </head>
 <body>
     <h2>Laporan Master Data</h2>
-    <p class="sub">Digenerate: {{ $generated_at }}</p>
+    <p class="sub">Tanggal Cetak: {{ $generated_at }}</p>
 
     <h3>Kategori</h3>
     <table>

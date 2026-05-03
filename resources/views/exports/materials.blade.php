@@ -15,7 +15,7 @@
 </head>
 <body>
     <h2>Laporan Material</h2>
-    <p class="sub">Digenerate: {{ $generated_at }}</p>
+    <p class="sub">Tanggal Cetak: {{ $generated_at }}</p>
     <table>
         <thead>
             <tr>

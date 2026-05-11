@@ -45,6 +45,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/items/{id}', [ItemController::class, 'update']);
     Route::put('/items/{id}/details', [ItemController::class, 'updateDetails']);
     Route::delete('/items/{id}', [ItemController::class, 'destroy']);
+    Route::get('/items/{id}/qrcode', [ItemController::class, 'generateQr']);
+    Route::post('/items/{id}/faulty', [ItemController::class, 'reportFaulty']);
 
     Route::get('/transactions', [TransactionController::class, 'index']);
     Route::get('/transactions/{id}', [TransactionController::class, 'show']);
@@ -83,7 +85,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/most-active', [DashboardController::class, 'getMostActive']);
     Route::get('/dashboard/least-active', [DashboardController::class, 'getLeastActive']);
     Route::get('/dashboard/highest-value', [DashboardController::class, 'getHighestValue']);
-
-    Route::get('/items/{id}/qrcode', [ItemController::class, 'generateQr']);
 });
 

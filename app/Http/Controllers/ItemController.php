@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Models\Items;
 use App\Models\Categories;
@@ -15,6 +16,9 @@ use App\Models\Transactions;
 use App\Models\Images;
 use Barryvdh\DomPDF\Facade\Pdf;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
+use Illuminate\Support\Facades\Storage;
 
 class ItemController extends Controller
 {
@@ -111,13 +115,15 @@ class ItemController extends Controller
             'images' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
+        $category = Categories::find($request->category_id);
+
         $item = Items::create([
             'item_id' => Str::uuid(),
             'item_name' => $request->item_name,
             'category_id' => $request->category_id,
             'material_id' => $request->material_id,
             'quantity' => $request->quantity,
-            'unit' => $request->unit,
+            'unit' => $category->unit,
             'price' => $request->price,
             'is_deleted' => 0,
             'created_at' => now(),
@@ -126,7 +132,14 @@ class ItemController extends Controller
 
         if ($request->hasFile('images')) {
             $file = $request->file('images');
-            $path = $file->store('items', 'public');
+            $fileName = 'item_' . time() . '_' . Str::random(5) . '.webp';
+            $path = 'items/' . $fileName;
+
+            $manager = new ImageManager(new Driver());
+            $image = $manager->read($file);
+            $image->scaleDown(width: 800);
+            $encodedImage = (string) $image->toWebp(70);
+            Storage::disk('public')->put('products/' . $fileName, $encodedImage);
 
             Images::create([
                 'image_id' => Str::uuid(),
@@ -220,7 +233,7 @@ class ItemController extends Controller
             'quantity' => $newQty,
             'unit' => $parentItem->unit,
             'price' => $parentItem->price,
-            'is_deleted' => 0,
+            'is_deleted' => 1, // Item turunan otomatis di-set sebagai deleted karena hanya untuk transaksi
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -435,5 +448,65 @@ class ItemController extends Controller
             ->generate($frontendUrl);
 
         return response($qrCode)->header('Content-Type', 'image/png');
-}
+    }
+
+    public function reportFaulty(Request $request, $id)
+        {
+            $authUser = Auth::user();
+
+            $request->validate([
+                'faulty_quantity' => 'required|integer|min:1',
+                'description' => 'required|string|max:255',
+            ]);
+
+            return DB::transaction(function () use ($request, $id, $authUser) { 
+
+                $item = Items::findOrFail($id);
+
+                $supplierId = $item->suppliers()->first()?->supplier_id;
+                
+                if (!$supplierId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Barang ini tidak memiliki supplier, transaksi tidak dapat dicatat.',
+                ], 400);
+                }
+
+                if ($request->faulty_quantity > $item->quantity) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Jumlah barang rusak melebihi stok yang tersedia',
+                    ], 400);
+                }
+
+                $item->decrement('quantity', $request->faulty_quantity);
+
+                Transactions::create([
+                    'transaction_id' => Str::uuid(),
+                    'item_id' => $item->item_id,
+                    'user_id' => $authUser->user_id,
+                    'transaction_type' => 'FAULTY',
+                    'supplier_id'      => $supplierId,
+                    'quantity' => $request->faulty_quantity,
+                    'unit' => $item->unit,
+                    'description' => $request->description,
+                    'transaction_date' => now(),
+                ]);
+
+                Logs::create([
+                    'log_id'     => Str::uuid(),
+                    'user_id'    => $authUser->user_id,
+                    'action'     => 'UPDATE',
+                    'table_name' => 'items',
+                    'row_id'     => $item->item_id,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Laporan barang rusak berhasil dibuat',
+                    'data'    => null
+                ], 201);
+                
+            });
+        }
 }

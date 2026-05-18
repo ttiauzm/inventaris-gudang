@@ -509,4 +509,18 @@ class ItemController extends Controller
                 
             });
         }
+
+    public function getChildItems()
+    {
+        $childItems = Items::with(['categories', 'materials', 'suppliers', 'images'])
+            ->whereNotNull('parent_item_id')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar riwayat barang turunan (potongan) berhasil diambil',
+            'data'    => $childItems
+        ], 200);
+    }
 }

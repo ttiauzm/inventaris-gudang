@@ -437,7 +437,7 @@ class ItemController extends Controller
 
         //JANGAN LUPA DISESUAIKAN LAGI
         // Ngambil alamat web dari file .env
-        $baseUrl = env('FRONTEND_URL', 'http://localhost:3000'); 
+        $baseUrl = env('FRONTEND_URL', 'http://localhost:3306'); 
 
         // Gabungin sama path form transaksi dan ID barangnya
         $frontendUrl = $baseUrl . "/input-transaksi?item_id=" . $item->item_id;
@@ -453,6 +453,14 @@ class ItemController extends Controller
     public function reportFaulty(Request $request, $id)
         {
             $authUser = Auth::user();
+
+            if (!$authUser->hasPermission('report_faulty')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk melaporkan barang rusak',
+                'data'    => null
+            ], 403);
+            }
 
             $request->validate([
                 'faulty_quantity' => 'required|integer|min:1',
@@ -521,6 +529,30 @@ class ItemController extends Controller
             'success' => true,
             'message' => 'Daftar riwayat barang turunan (potongan) berhasil diambil',
             'data'    => $childItems
+        ], 200);
+    }
+
+    public function getFaultyList()
+    {
+        $authUser = Auth::user();
+
+        if (!$authUser->hasPermission('view_faulty')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk melihat riwayat barang rusak',
+                'data'    => null
+            ], 403);
+        }
+
+        $faultyList = Transactions::with(['items', 'user']) 
+            ->where('transaction_type', 'FAULTY')
+            ->orderBy('transaction_date', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar riwayat barang rusak berhasil diambil',
+            'data'    => $faultyList
         ], 200);
     }
 }

@@ -175,3 +175,123 @@ export const exportMasterDataToExcel = (data: any[], type: 'Category' | 'Materia
 export const exportMasterDataToPDF = async (_data: any[], _type: 'Category' | 'Material'): Promise<boolean> => {
   return downloadPDFFromAPI('/export/master-data/pdf', `MasterData_${new Date().toISOString().split('T')[0]}.pdf`)
 }
+
+// Export Summary to Excel
+export const exportSummaryToExcel = (summaryData: any) => {
+  try {
+    const wb = XLSX.utils.book_new()
+    
+    // Stats sheet
+    const statsSheetData = summaryData.stats.map((s: any) => ({
+      'Kriteria': s.label,
+      'Total': s.value
+    }))
+    const wsStats = XLSX.utils.json_to_sheet(statsSheetData)
+    wsStats['!cols'] = [{ wch: 30 }, { wch: 15 }]
+    XLSX.utils.book_append_sheet(wb, wsStats, 'Statistik Utama')
+
+    // Aktivitas Barang Sheet
+    const activitiesSheetData = summaryData.allActivities.map((a: any, index: number) => ({
+      'No': index + 1,
+      'Nama Barang': a.name,
+      'Kategori': a.category || '-',
+      'Kuantitas': a.quantity
+    }))
+    const wsActivities = XLSX.utils.json_to_sheet(activitiesSheetData)
+    wsActivities['!cols'] = [{ wch: 5 }, { wch: 30 }, { wch: 20 }, { wch: 15 }]
+    XLSX.utils.book_append_sheet(wb, wsActivities, 'Aktivitas Barang')
+
+    // Barang Nilai Tinggi Sheet
+    const highValSheetData = summaryData.valuableGoodsHigh.map((v: any, index: number) => ({
+      'No': index + 1,
+      'Nama Barang': v.name,
+      'Total Nilai (Rp)': v.value
+    }))
+    const wsHigh = XLSX.utils.json_to_sheet(highValSheetData)
+    wsHigh['!cols'] = [{ wch: 5 }, { wch: 30 }, { wch: 25 }]
+    XLSX.utils.book_append_sheet(wb, wsHigh, 'Barang Nilai Tertinggi')
+
+    XLSX.writeFile(wb, `Ringkasan_Analisis_${new Date().toISOString().split('T')[0]}.xlsx`)
+    return true
+  } catch (error) {
+    console.error('Error exporting summary to Excel:', error)
+    return false
+  }
+}
+
+// Export Summary to PDF (Frontend)
+export const exportSummaryToPDF = (summaryData: any) => {
+  try {
+    const doc = new jsPDF()
+    const title = 'Laporan Ringkasan Analisis'
+    
+    // Add title
+    doc.setFontSize(18)
+    doc.text(title, 14, 20)
+    
+    // Add date
+    doc.setFontSize(10)
+    doc.text(`Tanggal Cetak: ${new Date().toLocaleDateString('id-ID')}`, 14, 28)
+    
+    let currentY = 35
+
+    // Section 1: Statistik Utama
+    doc.setFontSize(14)
+    doc.text('1. Statistik Utama', 14, currentY)
+    currentY += 8
+
+    autoTable(doc, {
+      head: [['Kriteria', 'Total']],
+      body: summaryData.stats.map((s: any) => [s.label, s.value]),
+      startY: currentY,
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [139, 123, 110], textColor: [255, 255, 255], fontStyle: 'bold' }
+    })
+    
+    currentY = (doc as any).lastAutoTable.finalY + 15
+
+    // Section 2: Aktivitas Barang (Top 15)
+    doc.setFontSize(14)
+    doc.text('2. Aktivitas Barang', 14, currentY)
+    currentY += 8
+
+    autoTable(doc, {
+      head: [['No', 'Nama Barang', 'Kategori', 'Kuantitas']],
+      body: summaryData.allActivities.slice(0, 15).map((a: any, i: number) => [i + 1, a.name, a.category || '-', a.quantity]),
+      startY: currentY,
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [139, 123, 110], textColor: [255, 255, 255], fontStyle: 'bold' }
+    })
+
+    currentY = (doc as any).lastAutoTable.finalY + 15
+
+    // Add page if needed
+    if (currentY > 250) {
+      doc.addPage()
+      currentY = 20
+    }
+
+    // Section 3: Barang Nilai Tertinggi
+    doc.setFontSize(14)
+    doc.text('3. Barang Nilai Tertinggi', 14, currentY)
+    currentY += 8
+
+    autoTable(doc, {
+      head: [['No', 'Nama Barang', 'Total Nilai (Rp)']],
+      body: summaryData.valuableGoodsHigh.map((v: any, i: number) => [
+        i + 1, 
+        v.name, 
+        new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(v.value)
+      ]),
+      startY: currentY,
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [139, 123, 110], textColor: [255, 255, 255], fontStyle: 'bold' }
+    })
+
+    doc.save(`Ringkasan_Analisis_${new Date().toISOString().split('T')[0]}.pdf`)
+    return true
+  } catch (error) {
+    console.error('Error exporting summary to PDF:', error)
+    return false
+  }
+}

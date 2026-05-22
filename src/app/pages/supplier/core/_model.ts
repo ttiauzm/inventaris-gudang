@@ -4,7 +4,6 @@ export interface Supplier {
   company?: string
   contact_person?: string
   phone?: string
-  email?: string
   address?: string
   city?: string
   province?: string

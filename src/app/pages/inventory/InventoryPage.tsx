@@ -25,6 +25,10 @@ const InventoryPage: FC = () => {
   const [showFilters, setShowFilters] = useState(false)
   const [showExportMenu, setShowExportMenu] = useState(false)
   
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 12 // Menyesuaikan agar maksimal 3 baris di desktop (4 per baris)
+  
   const [filters, setFilters] = useState({
     category: '',
     supplier: '',
@@ -80,6 +84,18 @@ const InventoryPage: FC = () => {
       return aVal < bVal ? 1 : -1
     }
   })
+
+  // Calculate Pagination 
+  const totalPages = Math.ceil(sortedInventory.length / itemsPerPage)
+  const paginatedInventory = sortedInventory.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+
+  // Reset pagination when search or filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, filters])
 
   const handleAdd = () => {
     if (!isSuperAdmin) {
@@ -207,8 +223,8 @@ const InventoryPage: FC = () => {
               )}
 
               {isSuperAdmin && (
-                <button className='btn btn-sm btn-primary' onClick={handleAdd}>
-                  <KTIcon iconName='plus' className='fs-3' />
+                <button className='btn btn-sm btn-product' onClick={handleAdd}>
+                  <KTIcon iconName='plus' className='fs-3 text-white' />
                   Tambah
                 </button>
               )}
@@ -319,32 +335,81 @@ const InventoryPage: FC = () => {
                 <span className='spinner-border spinner-border-lg' />
               </div>
             ) : (
-              <div className='row g-6'>
-                {sortedInventory.length > 0 ? (
-                  sortedInventory.map((item) => (
-                    <div key={item.id} className='col-12 col-sm-6 col-md-4 col-lg-3'>
-                      <TiltedCard
-                        imageSrc={item.image}
-                        title={item.name}
-                        supplier={item.supplier}
-                        quantity={item.quantity}
-                        unit={item.unit}
-                        price={item.price}
-                        onClick={() => handleCardClick(item)}
+              <>
+                <div className='row g-6'>
+                  {paginatedInventory.length > 0 ? (
+                    paginatedInventory.map((item) => (
+                      <div key={item.id} className='col-12 col-sm-6 col-md-4 col-lg-3'>
+                        <TiltedCard
+                          imageSrc={item.image}
+                          title={item.name}
+                          supplier={item.supplier}
+                          quantity={item.quantity}
+                          unit={item.unit}
+                          price={item.price}
+                          onClick={() => handleCardClick(item)}
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    <div className='col-12'>
+                      <EmptyState404
+                        title='Tidak ada barang ditemukan'
+                        subtitle='Pastikan kata kunci pencarian Anda benar.'
                       />
                     </div>
-                  ))
-                ) : (
-                  <div className='col-12'>
-                    <EmptyState404
-                      title='Tidak ada barang ditemukan'
-                      subtitle='Pastikan kata kunci pencarian Anda benar.'
-                    />
+                  )}
+                </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className='d-flex flex-stack flex-wrap pt-10'>
+                    <div className='fs-6 fw-bold text-gray-700'>
+                      Menampilkan {(currentPage - 1) * itemsPerPage + 1} hingga{' '}
+                      {Math.min(currentPage * itemsPerPage, sortedInventory.length)} dari{' '}
+                      {sortedInventory.length} barang
+                    </div>
+
+                    <ul className='pagination'>
+                      <li className={`page-item previous ${currentPage === 1 ? 'disabled' : ''}`}>
+                        <button
+                          className='page-link'
+                          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                        >
+                          <i className='previous'></i>
+                        </button>
+                      </li>
+
+                      {[...Array(totalPages)].map((_, i) => (
+                        <li
+                          key={i + 1}
+                          className={`page-item ${currentPage === i + 1 ? 'active' : ''}`}
+                        >
+                          <button
+                            className='page-link'
+                            onClick={() => setCurrentPage(i + 1)}
+                          >
+                            {i + 1}
+                          </button>
+                        </li>
+                      ))}
+
+                      <li className={`page-item next ${currentPage === totalPages ? 'disabled' : ''}`}>
+                        <button
+                          className='page-link'
+                          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                          disabled={currentPage === totalPages}
+                        >
+                          <i className='next'></i>
+                        </button>
+                      </li>
+                    </ul>
                   </div>
                 )}
-              </div>
+              </>
             )}
-          </div>
+            </div>
         </div>
       </div>
 

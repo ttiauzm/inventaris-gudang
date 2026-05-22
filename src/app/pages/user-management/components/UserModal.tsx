@@ -216,7 +216,7 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
               <div className='modal-footer'>
                 <button
                   type='button'
-                  className='btn btn-product-light'
+                  className='btn btn-danger'
                   onClick={onClose}
                   disabled={loading}
                 >
@@ -224,7 +224,7 @@ const UserModal: FC<UserModalProps> = ({user, onClose, onSave}) => {
                 </button>
                 <button
                   type='submit'
-                  className='btn btn-product'
+                  className='btn btn-inventory-blue'
                   disabled={loading}
                 >
                   {loading ? (

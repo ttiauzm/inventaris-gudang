@@ -25,9 +25,7 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState({
     name: '',
-    contact_person: '',
     phone: '',
-    email: '',
     address: '',
     city: '',
     province: '',
@@ -39,9 +37,7 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
     if (supplier) {
       setFormData({
         name: supplier.name,
-        contact_person: supplier.contact_person || '',
         phone: supplier.phone || '',
-        email: supplier.email || '',
         address: supplier.address || '',
         city: supplier.city || '',
         province: supplier.province || '',
@@ -51,30 +47,46 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
     }
   }, [supplier])
 
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({...prev, [field]: value}))
+    if (errors[field]) setErrors(prev => ({...prev, [field]: ''}))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Inline validation
     const newErrors: Record<string, string> = {}
+
     if (!formData.name.trim()) {
       newErrors.name = 'Nama supplier wajib diisi'
     }
+
+    // Contact info: wajib diisi, harus nomor telepon atau email yang valid
     if (!formData.phone.trim()) {
-      newErrors.phone = 'Contact info / telepon wajib diisi'
+      newErrors.phone = 'Contact info wajib diisi'
+    } else {
+      const isPhone = /^[+]?[\d\s\-(). ]{7,20}$/.test(formData.phone.trim())
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.phone.trim())
+      if (!isPhone && !isEmail) {
+        newErrors.phone = 'Masukkan nomor telepon atau alamat email yang valid'
+      }
     }
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Format email tidak valid'
-    }
-    
+
+    if (!formData.address.trim()) newErrors.address = 'Jalan wajib diisi'
+    if (!formData.city.trim()) newErrors.city = 'Kota wajib diisi'
+    if (!formData.province.trim()) newErrors.province = 'Provinsi wajib diisi'
+    if (!formData.postal_code.trim()) newErrors.postal_code = 'Kode Pos wajib diisi'
+    if (!formData.country.trim()) newErrors.country = 'Negara wajib diisi'
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return
     }
     setErrors({})
-    
+
     try {
       setLoading(true)
-      
+
       if (supplier) {
         await updateSupplier(supplier.id, formData)
         setSuccessMessage('Supplier berhasil diperbarui')
@@ -86,8 +98,7 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
     } catch (error: any) {
       console.error('Error saving supplier:', error)
       const serverMsg: string = error?.response?.data?.message || error?.message || ''
-      
-      // Parse validation errors dari backend
+
       const backendErrors = error?.response?.data?.errors || {}
       if (Object.keys(backendErrors).length > 0) {
         const parsedErrors: Record<string, string> = {}
@@ -98,7 +109,6 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
             parsedErrors[fieldName] = fieldErrors
           }
         }
-        // Map backend field names to frontend field names
         if (parsedErrors['supplier_name']) {
           parsedErrors['name'] = parsedErrors['supplier_name']
           delete parsedErrors['supplier_name']
@@ -142,9 +152,10 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
     }
   }
 
+  const requiredMark = <span className='text-danger ms-1'>*</span>
+
   return (
     <>
-      {/* Modal konfirmasi hapus */}
       {showDeleteConfirm && (
         <ConfirmModal
           message='Apakah Anda yakin ingin menghapus supplier ini? Data yang dihapus tidak dapat dikembalikan.'
@@ -155,7 +166,6 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
           onCancel={() => setShowDeleteConfirm(false)}
         />
       )}
-      {/* Modal sukses */}
       {showSuccess && (
         <SuccessModal
           message={successMessage}
@@ -175,7 +185,6 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
       <div className='modal fade show d-block' tabIndex={-1}>
         <div className='modal-dialog modal-dialog-centered' style={{maxWidth: '650px'}}>
           <div className='modal-content' style={{borderRadius: '12px'}}>
-            {/* Edit Supplier Section */}
             <div className='modal-header border-0'>
               <h3 className='modal-title fw-bold'>
                 {supplier ? 'Edit Supplier' : 'Tambah Supplier'}
@@ -185,26 +194,22 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
 
             <form onSubmit={handleSubmit}>
               <div className='modal-body' style={{padding: '20px 30px'}}>
-                {/* General Error Message */}
                 {errors.general && (
                   <div className='alert alert-danger' role='alert'>
                     {errors.general}
                   </div>
                 )}
-                
+
                 <div className='row g-4'>
                   {/* Nama */}
                   <div className='col-12'>
-                    <label className='form-label fw-semibold'>Nama</label>
+                    <label className='form-label fw-semibold'>Nama{requiredMark}</label>
                     <input
                       type='text'
                       className={`form-control form-control-lg ${errors.name ? 'is-invalid' : ''}`}
                       placeholder='Jason Tatum'
                       value={formData.name}
-                      onChange={(e) => {
-                        setFormData({...formData, name: e.target.value})
-                        if (errors.name) setErrors(prev => ({...prev, name: ''}))
-                      }}
+                      onChange={(e) => handleChange('name', e.target.value)}
                     />
                     {errors.name && (
                       <div className='invalid-feedback fw-semibold'>{errors.name}</div>
@@ -213,98 +218,95 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
 
                   {/* Contact Info */}
                   <div className='col-12'>
-                    <label className='form-label fw-semibold'>Contact Info / Telepon <span style={{color: 'red'}}>*</span></label>
+                    <label className='form-label fw-semibold'>
+                      Contact Info{requiredMark}
+                      <span className='text-muted fw-normal ms-2 fs-7'>(Nomor Telepon atau Email)</span>
+                    </label>
                     <input
                       type='text'
                       className={`form-control form-control-lg ${errors.phone ? 'is-invalid' : ''}`}
-                      placeholder='0812389016'
+                      placeholder='08123456789 atau supplier@example.com'
                       value={formData.phone}
-                      onChange={(e) => {
-                        setFormData({...formData, phone: e.target.value})
-                        if (errors.phone) setErrors(prev => ({...prev, phone: ''}))
-                      }}
+                      onChange={(e) => handleChange('phone', e.target.value)}
                     />
                     {errors.phone && (
                       <div className='invalid-feedback fw-semibold'>{errors.phone}</div>
                     )}
                   </div>
 
-                  {/* Email */}
-                  <div className='col-12'>
-                    <label className='form-label fw-semibold'>Email</label>
-                    <input
-                      type='email'
-                      className={`form-control form-control-lg ${errors.email ? 'is-invalid' : ''}`}
-                      placeholder='supplier@example.com'
-                      value={formData.email}
-                      onChange={(e) => {
-                        setFormData({...formData, email: e.target.value})
-                        if (errors.email) setErrors(prev => ({...prev, email: ''}))
-                      }}
-                    />
-                    {errors.email && (
-                      <div className='invalid-feedback fw-semibold'>{errors.email}</div>
-                    )}
-                  </div>
-
                   {/* Jalan */}
                   <div className='col-12'>
-                    <label className='form-label fw-semibold'>Jalan</label>
+                    <label className='form-label fw-semibold'>Jalan{requiredMark}</label>
                     <input
                       type='text'
-                      className='form-control form-control-lg'
+                      className={`form-control form-control-lg ${errors.address ? 'is-invalid' : ''}`}
                       placeholder='Jl. in aja dulu'
                       value={formData.address}
-                      onChange={(e) => setFormData({...formData, address: e.target.value})}
+                      onChange={(e) => handleChange('address', e.target.value)}
                     />
+                    {errors.address && (
+                      <div className='invalid-feedback fw-semibold'>{errors.address}</div>
+                    )}
                   </div>
 
                   {/* Kota */}
                   <div className='col-12'>
-                    <label className='form-label fw-semibold'>Kota</label>
+                    <label className='form-label fw-semibold'>Kota{requiredMark}</label>
                     <input
                       type='text'
-                      className='form-control form-control-lg'
-                      placeholder='jogja'
+                      className={`form-control form-control-lg ${errors.city ? 'is-invalid' : ''}`}
+                      placeholder='Yogyakarta'
                       value={formData.city}
-                      onChange={(e) => setFormData({...formData, city: e.target.value})}
+                      onChange={(e) => handleChange('city', e.target.value)}
                     />
+                    {errors.city && (
+                      <div className='invalid-feedback fw-semibold'>{errors.city}</div>
+                    )}
                   </div>
 
                   {/* Provinsi */}
                   <div className='col-12'>
-                    <label className='form-label fw-semibold'>Provinsi</label>
+                    <label className='form-label fw-semibold'>Provinsi{requiredMark}</label>
                     <input
                       type='text'
-                      className='form-control form-control-lg'
-                      placeholder='Jogja'
+                      className={`form-control form-control-lg ${errors.province ? 'is-invalid' : ''}`}
+                      placeholder='DI Yogyakarta'
                       value={formData.province}
-                      onChange={(e) => setFormData({...formData, province: e.target.value})}
+                      onChange={(e) => handleChange('province', e.target.value)}
                     />
+                    {errors.province && (
+                      <div className='invalid-feedback fw-semibold'>{errors.province}</div>
+                    )}
                   </div>
 
                   {/* Kode Pos */}
                   <div className='col-12'>
-                    <label className='form-label fw-semibold'>Kode Pos</label>
+                    <label className='form-label fw-semibold'>Kode Pos{requiredMark}</label>
                     <input
                       type='text'
-                      className='form-control form-control-lg'
+                      className={`form-control form-control-lg ${errors.postal_code ? 'is-invalid' : ''}`}
                       placeholder='55555'
                       value={formData.postal_code}
-                      onChange={(e) => setFormData({...formData, postal_code: e.target.value})}
+                      onChange={(e) => handleChange('postal_code', e.target.value)}
                     />
+                    {errors.postal_code && (
+                      <div className='invalid-feedback fw-semibold'>{errors.postal_code}</div>
+                    )}
                   </div>
 
                   {/* Negara */}
                   <div className='col-12'>
-                    <label className='form-label fw-semibold'>Negara</label>
+                    <label className='form-label fw-semibold'>Negara{requiredMark}</label>
                     <input
                       type='text'
-                      className='form-control form-control-lg'
+                      className={`form-control form-control-lg ${errors.country ? 'is-invalid' : ''}`}
                       placeholder='Indonesia'
                       value={formData.country}
-                      onChange={(e) => setFormData({...formData, country: e.target.value})}
+                      onChange={(e) => handleChange('country', e.target.value)}
                     />
+                    {errors.country && (
+                      <div className='invalid-feedback fw-semibold'>{errors.country}</div>
+                    )}
                   </div>
                 </div>
 
@@ -312,12 +314,7 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
                 <div className='text-end mt-6'>
                   <button
                     type='submit'
-                    className='btn btn-lg px-8'
-                    style={{
-                      backgroundColor: '#5C8AE6',
-                      color: 'white',
-                      borderRadius: '8px'
-                    }}
+                    className='btn btn-lg px-8 btn-inventory-blue'
                     disabled={loading}
                   >
                     {loading ? (
@@ -341,7 +338,7 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
               }}>
                 <h3 className='fw-bold mb-4'>Hapus Supplier</h3>
                 <p className='text-muted mb-4'>
-                  We regret to see you leave. Confirm account deletion below. Your data will be permanently removed. 
+                  We regret to see you leave. Confirm account deletion below. Your data will be permanently removed.
                   Thank you for being part of our community. Please check our{' '}
                   <a href='#' style={{color: '#5C8AE6'}}>Setup Guidelines</a> if you still wish continue.
                 </p>
@@ -360,11 +357,7 @@ const SupplierModal: FC<SupplierModalProps> = ({supplier, onClose, onSave, onDel
                 </div>
 
                 <div className='d-flex gap-3'>
-                  <button
-                    type='button'
-                    className='btn btn-light'
-                    onClick={onClose}
-                  >
+                  <button type='button' className='btn btn-light' onClick={onClose}>
                     Deactivate instead
                   </button>
                   <button

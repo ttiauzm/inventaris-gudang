@@ -368,7 +368,7 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
                 <div className='text-end mt-6'>
                   <button
                     type='submit'
-                    className='btn btn-lg px-8 btn-product'
+                    className='btn btn-lg px-8 btn-product btn-inventory-warm'
                     disabled={loading}
                   >
                     {loading ? (

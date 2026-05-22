@@ -9,6 +9,7 @@ export interface InventoryItem {
   price?: number
   image?: string
   category?: string
+  category_id?: string
   material?: string
   created_at?: string
   updated_at?: string

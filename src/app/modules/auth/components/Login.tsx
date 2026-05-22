@@ -361,7 +361,7 @@ export function Login() {
         </div>
       )}
 
-      <div className='mb-10 bg-light-info p-8 rounded'>
+      {/* <div className='mb-10 bg-light-info p-8 rounded'>
         <div className='text-info'>
           <strong>🔓 DEV MODE:</strong>
           <br />
@@ -369,7 +369,7 @@ export function Login() {
           <br />
           Admin: <strong>admin@example.com</strong> / <strong>admin</strong>
         </div>
-      </div>
+      </div> */}
 
       <div className='fv-row mb-8'>
         <label className='form-label fs-6 fw-bolder text-gray-900'>Username / Email</label>

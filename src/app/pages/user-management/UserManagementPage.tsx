@@ -83,7 +83,6 @@ const UserManagementPage: FC = () => {
               <button 
                 className='btn btn-sm btn-primary' 
                 onClick={handleAdd}
-                style={{backgroundColor: '#5C8AE6'}}
               >
                 <KTIcon iconName='plus' className='fs-3' />
                 Tambah Akun

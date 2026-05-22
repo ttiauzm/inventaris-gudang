@@ -10,6 +10,7 @@ import BuilderPageWrapper from '../pages/layout-builder/BuilderPageWrapper'
 import {useAuth} from '../modules/auth'
 import {LayoutSplashScreen} from '../../_metronic/layout/core'
 import {InventoryPage} from '../pages/inventory/InventoryPage'
+import {ItemDetailPage} from '../pages/inventory/ItemDetailPage'
 import {HistoryPage} from '../pages/history/HistoryPage'
 import {LogSystemPage} from '../pages/log-system/LogSystemPage'
 import { SupplierPage } from '../pages/supplier/SupplierPage'
@@ -76,6 +77,7 @@ const PrivateRoutes = () => {
         <Route path='menu-test' element={<MenuTestPage />} />
         {/*core pages*/}
         <Route path='apps/inventory' element={<InventoryPage />} />
+        <Route path='apps/inventory/:id' element={<ItemDetailPage />} />
         <Route path='apps/history' element={<HistoryPage />} />
         <Route path='apps/log-system' element={<LogSystemPage />} />
         <Route path='apps/supplier' element={<SupplierPage/>} />

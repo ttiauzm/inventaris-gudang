@@ -1,9 +1,10 @@
 import {FC, useState} from 'react'
 import {KTIcon} from '../../../../_metronic/helpers'
-import { InventoryItem } from '../core/_model'
+import {InventoryItem} from '../core/_model'
 import {useAuth} from '../../../modules/auth'
 import {isSuperAdmin as checkSuperAdmin} from '../../../utils/permissionHelper'
 import {SuccessModal} from '../../../components/SuccessModal'
+import {useNavigate} from 'react-router-dom'
 
 interface ItemDetailModalProps {
   item: InventoryItem
@@ -15,37 +16,35 @@ interface ItemDetailModalProps {
 const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTakeItem}) => {
   const {currentUser} = useAuth()
   const isSuperAdmin = checkSuperAdmin(currentUser)
-  const [takeQuantity, setTakeQuantity] = useState('')
-  const [takeDescription, setTakeDescription] = useState('')
-  const [showTakeForm, setShowTakeForm] = useState(false)
+  const navigate = useNavigate()
+
+  // ── View state: 'detail' | 'pakai'
+  // const [view, setView] = useState<'detail' | 'pakai'>('detail')
+  const [view, setView] = useState<'detail' | 'options' | 'pakai'>('detail')
+
+  // ── Pakai form state
+  const [jumlah, setJumlah] = useState('')
+  const [deskripsi, setDeskripsi] = useState('')
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [takeLoading, setTakeLoading] = useState(false)
   const [takeStatus, setTakeStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [takeErrorMsg, setTakeErrorMsg] = useState('')
-  const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const handleTake = async () => {
+  const defaultImage = '/media/svg/material/material-dummy.svg'
+
+  // ── Handlers
+  const handlePakaiSubmit = async () => {
     const newErrors: Record<string, string> = {}
+    const qty = parseInt(String(jumlah).trim(), 10)
 
-    // Validate quantity: must be numeric
-    const qtyStr = String(takeQuantity).trim()
-    const isNumeric = /^\d+$/.test(qtyStr)
-    const qty = parseInt(qtyStr, 10)
-
-    if (!isNumeric || isNaN(qty)) {
-      newErrors.quantity = 'Stok harus berupa angka'
-    } else if (qty <= 0 || !qtyStr) {
-      newErrors.quantity = 'Stok dan Deskripsi Wajib diisi'
+    if (!jumlah.trim() || isNaN(qty) || qty <= 0) {
+      newErrors.jumlah = 'Jumlah wajib diisi dan harus lebih dari 0'
     } else if (qty > item.quantity) {
-      newErrors.quantity = `Jumlah tidak boleh lebih dari stok tersedia (${item.quantity})`
+      newErrors.jumlah = `Jumlah tidak boleh melebihi stok tersedia (${item.quantity})`
     }
-
-    if (!takeDescription.trim()) {
-      if (newErrors.quantity === 'Stok dan Deskripsi Wajib diisi' || !qtyStr || qty <= 0) {
-        newErrors.quantity = 'Stok dan Deskripsi Wajib diisi'
-      }
-      newErrors.description = 'Stok dan Deskripsi Wajib diisi'
+    if (!deskripsi.trim()) {
+      newErrors.deskripsi = 'Deskripsi pengambilan wajib diisi'
     }
-
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return
@@ -55,234 +54,347 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
     setTakeLoading(true)
     setTakeStatus('idle')
     setTakeErrorMsg('')
+
     try {
-      await onTakeItem(qty, takeDescription)
+      await onTakeItem(qty, deskripsi)
       setTakeStatus('success')
-    } catch (error: any) {
+    } catch (err: any) {
       setTakeStatus('error')
-      const msg =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Gagal mengambil barang. Periksa koneksi dan coba lagi.'
-      setTakeErrorMsg(msg)
+      setTakeErrorMsg(
+        err?.response?.data?.message || err?.message || 'Gagal mengambil barang. Coba lagi.'
+      )
     } finally {
       setTakeLoading(false)
     }
   }
 
+  const handleGoToDetail = () => {
+    onClose()
+    navigate(`/apps/inventory/${item.id}`)
+  }
+
+  // Shared styles
+  const overlayStyle: React.CSSProperties = {
+    position: 'fixed',
+    inset: 0,
+    backgroundColor: 'rgba(0,0,0,0.50)',
+    backdropFilter: 'blur(3px)',
+    zIndex: 1040,
+  }
+
+  const cardStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    zIndex: 1050,
+    backgroundColor: '#ffffff',
+    borderRadius: '20px',
+    width: '92%',
+    maxWidth: '500px',
+    maxHeight: '92vh',
+    overflowY: 'auto',
+    boxShadow: '0 32px 80px rgba(0,0,0,0.22)',
+    padding: '28px 28px 24px',
+  }
+
+  const closeBtnStyle: React.CSSProperties = {
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    color: '#b0a89f',
+    fontSize: '22px',
+    lineHeight: 1,
+    padding: '2px 6px',
+    borderRadius: '6px',
+    marginTop: '-4px',
+    transition: 'color 0.15s',
+  }
+
+  const inputRowStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: '130px 1fr',
+    border: '1px solid #e0dbd5',
+    borderRadius: '10px',
+    overflow: 'hidden',
+    marginBottom: '10px',
+  }
+
+  const labelCellStyle: React.CSSProperties = {
+    backgroundColor: '#897870',
+    color: '#fff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '12px 14px',
+    fontSize: '13px',
+    fontWeight: 600,
+    textAlign: 'center',
+    lineHeight: 1.4,
+  }
+
+  const inputCellStyle: React.CSSProperties = {
+    border: 'none',
+    outline: 'none',
+    padding: '12px 14px',
+    fontSize: '13px',
+    color: '#3a3a3a',
+    backgroundColor: '#fff',
+    width: '100%',
+    fontFamily: 'inherit',
+  }
+
+  const primaryBtnStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '13px',
+    borderRadius: '10px',
+    border: 'none',
+    backgroundColor: '#5b8de8',
+    color: '#ffffff',
+    fontSize: '14px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'opacity 0.18s',
+    marginBottom: '10px',
+  }
+
+  const warmBtnStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '13px',
+    borderRadius: '10px',
+    border: 'none',
+    backgroundColor: '#897870',
+    color: '#ffffff',
+    fontSize: '14px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'opacity 0.18s',
+  }
+
+  // ── Success modal (replaces entire modal on success)
+  if (takeStatus === 'success') {
+    return (
+      <SuccessModal
+        message={`Berhasil mengambil ${parseInt(jumlah, 10)} ${item.unit} dari ${item.name}`}
+        onClose={onClose}
+      />
+    )
+  }
+
   return (
     <>
-      {/* Modal sukses pengambilan barang */}
-      {takeStatus === 'success' && (
-        <SuccessModal
-          message={`Berhasil mengambil ${parseInt(String(takeQuantity), 10)} ${item.unit} dari ${item.name}`}
-          onClose={onClose}
-        />
-      )}
+      {/* Overlay */}
+      <div style={overlayStyle} onClick={onClose} />
 
-      {/* Backdrop */}
-      <div 
-        className='modal-backdrop fade show' 
-        style={{backgroundColor: 'rgba(0,0,0,0.5)'}}
-        onClick={onClose}
-      />
+      {/* Card */}
+      <div style={cardStyle}>
+        {/* ── Header ── */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            marginBottom: '18px',
+          }}
+        >
+          <div>
+            <h2
+              style={{fontSize: '19px', fontWeight: 700, color: '#1a1a2e', margin: 0, lineHeight: 1.2}}
+            >
+              {view === 'pakai' ? `Pakai ${item.name}` : item.name}
+            </h2>
+            {item.supplier && (
+              <p style={{fontSize: '13px', color: '#9e9992', marginTop: '5px', marginBottom: 0}}>
+                {item.supplier}
+              </p>
+            )}
+          </div>
+          <button
+            style={closeBtnStyle}
+            onClick={onClose}
+            aria-label='Tutup'
+            onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.color = '#5a4038')}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.color = '#b0a89f')}
+          >
+            ×
+          </button>
+        </div>
 
-      {/* Modal */}
-      <div className='modal fade show d-block' tabIndex={-1}>
-        <div className='modal-dialog modal-dialog-centered' style={{maxWidth: showTakeForm ? '800px' : '650px'}}>
-          <div className='modal-content' style={{borderRadius: '12px'}}>
-            {/* Header */}
-            <div className='modal-header border-0 pb-0'>
-              <div>
-                <h2 className='modal-title fw-bold mb-0'>{item.name}</h2>
-                <p className='text-muted mb-0'>{item.supplier}</p>
+        {/* ── Foto Barang ── */}
+        <div
+          style={{
+            width: '100%',
+            aspectRatio: '16/9',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            backgroundColor: '#f5f2ee',
+            marginBottom: '20px',
+          }}
+        >
+          <img
+            src={item.image || defaultImage}
+            alt={item.name}
+            style={{width: '100%', height: '100%', objectFit: 'cover', display: 'block'}}
+          />
+        </div>
+
+        {/* ── VIEW: Detail Barang ── */}
+        {view === 'detail' && (
+          <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+            {/* Detail Barang → navigasi ke halaman detail */}
+            <button
+              style={primaryBtnStyle}
+              onClick={handleGoToDetail}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = '0.85')}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = '1')}
+            >
+              Detail Barang
+            </button>
+
+            {/* Pakai Barang */}
+            <button
+              style={warmBtnStyle}
+              onClick={() => setView('pakai')}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = '0.85')}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = '1')}
+            >
+              Pakai Barang
+            </button>
+          </div>
+        )}
+
+        {/* ── VIEW: Pakai Barang (form) ── */}
+        {view === 'pakai' && (
+          <>
+            {/* Row: Jumlah */}
+            <div style={inputRowStyle}>
+              <div style={labelCellStyle}>Jumlah</div>
+              <div style={{display: 'flex', flexDirection: 'column', flex: 1}}>
+                <input
+                  type='number'
+                  min={1}
+                  max={item.quantity}
+                  placeholder='Masukkan Jumlah'
+                  value={jumlah}
+                  onChange={(e) => {
+                    setJumlah(e.target.value)
+                    if (errors.jumlah) setErrors((p) => ({...p, jumlah: ''}))
+                  }}
+                  style={{
+                    ...inputCellStyle,
+                    borderBottom: errors.jumlah ? '2px solid #dc3545' : 'none',
+                  }}
+                />
               </div>
-              <button
-                type='button'
-                className='btn-close'
-                onClick={onClose}
+            </div>
+            {errors.jumlah && (
+              <p style={{color: '#dc3545', fontSize: '12px', marginTop: '-6px', marginBottom: '8px', paddingLeft: '4px'}}>
+                {errors.jumlah}
+              </p>
+            )}
+
+            {/* Row: Deskripsi */}
+            <div style={{...inputRowStyle, alignItems: 'stretch'}}>
+              <div style={labelCellStyle}>
+                Deskripsi
+                <br />
+                Pengambilan
+              </div>
+              <textarea
+                rows={3}
+                placeholder='Masukkan Deskripsi Pengambilan'
+                value={deskripsi}
+                onChange={(e) => {
+                  setDeskripsi(e.target.value)
+                  if (errors.deskripsi) setErrors((p) => ({...p, deskripsi: ''}))
+                }}
+                style={{
+                  ...inputCellStyle,
+                  resize: 'vertical',
+                  borderLeft: errors.deskripsi ? '2px solid #dc3545' : 'none',
+                }}
               />
             </div>
+            {errors.deskripsi && (
+              <p style={{color: '#dc3545', fontSize: '12px', marginTop: '-6px', marginBottom: '8px', paddingLeft: '4px'}}>
+                {errors.deskripsi}
+              </p>
+            )}
 
-            {/* Body */}
-            <div className='modal-body pt-3' style={{padding: '20px 30px'}}>
-              {!showTakeForm ? (
-                /* Detail View */
-                <>
-                  {/* Large Image */}
-                  <div className='mb-4'>
-                    <img
-                      src={item.image || '/media/svg/material/material-dummy.svg'}
-                      alt={item.name}
-                      className='w-100 rounded'
-                      style={{
-                        height: '400px',
-                        objectFit: 'cover',
-                        borderRadius: '12px'
-                      }}
-                    />
-                  </div>
+            {/* Error banner */}
+            {takeStatus === 'error' && (
+              <div
+                style={{
+                  backgroundColor: '#fff5f5',
+                  border: '1px solid #f5c6cb',
+                  borderRadius: '8px',
+                  padding: '12px 14px',
+                  marginBottom: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '13px',
+                  color: '#842029',
+                }}
+              >
+                <KTIcon iconName='cross-circle' className='fs-5' />
+                {takeErrorMsg}
+              </div>
+            )}
 
-                  {/* Edit Barang Button - Only for SuperAdmin */}
-                  {isSuperAdmin && (
-                    <div className='mb-4'>
-                      <button
-                        className='btn btn-lg w-100'
-                        style={{
-                          backgroundColor: '#5C8AE6',
-                          color: 'white',
-                          borderRadius: '8px',
-                          padding: '14px'
-                        }}
-                        onClick={() => onEdit(item)}
-                      >
-                        Edit Barang
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Ambil Barang Section Header */}
-                  <h3 className='fw-bold mb-4'>Ambil barang</h3>
-
-                  {/* Take Form Trigger Button */}
-                  <button
-                    className='btn btn-outline-primary btn-lg w-100'
-                    style={{borderRadius: '8px'}}
-                    onClick={() => setShowTakeForm(true)}
-                  >
-                    Masukkan jumlah untuk mengambil barang
-                  </button>
-                </>
-              ) : (
-                /* Take Form View */
-                <>
-                  {/* Image (smaller) */}
-                  <div className='mb-4'>
-                    <img
-                      src={item.image || '/media/svg/material/material-dummy.svg'}
-                      alt={item.name}
-                      className='w-100 rounded'
-                      style={{
-                        height: '300px',
-                        objectFit: 'cover',
-                        borderRadius: '12px'
-                      }}
-                    />
-                  </div>
-
-                  {/* Edit Barang Button - Only for SuperAdmin */}
-                  {isSuperAdmin && (
-                    <div className='mb-4'>
-                      <button
-                        className='btn btn-lg w-100'
-                        style={{
-                          backgroundColor: '#5C8AE6',
-                          color: 'white',
-                          borderRadius: '8px',
-                          padding: '14px'
-                        }}
-                        onClick={() => onEdit(item)}
-                      >
-                        Edit Barang
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Ambil Barang Form */}
-                  <h3 className='fw-bold mb-4'>Ambil barang</h3>
-
-                  {/* Quantity Input */}
-                  <div className='mb-4'>
-                    <label className='form-label fw-semibold mb-3'>
-                      Masukkan jumlah:
-                    </label>
-                    <input
-                      type='text'
-                      className={`form-control form-control-lg text-center ${errors.quantity ? 'is-invalid' : ''}`}
-                      value={takeQuantity}
-                      onChange={(e) => {
-                        setTakeQuantity(e.target.value)
-                        if (errors.quantity) setErrors(prev => ({...prev, quantity: ''}))
-                      }}
-                      style={{fontSize: '1.5rem', padding: '20px'}}
-                    />
-                    {errors.quantity && (
-                      <div className='invalid-feedback fw-semibold'>{errors.quantity}</div>
-                    )}
-                    <small className='text-muted'>
-                      Stok tersedia: {item.quantity} {item.unit}
-                    </small>
-                  </div>
-
-                  {/* Description Input */}
-                  <div className='mb-4'>
-                    <label className='form-label fw-semibold mb-3'>
-                      Masukkan deskripsi: <span className='text-danger'>*</span>
-                    </label>
-                    <textarea
-                      className={`form-control form-control-lg ${errors.description ? 'is-invalid' : ''}`}
-                      rows={4}
-                      placeholder='Masukkan deskripsi pengambilan barang...'
-                      value={takeDescription}
-                      onChange={(e) => {
-                        setTakeDescription(e.target.value)
-                        if (errors.description) setErrors(prev => ({...prev, description: ''}))
-                      }}
-                      style={{resize: 'none'}}
-                    />
-                    {errors.description && (
-                      <div className='invalid-feedback fw-semibold'>{errors.description}</div>
-                    )}
-                  </div>
-
-                  {/* Status Banner */}
-                  {takeStatus === 'error' && (
-                    <div className='alert alert-danger d-flex align-items-center mb-4 p-4' style={{borderRadius: '10px'}}>
-                      <KTIcon iconName='cross-circle' className='fs-2 text-danger me-3' />
-                      <div>
-                        <div className='fw-bold'>Gagal mengambil barang</div>
-                        <div className='fs-7'>{takeErrorMsg}</div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div className='d-flex gap-3'>
-                    <button
-                      type='button'
-                      className='btn btn-lg btn-light flex-fill'
-                      style={{borderRadius: '8px', padding: '14px'}}
-                      onClick={() => setShowTakeForm(false)}
-                      disabled={takeLoading || takeStatus === 'success'}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type='button'
-                      className='btn btn-lg flex-fill'
-                      style={{
-                        backgroundColor: takeStatus === 'success' ? '#28a745' : '#5C8AE6',
-                        color: 'white',
-                        borderRadius: '8px',
-                        padding: '14px'
-                      }}
-                      onClick={handleTake}
-                      disabled={takeLoading || takeStatus === 'success'}
-                    >
-                      {takeLoading ? (
-                        <><span className='spinner-border spinner-border-sm me-2' />Memproses...</>
-                      ) : takeStatus === 'success' ? (
-                        'Berhasil ✓'
-                      ) : (
-                        'Oke'
-                      )}
-                    </button>
-                  </div>
-                </>
-              )}
+            {/* Ambil Barang button */}
+            <div style={{display: 'flex', justifyContent: 'center', marginTop: '4px'}}>
+              <button
+                onClick={handlePakaiSubmit}
+                disabled={takeLoading}
+                style={{
+                  ...warmBtnStyle,
+                  width: 'auto',
+                  padding: '12px 36px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  opacity: takeLoading ? 0.65 : 1,
+                  cursor: takeLoading ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {takeLoading ? (
+                  <>
+                    <span className='spinner-border spinner-border-sm' />
+                    Memproses...
+                  </>
+                ) : (
+                  <>
+                    <KTIcon iconName='save-2' className='fs-5' />
+                    Ambil Barang
+                  </>
+                )}
+              </button>
             </div>
-          </div>
-        </div>
+
+            {/* Back link */}
+            <button
+              onClick={() => {
+                setView('detail')
+                setErrors({})
+                setTakeStatus('idle')
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#9e9992',
+                fontSize: '12px',
+                cursor: 'pointer',
+                marginTop: '10px',
+                display: 'block',
+                width: '100%',
+                textAlign: 'center',
+              }}
+            >
+              ← Kembali ke detail
+            </button>
+          </>
+        )}
       </div>
     </>
   )

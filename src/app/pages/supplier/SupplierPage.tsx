@@ -38,7 +38,6 @@ const SupplierPage: FC = () => {
 
   const filteredSuppliers = suppliers.filter(supplier =>
     supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    supplier.contact_person?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     supplier.phone?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
@@ -125,10 +124,8 @@ const SupplierPage: FC = () => {
                     <tr className='text-start text-muted fw-bold fs-7 text-uppercase gs-0'>
                       <th className='min-w-50px'>No</th>
                       <th className='min-w-200px'>Nama Supplier</th>
-                      <th className='min-w-150px'>Contact Person</th>
-                      <th className='min-w-125px'>Telepon</th>
-                      {/* <th className='min-w-125px'>Email</th> */}
-                      <th className='min-w-150px'>Alamat</th>
+                      <th className='min-w-175px'>Contact Info</th>
+                      <th className='min-w-175px'>Alamat</th>
                       <th className='text-end min-w-100px'>Actions</th>
                     </tr>
                   </thead>
@@ -149,9 +146,7 @@ const SupplierPage: FC = () => {
                               )}
                             </div>
                           </td>
-                          <td>{supplier.contact_person || '-'}</td>
                           <td>{supplier.phone || '-'}</td>
-                          {/* <td>{supplier.email || '-'}</td> */}
                           <td>
                             <span className='text-muted fs-7'>
                               {supplier.address || '-'}
@@ -183,7 +178,7 @@ const SupplierPage: FC = () => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={7}>
+                        <td colSpan={5}>
                           <EmptyState404
                             title='Tidak ada supplier'
                             subtitle='Pastikan kata kunci pencarian Anda benar.'

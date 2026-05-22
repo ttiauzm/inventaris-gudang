@@ -9,12 +9,30 @@ export const getInventory = async (params?: {
   per_page?: number
   search?: string
   category?: string
+  category_id?: string
 }): Promise<InventoryItem[]> => {
+  console.log('🌐 API Request to /items with params:', params)
   const response = await API.get<InventoryResponse>(ITEMS_URL, { params })
-  return response.data.data.map((item: any) => ({
+  
+  console.log('📦 Raw response.data:', response.data)
+  console.log('📦 response.data.data type:', typeof (response.data as any).data, Array.isArray((response.data as any).data))
+  
+  // Handle both paginated and non-paginated responses
+  const items = (response.data as any).data?.data || (response.data as any).data || response.data
+  
+  console.log('📦 Extracted items:', items)
+  console.log('📦 Items count:', items?.length)
+  
+  if (items && items.length > 0) {
+    console.log('📦 First item raw:', items[0])
+    console.log('📦 First item category_id:', items[0].category_id, items[0].categories?.category_id)
+  }
+  
+  return items.map((item: any) => ({
     id: item.item_id,
     name: item.item_name,
     category: item.categories?.category_name || '',
+    category_id: item.categories?.category_id || item.category_id || '',
     material: item.materials?.material_name || '',
     supplier: item.suppliers && item.suppliers.length > 0 ? item.suppliers[0].supplier_name : '',
     supplier_id: item.suppliers && item.suppliers.length > 0 ? item.suppliers[0].supplier_id : undefined,

@@ -6,9 +6,7 @@ const SUPPLIER_URL = '/suppliers'
 const mapSupplier = (item: any): Supplier => ({
   id: item.supplier_id,
   name: item.supplier_name,
-  contact_person: item.contact_info,
   phone: item.contact_info,
-  email: item.email,
   address: item.street,
   city: item.city,
   province: item.province,
@@ -42,9 +40,7 @@ export const getSupplierById = async (id: string): Promise<Supplier> => {
   return {
     id: item.supplier_id,
     name: item.supplier_name,
-    contact_person: item.contact_info,
     phone: item.contact_info,
-    email: item.email,
     address: item.street,
     city: item.city,
     province: item.province,
@@ -58,8 +54,7 @@ export const getSupplierById = async (id: string): Promise<Supplier> => {
 export const createSupplier = async (data: Partial<Supplier>): Promise<Supplier> => {
   const payload = {
     supplier_name: data.name,
-    contact_info: data.phone || data.contact_person,
-    email: data.email,
+    contact_info: data.phone,
     street: data.address,
     city: data.city,
     province: data.province,
@@ -73,8 +68,7 @@ export const createSupplier = async (data: Partial<Supplier>): Promise<Supplier>
 export const updateSupplier = async (id: string, data: Partial<Supplier>): Promise<Supplier> => {
   const payload = {
     supplier_name: data.name,
-    contact_info: data.phone || data.contact_person,
-    email: data.email,
+    contact_info: data.phone,
     street: data.address,
     city: data.city,
     province: data.province,

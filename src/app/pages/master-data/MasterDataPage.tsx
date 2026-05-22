@@ -47,6 +47,14 @@ const MasterDataPage: FC = () => {
   const [errorCategory, setErrorCategory] = useState('')
   const [errorMaterial, setErrorMaterial] = useState('')
 
+  // Pagination Categories
+  const [currentPageCat, setCurrentPageCat] = useState(1)
+  const [itemsPerPageCat, setItemsPerPageCat] = useState(10)
+
+  // Pagination Materials
+  const [currentPageMat, setCurrentPageMat] = useState(1)
+  const [itemsPerPageMat, setItemsPerPageMat] = useState(10)
+
   // Check superadmin - akan otomatis bypass di dev mode
   const isSuperAdmin = checkSuperAdmin(currentUser)
 
@@ -88,6 +96,29 @@ const MasterDataPage: FC = () => {
   const filteredMaterials = materials.filter(mat =>
     mat.name.toLowerCase().includes(searchQueryMaterials.toLowerCase())
   )
+
+  // Calculate Pagination Categories
+  const totalPagesCat = Math.ceil(filteredCategories.length / itemsPerPageCat)
+  const paginatedCategories = filteredCategories.slice(
+    (currentPageCat - 1) * itemsPerPageCat,
+    currentPageCat * itemsPerPageCat
+  )
+
+  // Calculate Pagination Materials
+  const totalPagesMat = Math.ceil(filteredMaterials.length / itemsPerPageMat)
+  const paginatedMaterials = filteredMaterials.slice(
+    (currentPageMat - 1) * itemsPerPageMat,
+    currentPageMat * itemsPerPageMat
+  )
+
+  // Reset pagination when search or page size changes
+  useEffect(() => {
+    setCurrentPageCat(1)
+  }, [searchQueryCategories, itemsPerPageCat])
+
+  useEffect(() => {
+    setCurrentPageMat(1)
+  }, [searchQueryMaterials, itemsPerPageMat])
 
   // Category Handlers
   const handleAddCategory = () => {
@@ -321,9 +352,9 @@ const MasterDataPage: FC = () => {
                               />
                             </td>
                           </tr>
-                        ) : filteredCategories.slice(0, 10).map((category, index) => (
+                        ) : paginatedCategories.map((category, index) => (
                           <tr key={category.id}>
-                            <td>{index + 1}</td>
+                            <td>{(currentPageCat - 1) * itemsPerPageCat + index + 1}</td>
                             <td className='text-dark fw-bold'>{category.id}</td>
                             <td className='text-dark fw-bold'>{category.name}</td>
                             <td className='text-muted'>{category.description || '-'}</td>
@@ -350,30 +381,66 @@ const MasterDataPage: FC = () => {
                   </div>
                 )}
 
-                <div className='d-flex justify-content-between align-items-center mt-4'>
+                <div className='d-flex flex-stack flex-wrap mt-4'>
                   <div className='d-flex align-items-center gap-2'>
                     <span className='text-muted'>Show</span>
-                    <select className='form-select form-select-sm w-auto'>
+                    <select 
+                      className='form-select form-select-sm w-auto'
+                      value={itemsPerPageCat}
+                      onChange={(e) => setItemsPerPageCat(Number(e.target.value))}
+                    >
                       <option value='10'>10</option>
                       <option value='25'>25</option>
                       <option value='50'>50</option>
                     </select>
                     <span className='text-muted'>per page</span>
                   </div>
-                  <div>
-                    <span className='text-muted'>1-10 of 52</span>
-                    <button className='btn btn-sm btn-icon btn-light ms-2'>
-                      <KTIcon iconName='arrow-left' className='fs-3' />
-                    </button>
-                    {[1, 2, 3, 4, 5].map(page => (
-                      <button key={page} className={`btn btn-sm btn-icon ${page === 1 ? 'btn-primary' : 'btn-light'} ms-1`}>
-                        {page}
-                      </button>
-                    ))}
-                    <button className='btn btn-sm btn-icon btn-light ms-1'>
-                      <KTIcon iconName='arrow-right' className='fs-3' />
-                    </button>
-                  </div>
+
+                  {totalPagesCat > 1 && (
+                    <div className='d-flex align-items-center mb-0'>
+                      <div className='fs-6 fw-bold text-gray-700 me-3'>
+                        Menampilkan {(currentPageCat - 1) * itemsPerPageCat + 1} hingga{' '}
+                        {Math.min(currentPageCat * itemsPerPageCat, filteredCategories.length)} dari{' '}
+                        {filteredCategories.length} kategori
+                      </div>
+
+                      <ul className='pagination'>
+                        <li className={`page-item previous ${currentPageCat === 1 ? 'disabled' : ''}`}>
+                          <button
+                            className='page-link'
+                            onClick={() => setCurrentPageCat((prev) => Math.max(prev - 1, 1))}
+                            disabled={currentPageCat === 1}
+                          >
+                            <i className='previous'></i>
+                          </button>
+                        </li>
+
+                        {[...Array(totalPagesCat)].map((_, i) => (
+                          <li
+                            key={i + 1}
+                            className={`page-item ${currentPageCat === i + 1 ? 'active' : ''}`}
+                          >
+                            <button
+                              className='page-link'
+                              onClick={() => setCurrentPageCat(i + 1)}
+                            >
+                              {i + 1}
+                            </button>
+                          </li>
+                        ))}
+
+                        <li className={`page-item next ${currentPageCat === totalPagesCat ? 'disabled' : ''}`}>
+                          <button
+                            className='page-link'
+                            onClick={() => setCurrentPageCat((prev) => Math.min(prev + 1, totalPagesCat))}
+                            disabled={currentPageCat === totalPagesCat}
+                          >
+                            <i className='next'></i>
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -464,9 +531,9 @@ const MasterDataPage: FC = () => {
                               />
                             </td>
                           </tr>
-                        ) : filteredMaterials.slice(0, 10).map((material, index) => (
+                        ) : paginatedMaterials.map((material, index) => (
                           <tr key={material.id}>
-                            <td>{index + 1}</td>
+                            <td>{(currentPageMat - 1) * itemsPerPageMat + index + 1}</td>
                             <td className='text-dark fw-bold'>{material.id}</td>
                             <td className='text-dark fw-bold'>{material.name}</td>
                             <td className='text-muted'>{material.description || '-'}</td>
@@ -493,30 +560,66 @@ const MasterDataPage: FC = () => {
                   </div>
                 )}
 
-                <div className='d-flex justify-content-between align-items-center mt-4'>
+                <div className='d-flex flex-stack flex-wrap mt-4'>
                   <div className='d-flex align-items-center gap-2'>
                     <span className='text-muted'>Show</span>
-                    <select className='form-select form-select-sm w-auto'>
+                    <select 
+                      className='form-select form-select-sm w-auto'
+                      value={itemsPerPageMat}
+                      onChange={(e) => setItemsPerPageMat(Number(e.target.value))}
+                    >
                       <option value='10'>10</option>
                       <option value='25'>25</option>
                       <option value='50'>50</option>
                     </select>
                     <span className='text-muted'>per page</span>
                   </div>
-                  <div>
-                    <span className='text-muted'>1-10 of 52</span>
-                    <button className='btn btn-sm btn-icon btn-light ms-2'>
-                      <KTIcon iconName='arrow-left' className='fs-3' />
-                    </button>
-                    {[1, 2, 3, 4, 5].map(page => (
-                      <button key={page} className={`btn btn-sm btn-icon ${page === 1 ? 'btn-primary' : 'btn-light'} ms-1`}>
-                        {page}
-                      </button>
-                    ))}
-                    <button className='btn btn-sm btn-icon btn-light ms-1'>
-                      <KTIcon iconName='arrow-right' className='fs-3' />
-                    </button>
-                  </div>
+
+                  {totalPagesMat > 1 && (
+                    <div className='d-flex align-items-center mb-0'>
+                      <div className='fs-6 fw-bold text-gray-700 me-3'>
+                        Menampilkan {(currentPageMat - 1) * itemsPerPageMat + 1} hingga{' '}
+                        {Math.min(currentPageMat * itemsPerPageMat, filteredMaterials.length)} dari{' '}
+                        {filteredMaterials.length} material
+                      </div>
+
+                      <ul className='pagination'>
+                        <li className={`page-item previous ${currentPageMat === 1 ? 'disabled' : ''}`}>
+                          <button
+                            className='page-link'
+                            onClick={() => setCurrentPageMat((prev) => Math.max(prev - 1, 1))}
+                            disabled={currentPageMat === 1}
+                          >
+                            <i className='previous'></i>
+                          </button>
+                        </li>
+
+                        {[...Array(totalPagesMat)].map((_, i) => (
+                          <li
+                            key={i + 1}
+                            className={`page-item ${currentPageMat === i + 1 ? 'active' : ''}`}
+                          >
+                            <button
+                              className='page-link'
+                              onClick={() => setCurrentPageMat(i + 1)}
+                            >
+                              {i + 1}
+                            </button>
+                          </li>
+                        ))}
+
+                        <li className={`page-item next ${currentPageMat === totalPagesMat ? 'disabled' : ''}`}>
+                          <button
+                            className='page-link'
+                            onClick={() => setCurrentPageMat((prev) => Math.min(prev + 1, totalPagesMat))}
+                            disabled={currentPageMat === totalPagesMat}
+                          >
+                            <i className='next'></i>
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

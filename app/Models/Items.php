@@ -19,6 +19,7 @@ class Items extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'item_id',
         'item_name',
         'category_id',
         'material_id',

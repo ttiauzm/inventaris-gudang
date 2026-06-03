@@ -34,8 +34,8 @@ class ItemController extends Controller
         }
 
         $query = Items::with(['categories', 'materials', 'suppliers', 'images'])
-            ->where('is_deleted', 0);
-            // ->whereNull('parent_item_id'); // Hanya tampilkan item utama (bukan turunan)
+            ->where('is_deleted', 0)
+            ->whereNull('parent_item_id'); // Hanya tampilkan item utama (bukan turunan)
 
         // Filter by category_id if provided
         if ($request->has('category_id') && $request->category_id !== 'all') {
@@ -123,7 +123,7 @@ class ItemController extends Controller
             'category_id' => $request->category_id,
             'material_id' => $request->material_id,
             'quantity' => $request->quantity,
-            'unit' => $category->unit,
+            'unit' => $request->unit,
             'price' => $request->price,
             'is_deleted' => 0,
             'created_at' => now(),
@@ -139,7 +139,7 @@ class ItemController extends Controller
             $image = $manager->read($file);
             $image->scaleDown(width: 800);
             $encodedImage = (string) $image->toWebp(70);
-            Storage::disk('public')->put('products/' . $fileName, $encodedImage);
+            Storage::disk('public')->put($path, $encodedImage);
 
             Images::create([
                 'image_id' => Str::uuid(),
@@ -439,8 +439,8 @@ class ItemController extends Controller
         // Ngambil alamat web dari file .env
         $baseUrl = env('FRONTEND_URL', 'http://localhost:3306'); 
 
-        // Gabungin sama path form transaksi dan ID barangnya
-        $frontendUrl = $baseUrl . "/input-transaksi?item_id=" . $item->item_id;
+        // Gabungin sama path detail barang dan ID barangnya
+        $frontendUrl = $baseUrl . "/apps/inventory/" . $item->item_id;
         //SAMPAI SINI
 
         $qrCode = QrCode::size(300)

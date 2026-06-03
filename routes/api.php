@@ -48,6 +48,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/items/{id}/qrcode', [ItemController::class, 'generateQr']);
     Route::post('/items/{id}/faulty', [ItemController::class, 'reportFaulty']);
     Route::get('/items/history/child', [ItemController::class, 'getChildItems']);
+    Route::get('/items/history/faulty', [ItemController::class, 'getFaultyList']);
 
     Route::get('/transactions', [TransactionController::class, 'index']);
     Route::get('/transactions/{id}', [TransactionController::class, 'show']);

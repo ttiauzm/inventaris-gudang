@@ -1,5 +1,5 @@
 import {FC, lazy, Suspense, useState, useEffect} from 'react'
-import {Navigate, Route, Routes} from 'react-router-dom'
+import {Navigate, Route, Routes, useLocation} from 'react-router-dom'
 import {MasterLayout} from '../../_metronic/layout/MasterLayout'
 import TopBarProgress from 'react-topbar-progress-indicator'
 import {DashboardWrapper} from '../pages/dashboard/DashboardWrapper'
@@ -18,10 +18,24 @@ import {UserManagementPage} from '../pages/user-management/UserManagementPage'
 import {CategoryPage} from '../pages/category/CategoryPage'
 import {MaterialPage} from '../pages/material/MaterialPage'
 import {MasterDataPage} from '../pages/master-data/MasterDataPage'
+import {FaultyListPage} from '../pages/faulty-items/FaultyListPage'
+
+const FallbackRoute = () => {
+  const loc = useLocation()
+  console.log('🚨 404 hit inside PrivateRoutes! Unmatched URL:', loc.pathname + loc.search)
+  useEffect(() => {
+    // If it's a valid inventory item but router failed to match it, try to recover
+    if (loc.pathname.match(/^\/apps\/inventory\/\d+/)) {
+      console.log('Recovery attempt for inventory detail page');
+    }
+  }, [loc.pathname])
+  return <Navigate to='/error/404' />
+}
 
 const PrivateRoutes = () => {
   const {currentUser, auth} = useAuth()
   const [isChecking, setIsChecking] = useState(true)
+  const location = useLocation()
   
   const ProfilePage = lazy(() => import('../modules/profile/ProfilePage'))
   const WizardsPage = lazy(() => import('../modules/wizards/WizardsPage'))
@@ -58,12 +72,18 @@ const PrivateRoutes = () => {
   // AUTH CHECK: Redirect ke login jika tidak ada auth token ATAU tidak ada user
   if (!auth?.token || !currentUser) {
     console.log('❌ Authentication failed - redirecting to login')
-    console.log('  - Auth token:', auth?.token || 'MISSING')
-    console.log('  - Current user:', currentUser?.email || 'MISSING')
+    
+    // Simpan target URL kalau user masuk dari link spesifik (contoh: scan QR)
+    const currentPath = location.pathname + location.search;
+    if (currentPath && currentPath !== '/' && !currentPath.startsWith('/auth') && !currentPath.startsWith('/error')) {
+      localStorage.setItem('sim_pending_redirect', currentPath);
+    }
+
     return <Navigate to='/auth/login' replace />
   }
 
   console.log('✅ Authenticated as:', currentUser.email, '| Role:', currentUser.role, '| Roles:', currentUser.roles)
+  console.log('🔗 Current Location in PrivateRoutes:', location.pathname + location.search)
 
   return (
     <Routes>
@@ -76,8 +96,11 @@ const PrivateRoutes = () => {
         <Route path='builder' element={<BuilderPageWrapper />} />
         <Route path='menu-test' element={<MenuTestPage />} />
         {/*core pages*/}
-        <Route path='apps/inventory' element={<InventoryPage />} />
-        <Route path='apps/inventory/:id' element={<ItemDetailPage />} />
+        <Route path='apps/inventory'>
+          <Route index element={<InventoryPage />} />
+          <Route path=':id' element={<ItemDetailPage />} />
+        </Route>
+        <Route path='apps/faulty-items' element={<FaultyListPage />} />
         <Route path='apps/history' element={<HistoryPage />} />
         <Route path='apps/log-system' element={<LogSystemPage />} />
         <Route path='apps/supplier' element={<SupplierPage/>} />
@@ -138,8 +161,8 @@ const PrivateRoutes = () => {
           }
         />
         
-        {/* Page Not Found */}
-        <Route path='*' element={<Navigate to='/error/404' />} />
+        {/* Fallback route - instead of failing silently to 404, we catch it */}
+        <Route path='*' element={<FallbackRoute />} />
       </Route>
     </Routes>
   )

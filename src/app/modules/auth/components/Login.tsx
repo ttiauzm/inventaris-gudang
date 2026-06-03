@@ -1,7 +1,7 @@
 import {useState} from 'react'
 import * as Yup from 'yup'
 import clsx from 'clsx'
-import {Link, useNavigate} from 'react-router-dom'
+import {Link, useNavigate, useLocation} from 'react-router-dom'
 import {useFormik} from 'formik'
 import {useAuth} from '../core/Auth'
 import {UserModel} from '../core/_models'
@@ -133,6 +133,15 @@ export function Login() {
   const [loading, setLoading] = useState(false)
   const {saveAuth, setCurrentUser} = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  
+  // Ambil rute asal dari localStorage (jika tersimpan dari akses link tanpa login)
+  const pendingRedirect = localStorage.getItem('sim_pending_redirect');
+  const from = pendingRedirect && pendingRedirect !== '/' && !pendingRedirect.startsWith('/auth') 
+    ? pendingRedirect 
+    : '/dashboard';
+  
+  console.log('📍 Login computed from:', from);
 
   const formik = useFormik({
     initialValues,
@@ -181,9 +190,12 @@ export function Login() {
               user: savedUser
             })
             
-            // Navigate to dashboard
-            console.log('🔄 Navigating to dashboard...')
-            navigate('/dashboard')
+            // Clear pending redirect agar tidak mengganggu navigasi berikutnya
+            if (pendingRedirect) localStorage.removeItem('sim_pending_redirect');
+
+            // Navigate back to origin path
+            console.log(`🔄 Navigating to ${from}...`)
+            navigate(from, { replace: true })
           }, 200)
           
           setLoading(false)
@@ -307,8 +319,14 @@ export function Login() {
         if (mappedUser.id) {
           localStorage.setItem(`sim_last_login_${mappedUser.id}`, new Date().toISOString())
         }
+        
+        // Clear pending redirect agar tidak mengganggu navigasi berikutnya
+        if (pendingRedirect) localStorage.removeItem('sim_pending_redirect');
+
+        // FORCE TEST
+        console.log('Force navigating to ', from);
         setLoading(false)
-        navigate('/dashboard')
+        navigate(from, { replace: true })
       } catch (error: any) {
         console.error('Login error:', error)
         saveAuth(undefined)

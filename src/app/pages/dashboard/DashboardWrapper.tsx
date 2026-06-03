@@ -262,7 +262,7 @@ const DashboardWrapper: FC = () => {
   const isSuperadmin = currentUser?.role?.toLowerCase() === 'superadmin'
 
   // ── State ──
-  const [activeTab, setActiveTab] = useState<'tercepat' | 'terlama'>('tercepat')
+  const [activeTab, setActiveTab] = useState<'terbaru' | 'terlama'>('terbaru')
   const [activeValueTab, setActiveValueTab] = useState<'tertinggi' | 'terendah'>('tertinggi')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
@@ -378,15 +378,32 @@ const DashboardWrapper: FC = () => {
       
       // Sort based on active tab
       let sortedItems = [...items]
-      if (activeTab === 'tercepat') {
-        // Sort by highest quantity (fastest moving stock)
-        sortedItems.sort((a, b) => b.quantity - a.quantity)
-      } else {
-        // Sort by most recent (newest first)
+
+      // Original sorting logic (commented out)
+      // if (activeTab === 'terbaru') {
+      //   // Sort by highest quantity (fastest moving stock)
+      //   sortedItems.sort((a, b) => b.quantity - a.quantity)
+      // } else {
+      //   // Sort by most recent (newest first)
+      //   sortedItems.sort((a, b) => {
+      //     const dateA = new Date(a.created_at || 0).getTime()
+      //     const dateB = new Date(b.created_at || 0).getTime()
+      //     return dateB - dateA
+      //   })
+      // }
+
+      //Fixed: Sort by updated_at for both tabs, but in different order
+      if (activeTab === 'terbaru') {
         sortedItems.sort((a, b) => {
-          const dateA = new Date(a.created_at || 0).getTime()
-          const dateB = new Date(b.created_at || 0).getTime()
-          return dateB - dateA
+          const dateA = new Date(a.updated_at || 0).getTime()
+          const dateB = new Date(b.updated_at || 0).getTime()
+          return dateB - dateA  // terbaru di atas
+        })
+      } else {
+        sortedItems.sort((a, b) => {
+          const dateA = new Date(a.updated_at || 0).getTime()
+          const dateB = new Date(b.updated_at || 0).getTime()
+          return dateA - dateB  // terlama di atas
         })
       }
 
@@ -530,7 +547,17 @@ const DashboardWrapper: FC = () => {
             style={{maxWidth: '300px', height: 'auto', marginBottom: '20px'}}
           />
           <h2 className='fw-bold mb-1' style={{color: '#2C3E50', fontSize: '1.6rem'}}>
-            Selamat Datang, {currentUser?.first_name || 'User'}
+            Selamat Datang,{' '}
+            <span 
+              style={{
+                background: 'linear-gradient(90deg, #D4145A 0%, #FBB03B 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                display: 'inline-block'
+              }}
+            >
+              {currentUser?.first_name || 'User'}
+            </span>
           </h2>
           <p className='text-muted mb-0' style={{fontSize: '0.9rem'}}>
             {getCurrentDate()}
@@ -706,12 +733,12 @@ const DashboardWrapper: FC = () => {
 
                   {/* Tab bar */}
                   <div className='d-flex align-items-center gap-2 flex-wrap' style={{marginBottom: '16px'}}>
-                    {/* Tercepat / Terlama */}
+                    {/* terbaru / Terlama */}
                     <div
                       className='d-flex'
                       style={{border: '1px solid #e0dbd5', borderRadius: '8px', overflow: 'hidden'}}
                     >
-                      {(['tercepat', 'terlama'] as const).map((tab) => (
+                      {(['terbaru', 'terlama'] as const).map((tab) => (
                         <button
                           key={tab}
                           onClick={() => {

@@ -267,6 +267,14 @@ export function AsideMenuMain() {
         customIcon='/media/icons/custom/delova_inventory.svg'
       />
 
+      {/* Faulty Items */}
+      <AsideMenuItem
+        to='/apps/faulty-items'
+        title='Laporan Kerusakan'
+        bsTitle='Laporan Kerusakan'
+        customIcon='/media/icons/custom/delova_itemFaulty.svg'
+      />
+
       {/* History — Admin & SuperAdmin */}
       {isAdmin && (
         <AsideMenuItem

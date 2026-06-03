@@ -1,14 +1,15 @@
 import {FC, useEffect, useState} from 'react'
 import {useParams, useNavigate} from 'react-router-dom'
-import {KTIcon} from '../../../_metronic/helpers'
+import {KTIcon, toAbsoluteUrl} from '../../../_metronic/helpers'
 import {InventoryItem} from './core/_model'
 import {getInventory, updateInventoryDetails, deleteInventory, takeInventoryItem} from './core/_requests'
 import {useAuth} from '../../modules/auth'
 import {isSuperAdmin as checkSuperAdmin} from '../../utils/permissionHelper'
 import API from '../../../api'
 import {SuccessModal} from '../../components/SuccessModal'
-import {InventoryModal} from './components/InventoryModal'
+import { InventoryModal } from './components/InventoryModal'
 import { ConfirmModal } from '../../components/ConfirmModal'
+import { FaultyItemModal } from './components/FaultyItemModal'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface ItemDetail {
@@ -50,6 +51,7 @@ const ItemDetailPage: FC = () => {
   const [showActionMenu, setShowActionMenu] = useState(false)
   const [showTakeModal, setShowTakeModal] = useState(false)
   const [showDeleteSection, setShowDeleteSection] = useState(false)
+  const [showFaultyModal, setShowFaultyModal] = useState(false)
 
   const pageUrl = `${window.location.origin}/apps/inventory/${id}`
 
@@ -229,7 +231,7 @@ const ItemDetailPage: FC = () => {
   }
 
   return (
-    <div style={{ minHeight: '20vh', backgroundColor: '#B7ADA6', padding: '20px' }}>
+    <div style={{ minHeight: '20vh', backgroundColor: '#B7ADA6', padding: '20px', margin: '10px', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)' }}>
 
       {/* ── Back button ── */}
       <button
@@ -239,7 +241,7 @@ const ItemDetailPage: FC = () => {
           border: 'none',
           borderRadius: '8px',
           cursor: 'pointer',
-          color: '#000000',
+          color: '#fff',
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
@@ -247,13 +249,19 @@ const ItemDetailPage: FC = () => {
           fontWeight: 600,
           marginBottom: '16px',
           padding: '2px 10px',
-          opacity: 0.9,
+          opacity: 1,
           transition: 'opacity 0.15s',
+          rotate: '180deg',
         }}
         onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = '1')}
         onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = '0.9')}
       >
-        ←
+        <span style={{ rotate: '180deg' }}>Kembali</span>
+        <img 
+          src={toAbsoluteUrl('media/icons/delova_slack.svg')} 
+          alt='Kembali' 
+          style={{ width: '28px', height: '28px', objectFit: 'contain',}} 
+        />
       </button>
 
       {/* ── Top row: Info card + QR card ── */}
@@ -313,7 +321,7 @@ const ItemDetailPage: FC = () => {
                   className='btn btn-product'
                   style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', padding: '9px 20px', borderRadius: '8px' }}
                 >
-                  <KTIcon iconName='setting-2' className='fs-5' />
+                  <KTIcon iconName='setting-2' className='fs-5 text-white' />
                   Kelola Barang
                 </button>
 
@@ -343,7 +351,7 @@ const ItemDetailPage: FC = () => {
                         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f5f2ee')}
                         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                       >
-                        <KTIcon iconName='pencil' className='fs-5' />
+                        <KTIcon iconName='pencil' className='fs-5 text-primary' />
                         Edit Detail
                       </button>
 
@@ -359,8 +367,24 @@ const ItemDetailPage: FC = () => {
                         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f5f2ee')}
                         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                       >
-                        <KTIcon iconName='minus-circle' className='fs-5' />
+                        <KTIcon iconName='minus-circle' className='fs-5 text-primary' />
                         Potong Stok
+                      </button>
+
+                      <button
+                        onClick={() => { setShowActionMenu(false); setShowFaultyModal(true) }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '10px',
+                          width: '100%', padding: '10px 14px', border: 'none',
+                          backgroundColor: 'transparent', borderRadius: '8px',
+                          fontSize: '13px', fontWeight: 600, color: '#3a3a3a',
+                          cursor: 'pointer', textAlign: 'left',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f5f2ee')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
+                        <KTIcon iconName='information-5' className='fs-5 text-warning' />
+                        Lapor Kerusakan
                       </button>
 
                       <div style={{ borderTop: '1px solid #f0ebe6', margin: '4px 0' }} />
@@ -377,7 +401,7 @@ const ItemDetailPage: FC = () => {
                         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#fff5f5')}
                         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                       >
-                        <KTIcon iconName='trash' className='fs-5' />
+                        <KTIcon iconName='trash' className='fs-5 text-danger' />
                         Hapus Barang
                       </button>
                     </div>
@@ -416,7 +440,7 @@ const ItemDetailPage: FC = () => {
                   aria-expanded='false'
                   style={{ fontSize: '13px', padding: '10px 16px', borderRadius: '8px' }}
                 >
-                  <KTIcon iconName='printer' className='fs-4' />
+                  <KTIcon iconName='printer' className='fs-4 text-white' />
                   Cetak QR
                 </button>
                 <ul className='dropdown-menu w-100 text-center py-2 shadow-sm' style={{ border: '1px solid #eee', borderRadius: '12px' }}>
@@ -578,11 +602,20 @@ const ItemDetailPage: FC = () => {
         />
       )}
 
+        
+      {showFaultyModal && item && (
+        <FaultyItemModal
+          item={item}
+          onClose={() => setShowFaultyModal(false)}
+          onSuccess={() => { setShowFaultyModal(false); fetchItem() }}
+        />
+      )}
+
     </div>
   )
 }
 
-// ── Edit Detail Inline Modal ──────────────────────────────────────────────────
+// ── EditDetailInlineModal ─────────────────────────────────────────────────────
 interface EditDetailInlineModalProps {
   item: ItemDetail
   onClose: () => void

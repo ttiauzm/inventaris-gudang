@@ -455,29 +455,29 @@ class ItemController extends Controller
             $authUser = Auth::user();
 
             if (!$authUser->hasPermission('report_faulty')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak memiliki izin untuk melaporkan barang rusak',
-                'data'    => null
-            ], 403);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki izin untuk melaporkan barang rusak',
+                    'data'    => null
+                ], 403);
             }
 
             $request->validate([
                 'faulty_quantity' => 'required|integer|min:1',
-                'description' => 'required|string|max:255',
+                'description'     => 'required|string|max:255',
+                'image'           => 'nullable|image|mimes:jpeg,png,jpg|max:5120', //max 5mb
             ]);
 
             return DB::transaction(function () use ($request, $id, $authUser) { 
 
                 $item = Items::findOrFail($id);
-
                 $supplierId = $item->suppliers()->first()?->supplier_id;
                 
                 if (!$supplierId) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Barang ini tidak memiliki supplier, transaksi tidak dapat dicatat.',
-                ], 400);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Barang ini tidak memiliki supplier, transaksi tidak dapat dicatat.',
+                    ], 400);
                 }
 
                 if ($request->faulty_quantity > $item->quantity) {
@@ -487,17 +487,32 @@ class ItemController extends Controller
                     ], 400);
                 }
 
+                $imagePath = null;
+                if ($request->hasFile('image')) {
+                    $file = $request->file('image');
+                    $fileName = 'faulty_' . time() . '_' . Str::random(5) . '.webp';
+                    $imagePath = 'faulty_proofs/' . $fileName;
+
+                    $manager = new ImageManager(new Driver());
+                    $image = $manager->read($file);
+                    $image->scaleDown(width: 800);
+                    $encodedImage = (string) $image->toWebp(70);
+                    
+                    Storage::disk('public')->put($imagePath, $encodedImage);
+                }
+
                 $item->decrement('quantity', $request->faulty_quantity);
 
                 Transactions::create([
-                    'transaction_id' => Str::uuid(),
-                    'item_id' => $item->item_id,
-                    'user_id' => $authUser->user_id,
+                    'transaction_id'   => Str::uuid(),
+                    'item_id'          => $item->item_id,
+                    'user_id'          => $authUser->user_id,
                     'transaction_type' => 'FAULTY',
                     'supplier_id'      => $supplierId,
-                    'quantity' => $request->faulty_quantity,
-                    'unit' => $item->unit,
-                    'description' => $request->description,
+                    'quantity'         => $request->faulty_quantity,
+                    'unit'             => $item->unit,
+                    'description'      => $request->description,
+                    'image_proof'      => $imagePath,
                     'transaction_date' => now(),
                 ]);
 
@@ -511,7 +526,7 @@ class ItemController extends Controller
 
                 return response()->json([
                     'success' => true,
-                    'message' => 'Laporan barang rusak berhasil dibuat',
+                    'message' => 'Laporan barang rusak dan foto bukti berhasil dicatat',
                     'data'    => null
                 ], 201);
                 
@@ -533,26 +548,35 @@ class ItemController extends Controller
     }
 
     public function getFaultyList()
-    {
-        $authUser = Auth::user();
+        {
+            $authUser = Auth::user();
 
-        if (!$authUser->hasPermission('view_faulty')) {
+            if (!$authUser->hasPermission('view_faulty')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki izin untuk melihat riwayat barang rusak',
+                    'data'    => null
+                ], 403);
+            }
+
+            $faultyList = Transactions::with(['items', 'user']) 
+                ->where('transaction_type', 'FAULTY')
+                ->orderBy('transaction_date', 'desc')
+                ->get();
+
+            $faultyList->map(function ($transaction) {
+                if ($transaction->image_proof) {
+                    $transaction->image_url = asset('storage/' . $transaction->image_proof);
+                } else {
+                    $transaction->image_url = null;
+                }
+                return $transaction;
+            });
+
             return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak memiliki izin untuk melihat riwayat barang rusak',
-                'data'    => null
-            ], 403);
+                'success' => true,
+                'message' => 'Daftar riwayat barang rusak berhasil diambil',
+                'data'    => $faultyList
+            ], 200);
         }
-
-        $faultyList = Transactions::with(['items', 'user']) 
-            ->where('transaction_type', 'FAULTY')
-            ->orderBy('transaction_date', 'desc')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Daftar riwayat barang rusak berhasil diambil',
-            'data'    => $faultyList
-        ], 200);
-    }
 }

@@ -550,7 +550,7 @@ const DashboardWrapper: FC = () => {
             Selamat Datang,{' '}
             <span 
               style={{
-                background: 'linear-gradient(90deg, #D4145A 0%, #FBB03B 100%)',
+                background: 'linear-gradient(75deg, #28a745 0%, #5C8AE6 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 display: 'inline-block'

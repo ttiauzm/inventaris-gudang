@@ -61,7 +61,7 @@ export const FaultyItemCard: FC<Props> = ({report}) => {
         .faulty-card:hover {
           box-shadow: 0 6px 24px rgba(137, 120, 112, 0.22);
           transform: translateY(-1px);
-          background: linear-gradient(135deg, #F7F3EE 0%, #EEE7DD 60%, #E5DDD3 100%);
+          background: linear-gradient(135deg, #F7F3EE 0%, #EEE7DD 60%, rgb(229, 221, 211) 100%);
         }
         .faulty-card:active,
         .faulty-card.pressed {
@@ -81,7 +81,8 @@ export const FaultyItemCard: FC<Props> = ({report}) => {
         .faulty-card-image {
           position: relative;
           flex-shrink: 0;
-          width: 140px;
+          width: 440px;
+          max-height: 100px;
           overflow: hidden;
         }
         .faulty-card-image-fade {
@@ -89,7 +90,7 @@ export const FaultyItemCard: FC<Props> = ({report}) => {
           inset: 0;
           z-index: 1;
           pointer-events: none;
-          background: linear-gradient(135deg, rgb(253, 252, 251) 0%, rgb(243, 242, 241) 50%, transparent 100%);
+          background: linear-gradient(90deg, rgb(243, 242, 241) 10%, rgba(243, 242, 241, 0) 100%, transparent 100%);
         }
         .faulty-qty-badge {
           background-color: #fff5f5;

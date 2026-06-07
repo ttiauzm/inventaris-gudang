@@ -5,6 +5,7 @@ import {useAuth} from '../../../modules/auth'
 import {isSuperAdmin as checkSuperAdmin} from '../../../utils/permissionHelper'
 import {SuccessModal} from '../../../components/SuccessModal'
 import {useNavigate} from 'react-router-dom'
+import {FaultyItemModal} from './FaultyItemModal'  // ← tambahan
 
 interface ItemDetailModalProps {
   item: InventoryItem
@@ -18,11 +19,9 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
   const isSuperAdmin = checkSuperAdmin(currentUser)
   const navigate = useNavigate()
 
-  // ── View state: 'detail' | 'pakai'
-  // const [view, setView] = useState<'detail' | 'pakai'>('detail')
   const [view, setView] = useState<'detail' | 'options' | 'pakai'>('detail')
 
-  // ── Pakai form state
+  // Pakai form state
   const [jumlah, setJumlah] = useState('')
   const [deskripsi, setDeskripsi] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -30,9 +29,11 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
   const [takeStatus, setTakeStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [takeErrorMsg, setTakeErrorMsg] = useState('')
 
+  // ← tambahan: state untuk FaultyItemModal
+  const [showFaultyModal, setShowFaultyModal] = useState(false)
+
   const defaultImage = '/media/svg/material/material-dummy.svg'
 
-  // ── Handlers
   const handlePakaiSubmit = async () => {
     const newErrors: Record<string, string> = {}
     const qty = parseInt(String(jumlah).trim(), 10)
@@ -171,7 +172,7 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
     transition: 'opacity 0.18s',
   }
 
-  // ── Success modal (replaces entire modal on success)
+
   if (takeStatus === 'success') {
     return (
       <SuccessModal
@@ -189,18 +190,9 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
       {/* Card */}
       <div style={cardStyle}>
         {/* ── Header ── */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            marginBottom: '18px',
-          }}
-        >
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '18px'}}>
           <div>
-            <h2
-              style={{fontSize: '19px', fontWeight: 700, color: '#1a1a2e', margin: 0, lineHeight: 1.2}}
-            >
+            <h2 style={{fontSize: '19px', fontWeight: 700, color: '#1a1a2e', margin: 0, lineHeight: 1.2}}>
               {view === 'pakai' ? `Pakai ${item.name}` : item.name}
             </h2>
             {item.supplier && (
@@ -209,28 +201,61 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
               </p>
             )}
           </div>
-          <button
-            style={closeBtnStyle}
-            onClick={onClose}
-            aria-label='Tutup'
-            onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.color = '#5a4038')}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.color = '#b0a89f')}
-          >
-            ×
-          </button>
+
+          {/* Icon actions di kanan header */}
+          <div style={{display: 'flex', alignItems: 'center', gap: '4px', marginTop: '-2px'}}>
+
+            {/* Lapor Kerusakan — icon only */}
+            <button
+              onClick={() => setShowFaultyModal(true)}
+              aria-label='Lapor Kerusakan'
+              title='Lapor Kerusakan'
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px 6px',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.backgroundColor = '#fff0f0')}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent')}
+            >
+              <img
+                src='/media/icons/custom/delova_information-warn.svg'
+                alt='lapor rusak'
+                style={{
+                  width: '20px',
+                  height: '20px',
+                  objectFit: 'contain',
+                  filter: 'invert(27%) sepia(85%) saturate(2000%) hue-rotate(335deg) brightness(90%)',
+                }}
+                onError={(e) => {
+                  // fallback ke KTIcon jika svg tidak ditemukan
+                  const btn = (e.currentTarget as HTMLImageElement).parentElement
+                  if (btn) btn.innerHTML = '<span style="color:#dc3545;font-size:18px;font-weight:700;line-height:1">⚠</span>'
+                }}
+              />
+            </button>
+
+            {/* Close (×) */}
+            <button
+              style={closeBtnStyle}
+              onClick={onClose}
+              aria-label='Tutup'
+              onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.color = '#5a4038')}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.color = '#b0a89f')}
+            >
+              ×
+            </button>
+          </div>
         </div>
 
         {/* ── Foto Barang ── */}
-        <div
-          style={{
-            width: '100%',
-            aspectRatio: '16/9',
-            borderRadius: '12px',
-            overflow: 'hidden',
-            backgroundColor: '#f5f2ee',
-            marginBottom: '20px',
-          }}
-        >
+        <div style={{width: '100%', aspectRatio: '16/9', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#f5f2ee', marginBottom: '20px'}}>
           <img
             src={item.image || defaultImage}
             alt={item.name}
@@ -241,7 +266,8 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
         {/* ── VIEW: Detail Barang ── */}
         {view === 'detail' && (
           <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
-            {/* Detail Barang → navigasi ke halaman detail */}
+
+            {/* Detail Barang */}
             <button
               style={primaryBtnStyle}
               onClick={handleGoToDetail}
@@ -260,6 +286,9 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
             >
               Pakai Barang
             </button>
+
+
+
           </div>
         )}
 
@@ -280,10 +309,7 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
                     setJumlah(e.target.value)
                     if (errors.jumlah) setErrors((p) => ({...p, jumlah: ''}))
                   }}
-                  style={{
-                    ...inputCellStyle,
-                    borderBottom: errors.jumlah ? '2px solid #dc3545' : 'none',
-                  }}
+                  style={{...inputCellStyle, borderBottom: errors.jumlah ? '2px solid #dc3545' : 'none'}}
                 />
               </div>
             </div>
@@ -308,11 +334,7 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
                   setDeskripsi(e.target.value)
                   if (errors.deskripsi) setErrors((p) => ({...p, deskripsi: ''}))
                 }}
-                style={{
-                  ...inputCellStyle,
-                  resize: 'vertical',
-                  borderLeft: errors.deskripsi ? '2px solid #dc3545' : 'none',
-                }}
+                style={{...inputCellStyle, resize: 'vertical', borderLeft: errors.deskripsi ? '2px solid #dc3545' : 'none'}}
               />
             </div>
             {errors.deskripsi && (
@@ -323,20 +345,7 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
 
             {/* Error banner */}
             {takeStatus === 'error' && (
-              <div
-                style={{
-                  backgroundColor: '#fff5f5',
-                  border: '1px solid #f5c6cb',
-                  borderRadius: '8px',
-                  padding: '12px 14px',
-                  marginBottom: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontSize: '13px',
-                  color: '#842029',
-                }}
-              >
+              <div style={{backgroundColor: '#fff5f5', border: '1px solid #f5c6cb', borderRadius: '8px', padding: '12px 14px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#842029'}}>
                 <KTIcon iconName='cross-circle' className='fs-5' />
                 {takeErrorMsg}
               </div>
@@ -347,55 +356,43 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
               <button
                 onClick={handlePakaiSubmit}
                 disabled={takeLoading}
-                style={{
-                  ...warmBtnStyle,
-                  width: 'auto',
-                  padding: '12px 36px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  opacity: takeLoading ? 0.65 : 1,
-                  cursor: takeLoading ? 'not-allowed' : 'pointer',
-                }}
+                style={{...warmBtnStyle, width: 'auto', padding: '12px 36px', display: 'flex', alignItems: 'center', gap: '8px', opacity: takeLoading ? 0.65 : 1, cursor: takeLoading ? 'not-allowed' : 'pointer'}}
               >
                 {takeLoading ? (
-                  <>
-                    <span className='spinner-border spinner-border-sm' />
-                    Memproses...
-                  </>
+                  <><span className='spinner-border spinner-border-sm' /> Memproses...</>
                 ) : (
-                  <>
-                    <KTIcon iconName='save-2' className='fs-5' />
-                    Ambil Barang
-                  </>
+                  <><KTIcon iconName='save-2' className='fs-5' /> Ambil Barang</>
                 )}
               </button>
             </div>
 
             {/* Back link */}
             <button
-              onClick={() => {
-                setView('detail')
-                setErrors({})
-                setTakeStatus('idle')
-              }}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#9e9992',
-                fontSize: '12px',
-                cursor: 'pointer',
-                marginTop: '10px',
-                display: 'block',
-                width: '100%',
-                textAlign: 'center',
-              }}
+              onClick={() => { setView('detail'); setErrors({}); setTakeStatus('idle') }}
+              style={{background: 'none', border: 'none', color: '#9e9992', fontSize: '12px', cursor: 'pointer', marginTop: '10px', display: 'block', width: '100%', textAlign: 'center'}}
             >
               ← Kembali ke detail
             </button>
           </>
         )}
       </div>
+
+      {/* ── FaultyItemModal — z-index di atas ItemDetailModal ── */}
+      {showFaultyModal && (
+        <FaultyItemModal
+          item={{
+            id:       String(item.id),
+            name:     item.name,
+            quantity: item.quantity,
+            unit:     item.unit,
+          }}
+          onClose={() => setShowFaultyModal(false)}
+          onSuccess={() => {
+            setShowFaultyModal(false)
+            onClose() // tutup ItemDetailModal setelah berhasil lapor
+          }}
+        />
+      )}
     </>
   )
 }

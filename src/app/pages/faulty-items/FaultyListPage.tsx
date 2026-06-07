@@ -37,7 +37,12 @@ export const FaultyListPage: FC = () => {
         quantity:    r.quantity         ?? r.faulty_quantity ?? 0,
         unit:        r.unit             ?? r.items?.unit     ?? '',
         description: r.description      ?? '',
-        photo_url:   r.image_url        ?? r.photo_url       ?? undefined,
+        photo_url:   r.image_url        // sudah absolute (dari controller ->map())
+                     ?? (r.image_proof
+                          ? (r.image_proof.startsWith('http')
+                              ? r.image_proof
+                              : `${import.meta.env.VITE_APP_API_URL?.replace('/api', '') ?? ''}/storage/${r.image_proof}`)
+                          : undefined),
         reported_by: r.user?.fullname   ?? r.user?.username  ?? r.reported_by ?? r.reporter_name ?? '—',
         reported_at: r.transaction_date ?? r.reported_at     ?? r.created_at  ?? new Date().toISOString(),
         status:      r.status           ?? undefined,

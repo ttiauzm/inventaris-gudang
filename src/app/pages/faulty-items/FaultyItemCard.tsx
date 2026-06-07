@@ -18,8 +18,9 @@ interface Props {
 }
 
 export const FaultyItemCard: FC<Props> = ({report}) => {
-  const [imgError, setImgError] = useState(false)
-  const [pressed, setPressed] = useState(false)
+  const [imgError, setImgError]     = useState(false)
+  const [pressed, setPressed]       = useState(false)
+  const [lightbox, setLightbox]     = useState(false)
 
   const dateObj = new Date(report.reported_at)
   const formattedDate = isNaN(dateObj.getTime())
@@ -101,10 +102,198 @@ export const FaultyItemCard: FC<Props> = ({report}) => {
           flex-shrink: 0;
           border: 1px solid rgba(220,53,69,0.15);
         }
+        .faulty-divider {
+          height: 1px;
+          background: linear-gradient(90deg, rgba(183,173,166,0.4) 0%, rgba(183,173,166,0.08) 100%);
+        }
+        .faulty-card-ornament {
+          position: absolute;
+          right: 8px;
+          top: 50%;
+          transform: translateY(-50%);
+          opacity: 0.12;
+          z-index: 2;
+          pointer-events: none;
+        }
+
+        /* ── Lightbox ── */
+        .faulty-lightbox-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 2000;
+          background: rgba(0, 0, 0, 0.82);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: zoom-out;
+          animation: faulty-fade-in 0.18s ease;
+        }
+        @keyframes faulty-fade-in {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+        .faulty-lightbox-inner {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 16px;
+          cursor: default;
+          animation: faulty-scale-in 0.2s ease;
+          max-width: 90vw;
+        }
+        @keyframes faulty-scale-in {
+          from { transform: scale(0.92); opacity: 0; }
+          to   { transform: scale(1);    opacity: 1; }
+        }
+        .faulty-lightbox-card {
+          background: #fff;
+          border-radius: 18px;
+          overflow: hidden;
+          box-shadow: 0 32px 80px rgba(0,0,0,0.45);
+          max-width: 480px;
+          width: 100%;
+        }
+        .faulty-lightbox-img-wrap {
+          width: 100%;
+          max-height: 55vh;
+          overflow: hidden;
+          background: #f5f0eb;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .faulty-lightbox-img-wrap img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          display: block;
+          max-height: 55vh;
+        }
+        .faulty-lightbox-info {
+          padding: 18px 20px 20px;
+        }
+        .faulty-lightbox-close {
+          position: fixed;
+          top: 18px;
+          right: 18px;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          border: none;
+          background: rgba(255,255,255,0.18);
+          color: #fff;
+          font-size: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: background 0.15s;
+          z-index: 2001;
+          line-height: 1;
+        }
+        .faulty-lightbox-close:hover {
+          background: rgba(255,255,255,0.32);
+        }
+        .faulty-no-photo-box {
+          width: 100%;
+          height: 180px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          background: linear-gradient(135deg, rgba(183,173,166,0.12) 0%, rgba(137,120,112,0.06) 100%);
+        }
       `}</style>
 
+      {/* ── Lightbox overlay ───────────────────────────────────────────────── */}
+      {lightbox && (
+        <div
+          className='faulty-lightbox-backdrop'
+          onClick={() => setLightbox(false)}
+        >
+          {/* Tombol tutup */}
+          <button
+            className='faulty-lightbox-close'
+            onClick={(e) => { e.stopPropagation(); setLightbox(false) }}
+          >×</button>
+
+          {/* Kartu detail */}
+          <div
+            className='faulty-lightbox-inner'
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className='faulty-lightbox-card'>
+
+              {/* Gambar atau placeholder */}
+              <div className='faulty-lightbox-img-wrap'>
+                {hasPhoto ? (
+                  <img
+                    src={report.photo_url}
+                    alt='Bukti kerusakan'
+                    onError={() => setImgError(true)}
+                  />
+                ) : (
+                  <div className='faulty-no-photo-box'>
+                    <svg width='40' height='40' viewBox='0 0 24 24' fill='none' style={{opacity: 0.3}}>
+                      <rect x='3' y='3' width='18' height='18' rx='3' stroke='#897870' strokeWidth='1.5' />
+                      <circle cx='8.5' cy='8.5' r='1.5' fill='#897870' />
+                      <path d='M3 15l5-5 4 4 3-3 6 6' stroke='#897870' strokeWidth='1.5' strokeLinecap='round' strokeLinejoin='round' />
+                    </svg>
+                    <span style={{fontSize: '12px', color: '#b0a89f'}}>Tidak ada foto bukti</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Info detail */}
+              <div className='faulty-lightbox-info'>
+                {/* Nama + badge qty */}
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', marginBottom: '10px'}}>
+                  <p style={{margin: 0, fontFamily: "'Georgia', serif", fontSize: '15px', fontWeight: 700, color: '#2C1E18', lineHeight: 1.35}}>
+                    {report.item_name || '—'}
+                  </p>
+                  <span className='faulty-qty-badge' style={{fontSize: '12px', padding: '4px 12px'}}>
+                    -{report.quantity} {report.unit || 'pcs'}
+                  </span>
+                </div>
+
+                {/* Divider */}
+                <div className='faulty-divider' style={{marginBottom: '10px'}} />
+
+                {/* Tanggal */}
+                <p style={{margin: '0 0 4px', fontSize: '11.5px', color: '#897870', fontFamily: "'Georgia', serif", letterSpacing: '0.03em'}}>
+                  {formattedDate}
+                </p>
+
+                {/* Reporter */}
+                <p style={{margin: '0 0 8px', fontSize: '12px', color: '#6B5750'}}>
+                  Dilaporkan oleh{' '}
+                  <span style={{fontWeight: 700, color: '#3D2B24'}}>{report.reported_by || '—'}</span>
+                </p>
+
+                {/* Divider */}
+                <div className='faulty-divider' style={{marginBottom: '10px'}} />
+
+                {/* Deskripsi */}
+                <p style={{margin: 0, fontSize: '13px', color: '#4a3a34', lineHeight: 1.55, fontFamily: "'Georgia', serif"}}>
+                  {report.description || '—'}
+                </p>
+              </div>
+            </div>
+
+            {/* Hint tutup */}
+            <p style={{color: 'rgba(255,255,255,0.4)', fontSize: '11px', margin: 0}}>
+              Klik di luar kartu untuk menutup
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Card list ─────────────────────────────────────────────────────── */}
       <div
         className={`faulty-card${pressed ? ' pressed' : ''}`}
+        onClick={() => setLightbox(true)}
         onMouseDown={() => setPressed(true)}
         onMouseUp={() => setPressed(false)}
         onMouseLeave={() => setPressed(false)}

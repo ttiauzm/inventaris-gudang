@@ -8,7 +8,7 @@ const API_URL = import.meta.env.MODE === 'development' ? '/api' : (import.meta.e
 
 const API = axios.create({
   baseURL: API_URL,
-  withCredentials: true, // false karena pakai Bearer Token, bukan session/cookie auth
+  withCredentials: false, // false karena pakai Bearer Token, bukan session/cookie auth
   timeout: 8000, // 8 detik - agar tidak hang selamanya jika backend tidak merespons
   headers: {
     'Content-Type': 'application/json',

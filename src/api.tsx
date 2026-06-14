@@ -4,7 +4,7 @@ import {getAuth} from './app/modules/auth/core/AuthHelpers'
 // const API = axios.create({
 //   baseURL: import.meta.env.VITE_API_URL || {/*'http://localhost:8000/api'*/},
 // const API_URL = import.meta.env.MODE === 'development' ? '/api' : (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api')
-const API_URL = import.meta.env.MODE === 'development' ? '/api' : (import.meta.env.VITE_API_URL || 'https://server1.delova.cloud/api')
+const API_URL = import.meta.env.MODE === 'development' ? '/api' : (import.meta.env.VITE_API_URL || 'https://api.delova.web.id/api')
 
 const API = axios.create({
   baseURL: API_URL,

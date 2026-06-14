@@ -22,6 +22,7 @@ class Transactions extends Model
         'quantity',
         'unit',
         'description',
+        'image_proof',
     ];
 
      public function user() {

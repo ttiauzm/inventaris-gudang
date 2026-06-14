@@ -1,6 +1,7 @@
 import axios, {AxiosInstance, AxiosRequestConfig} from 'axios'
 import {getAuth} from '../../modules/auth/core/AuthHelpers'
 
+// const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
 class ApiClient {

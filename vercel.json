@@ -2,8 +2,7 @@
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/index.html",
-      "github.enabled": true
+      "destination": "/index.html"
     }
   ]
 }

@@ -3,7 +3,8 @@ import {getAuth} from './app/modules/auth/core/AuthHelpers'
 
 // const API = axios.create({
 //   baseURL: import.meta.env.VITE_API_URL || {/*'http://localhost:8000/api'*/},
-const API_URL = import.meta.env.MODE === 'development' ? '/api' : (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api')
+// const API_URL = import.meta.env.MODE === 'development' ? '/api' : (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api')
+const API_URL = import.meta.env.MODE === 'development' ? '/api' : (import.meta.env.VITE_API_URL || 'http://server1.delova.cloud')
 
 const API = axios.create({
   baseURL: API_URL,

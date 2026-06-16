@@ -25,20 +25,15 @@ class Transactions extends Model
         'image_proof',
     ];
 
-     public function user() {
+    public function user() {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function users() {
-        return $this->belongsTo(User::class, 'user_id');
+    public function item() {
+        return $this->belongsTo(Items::class, 'item_id');
     }
 
-    public function items() {
-        return $this->belongsTo(items::class, 'item_id');
+    public function supplier() {
+        return $this->belongsTo(Suppliers::class, 'supplier_id');
     }
-
-    public function suppliers() {
-        return $this->belongsTo(suppliers::class, 'supplier_id');
-    }
-    
 }

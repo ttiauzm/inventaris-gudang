@@ -9,12 +9,13 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up()
     {
         Schema::table('permissions', function (Blueprint $table) {
-            // Hapus unique index lama pada satu kolom saja
-            $table->dropUnique('permissions_permission_name_unique');
-            // Ganti dengan unique gabungan (role_id + permission_name)
+            // Kita komentari yang ini karena gembok lamanya emang gak ada di database baru
+            // $table->dropUnique('permissions_permission_name_unique');
+            
+            // Yang ini TETAP JALANAN agar role & permission kalian punya batasan unik yang benar
             $table->unique(['role_id', 'permission_name'], 'permissions_role_permission_unique');
         });
     }
@@ -26,7 +27,7 @@ return new class extends Migration
     {
         Schema::table('permissions', function (Blueprint $table) {
             $table->dropUnique('permissions_role_permission_unique');
-            $table->unique('permission_name', 'permissions_permission_name_unique');
+            //$table->unique('permission_name', 'permissions_permission_name_unique');
         });
     }
 };

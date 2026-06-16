@@ -90,7 +90,13 @@ export const FaultyItemCard: FC<Props> = ({report}) => {
           inset: 0;
           z-index: 1;
           pointer-events: none;
-          background: linear-gradient(90deg, rgb(243, 242, 241) 10%, rgba(243, 242, 241, 0) 100%, transparent 100%);
+          background: linear-gradient(
+          90deg, 
+          rgb(243, 242, 241) 0%,
+          rgba(243, 242, 241, 0.85) 10%,
+          rgba(243, 242, 241, 0.45) 22%,
+          rgba(243, 242, 241, 0) 38%
+          );
         }
         .faulty-qty-badge {
           background-color: #fff5f5;
@@ -378,7 +384,13 @@ export const FaultyItemCard: FC<Props> = ({report}) => {
               src={report.photo_url}
               alt='Bukti kerusakan'
               onError={() => setImgError(true)}
-              style={{width: '100%', height: '100%', objectFit: 'cover', display: 'block'}}
+              style={{
+                width: '100%', 
+                height: '100%', 
+                objectFit: 'cover', 
+                display: 'block',
+                filter: 'contrast(1.1) saturate(1.15) brightness(1.02)',
+              }}
             />
           ) : (
             <div

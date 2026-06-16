@@ -40,7 +40,8 @@ export const getInventory = async (params?: {
     unit: item.unit,
     price: item.price,
     description: item.materials?.material_name || '',
-    image: item.images && item.images.length > 0 ? `/storage/${item.images[0].file_path}` : undefined,
+    // image: item.images && item.images.length > 0 ? `/storage/${item.images[0].file_path}` : undefined,
+    image: item.image_url || undefined,
     created_at: item.created_at,
     updated_at: item.updated_at
   }))

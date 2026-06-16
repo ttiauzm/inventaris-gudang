@@ -121,7 +121,7 @@ const HistoryPage: FC = () => {
                       <th className='min-w-200px'>Nama Barang</th>
                       <th className='min-w-100px'>Jumlah</th>
                       <th className='min-w-150px'>Tanggal</th>
-                      <th className='min-w-125px'>Admin</th>
+                      <th className='min-w-125px'>Pengguna</th>
                     </tr>
                   </thead>
                   <tbody className='text-gray-600 fw-semibold'>

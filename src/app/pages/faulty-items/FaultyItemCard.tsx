@@ -251,7 +251,7 @@ export const FaultyItemCard: FC<Props> = ({report}) => {
               <div className='faulty-lightbox-info'>
                 {/* Nama + badge qty */}
                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', marginBottom: '10px'}}>
-                  <p style={{margin: 0, fontFamily: "'Georgia', serif", fontSize: '15px', fontWeight: 700, color: '#2C1E18', lineHeight: 1.35}}>
+                  <p style={{margin: 0, fontSize: '15px', fontWeight: 700, color: '#2C1E18', lineHeight: 1.35}}>                {/* Ini tuh aselinya bisa ditambahin fontfamily */}
                     {report.item_name || '—'}
                   </p>
                   <span className='faulty-qty-badge' style={{fontSize: '12px', padding: '4px 12px'}}>
@@ -263,7 +263,7 @@ export const FaultyItemCard: FC<Props> = ({report}) => {
                 <div className='faulty-divider' style={{marginBottom: '10px'}} />
 
                 {/* Tanggal */}
-                <p style={{margin: '0 0 4px', fontSize: '11.5px', color: '#897870', fontFamily: "'Georgia', serif", letterSpacing: '0.03em'}}>
+                <p style={{margin: '0 0 4px', fontSize: '11.5px', color: '#897870', letterSpacing: '0.03em'}}>                  {/* Ini tuh aselinya bisa ditambahin fontfamily */}
                   {formattedDate}
                 </p>
 
@@ -277,7 +277,7 @@ export const FaultyItemCard: FC<Props> = ({report}) => {
                 <div className='faulty-divider' style={{marginBottom: '10px'}} />
 
                 {/* Deskripsi */}
-                <p style={{margin: 0, fontSize: '13px', color: '#4a3a34', lineHeight: 1.55, fontFamily: "'Georgia', serif"}}>
+                <p style={{margin: 0, fontSize: '13px', color: '#4a3a34', lineHeight: 1.55}}>                                   {/* Ini tuh aselinya bisa ditambahin fontfamily */}
                   {report.description || '—'}
                 </p>
               </div>
@@ -312,7 +312,7 @@ export const FaultyItemCard: FC<Props> = ({report}) => {
             <p
               style={{
                 margin: 0,
-                fontFamily: "'Georgia', 'Times New Roman', serif",
+                // fontFamily: "'Georgia', 'Times New Roman', serif",
                 fontSize: '0.97rem',
                 fontWeight: 700,
                 color: '#2C1E18',
@@ -337,7 +337,7 @@ export const FaultyItemCard: FC<Props> = ({report}) => {
           <p
             style={{
               margin: 0,
-              fontFamily: "'Georgia', serif",
+              // fontFamily: "'Georgia', serif",
               fontSize: '0.70rem',
               color: '#897870',
               letterSpacing: '0.03em',
@@ -353,7 +353,7 @@ export const FaultyItemCard: FC<Props> = ({report}) => {
           <p
             style={{
               margin: 0,
-              fontFamily: "'Georgia', serif",
+              // fontFamily: "'Georgia', serif",
               fontSize: '0.73rem',
               color: '#6B5750',
               overflow: 'hidden',

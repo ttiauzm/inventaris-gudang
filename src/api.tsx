@@ -55,12 +55,13 @@ API.interceptors.response.use(
         return Promise.reject(error)
       }
 
-      // // Jika 401 berasal dari endpoint /login itu sendiri (kredensial salah),
-      // // jangan redirect — biarkan catch di Login.tsx yang menampilkan pesan error
-      // const requestUrl = error.config?.url || ''
-      // if (requestUrl.includes('/login')) {
-      //   return Promise.reject(error)
-      // }
+      // Aktifkan kembali pelindung ini:
+      // Jika 401 berasal dari endpoint /login itu sendiri (kredensial salah),
+      // jangan redirect — biarkan catch di Login.tsx yang menampilkan pesan error
+      const requestUrl = error.config?.url || ''
+      if (requestUrl.includes('/login')) {
+        return Promise.reject(error)
+      }
 
       console.warn('⚠️ 401 Unauthorized - clearing auth and redirecting')
       localStorage.removeItem('kt-auth-react-v')

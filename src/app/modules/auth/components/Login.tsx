@@ -111,24 +111,6 @@ const ADMIN_USER: UserModel = {
   }
 }
 
-// const onSubmit = async (values) => {
-//    try {
-
-//       // 1️⃣ Ambil CSRF cookie dulu
-//       await axios.get('/sanctum/csrf-cookie', {
-//          withCredentials: true
-//       });
-
-//       // 2️⃣ Baru login
-//       await axios.post('/api/login', values, {
-//          withCredentials: true
-//       });
-
-//    } catch (error) {
-//       console.log(error);
-//    }
-
-
 export function Login() {
   const [loading, setLoading] = useState(false)
   const {saveAuth, setCurrentUser} = useAuth()
@@ -160,8 +142,6 @@ export function Login() {
 
       if (isDevLogin || isAdminLogin) {
         console.log('=====DEV MODE: Bypassing authentication=====')
-        console.log('Email:', values.email)
-        console.log('Password:', values.password)
         
         const userToLogin = isDevLogin ? DEV_USER : ADMIN_USER;
         const token = isDevLogin ? "dev-token" : "admin-token";
@@ -169,32 +149,11 @@ export function Login() {
         try {
           const devAuth = { token: token }
           
-          console.log('🔑 Dev/Admin login - Setting auth and user...')
-          console.log('  Auth:', devAuth)
-          console.log('  User:', userToLogin)
-          
-          // Save auth first
           saveAuth(devAuth)
-          
-          // Then set current user (will be saved to localStorage by AuthProvider)
           setCurrentUser(userToLogin)
           
-          // Verify localStorage
           setTimeout(() => {
-            const savedAuth = localStorage.getItem('kt-auth-react-v')
-            const savedUser = localStorage.getItem('current-user')
-            console.log('✅ Verification after save:', {
-              hasAuth: !!savedAuth,
-              hasUser: !!savedUser,
-              auth: savedAuth,
-              user: savedUser
-            })
-            
-            // Clear pending redirect agar tidak mengganggu navigasi berikutnya
             if (pendingRedirect) localStorage.removeItem('sim_pending_redirect');
-
-            // Navigate back to origin path
-            console.log(`🔄 Navigating to ${from}...`)
             navigate(from, { replace: true })
           }, 200)
           
@@ -212,52 +171,34 @@ export function Login() {
       try {
         console.log('🔐 Normal login attempt')
         
-        // Ambil CSRF cookie dulu dengan base URL yang sama dengan API
-        // const csrfUrl = API.defaults.baseURL?.replace('/api', '/sanctum/csrf-cookie') || '/sanctum/csrf-cookie'
-        // await axios.get(csrfUrl, { withCredentials: true })
-        
         const response = await API.post("/login", {
           login: values.email, 
           password: values.password,
         })
 
-        console.log('📦 Login response:', response.data)
-
-        // Backend returns: { success: true, data: { access_token: "...", token_type: "Bearer", user: {...} } }
         const responseData = response.data
         const token: string | undefined =
-          responseData?.data?.access_token ||   // struktur: { data: { access_token } }
-          responseData?.access_token ||          // struktur: { access_token }
-          responseData?.token                    // struktur: { token } (fallback)
+          responseData?.data?.access_token ||   
+          responseData?.access_token ||          
+          responseData?.token                    
 
         if (!token) {
-          console.error('❌ Token tidak ditemukan di response:', responseData)
           throw new Error('Token tidak ditemukan dalam response login')
         }
 
-        console.log('✅ Token diterima:', token.substring(0, 20) + '...')
         saveAuth({ token })
         API.defaults.headers.common["Authorization"] = `Bearer ${token}`
 
-        // Data user dari login response (fallback minimal)
-        // Backend: data.user = { username, email } dan data.role = 'superadmin' (string)
         const loginUserData = responseData?.data?.user ?? {}
-        // Role string langsung dari login response (mis: 'superadmin', 'admin')
         const loginRoleFromResponse: string = responseData?.data?.role ?? ''
 
-        // Ekstrak nama role dari berbagai bentuk data
-        // Backend Role model menggunakan field 'role_name' (bukan 'nama_role')
         const extractRoleName = (roleData: any): string => {
           if (!roleData) return ''
           if (typeof roleData === 'string') return roleData
-          // Role object dari Laravel relationship: { role_id, role_name, ... }
           return roleData.role_name ?? roleData.nama_role ?? ''
         }
 
-        // Helper untuk mapping data user ke UserModel
         const buildUserModel = (userData: any) => {
-          // Role name: coba dari userData (profile response eager-loads role),
-          // lalu fallback ke loginRoleFromResponse (data.role dari login)
           const roleName =
             extractRoleName(userData.role) ||
             userData.nama_role ||
@@ -272,8 +213,6 @@ export function Login() {
             loginUserData.role_id ??
             ''
 
-          console.log('🎭 Role resolved:', { roleName, roleId, rawRole: userData.role, loginRole: loginUserData.role })
-
           return {
             id: userData.user_id ?? userData.id ?? loginUserData.user_id ?? loginUserData.id ?? '',
             username: userData.username ?? loginUserData.username ?? '',
@@ -282,8 +221,8 @@ export function Login() {
             last_name: userData.last_name ?? '',
             fullname: userData.fullname ?? userData.name ?? userData.username ?? loginUserData.username ?? '',
             password: undefined,
-            role: roleName,      // Selalu string (e.g. 'superadmin', 'admin')
-            nama_role: roleName, // Sama, untuk backward-compat dengan permissionHelper
+            role: roleName,      
+            nama_role: roleName, 
             role_id: roleId,
             pic: userData.pic ?? userData.avatar ?? '',
             language: userData.language ?? 'en',
@@ -300,39 +239,30 @@ export function Login() {
           }
         }
 
-        // Ambil data lengkap user dari /profile
-        // Jika gagal (misal DB issue), tetap pakai data dari login response agar user bisa masuk
         let mappedUser
         try {
           const profileRes = await API.get("/profile")
-          const userData = profileRes.data
-          console.log('👤 Profile response:', userData)
-          mappedUser = buildUserModel(userData)
+          mappedUser = buildUserModel(profileRes.data)
         } catch (profileError: any) {
-          console.warn('⚠️ /profile gagal, menggunakan data dari login response:', profileError?.response?.status)
-          // Fallback: pakai data minimal dari login response
           mappedUser = buildUserModel(loginUserData)
         }
 
         setCurrentUser(mappedUser)
-        // Simpan waktu login terakhir ke localStorage (digunakan oleh halaman manajemen akun)
         if (mappedUser.id) {
           localStorage.setItem(`sim_last_login_${mappedUser.id}`, new Date().toISOString())
         }
         
-        // Clear pending redirect agar tidak mengganggu navigasi berikutnya
         if (pendingRedirect) localStorage.removeItem('sim_pending_redirect');
 
-        // FORCE TEST
-        console.log('Force navigating to ', from);
         setLoading(false)
         navigate(from, { replace: true })
       } catch (error: any) {
         console.error('Login error:', error)
         saveAuth(undefined)
-        setStatus(
-          error?.response?.data?.message || error?.message || "Password atau email salah"
-        )
+        
+        // Memastikan pesan error yang keluar persis seperti permintaan dan tidak memicu render object
+        setStatus("Email/username atau password salah")
+        
         setSubmitting(false)
         setLoading(false)
       }
@@ -342,7 +272,11 @@ export function Login() {
   return (
     <form
       className='form w-100'
-      onSubmit={formik.handleSubmit}
+      // Menambahkan e.preventDefault() secara eksplisit agar page tidak auto-refresh jika API gagal
+      onSubmit={(e) => {
+        e.preventDefault();
+        formik.handleSubmit(e);
+      }}
       noValidate
       id='kt_login_signin_form'
     >
@@ -378,16 +312,6 @@ export function Login() {
           </div>
         </div>
       )}
-
-      {/* <div className='mb-10 bg-light-info p-8 rounded'>
-        <div className='text-info'>
-          <strong>🔓 DEV MODE:</strong>
-          <br />
-          Super Admin: <strong>dev@example.com</strong> / <strong>1234</strong>
-          <br />
-          Admin: <strong>admin@example.com</strong> / <strong>admin</strong>
-        </div>
-      </div> */}
 
       <div className='fv-row mb-8'>
         <label className='form-label fs-6 fw-bolder text-gray-900'>Username / Email</label>
@@ -434,9 +358,18 @@ export function Login() {
 
       <div className='d-flex flex-stack flex-wrap gap-3 fs-base fw-semibold mb-8'>
         <div />
-        <Link to='/auth/forgot-password' className='link-primary'>
+        {/* Menggunakan elemen anchor dengan onClick alert untuk mengarahkan pelaporan ke Superadmin */}
+        <a 
+          href='#'
+          onClick={(e) => {
+            e.preventDefault();
+            alert('Silahkan lapor kepada Superadmin');
+          }}
+          className='link-primary'
+          style={{ cursor: 'pointer' }}
+        >
           Lupa Password?
-        </Link>
+        </a>
       </div>
 
       <div className='d-grid mb-10'>
@@ -456,13 +389,6 @@ export function Login() {
           )}
         </button>
       </div>
-
-      {/* <div className='text-gray-500 text-center fw-semibold fs-6'>
-        Not a Member yet?{' '}
-        <Link to='/auth/registration' className='link-primary'>
-          Sign up
-        </Link>
-      </div> */}
     </form>
   )
 }

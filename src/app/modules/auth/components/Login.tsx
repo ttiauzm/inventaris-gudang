@@ -258,7 +258,7 @@ export function Login() {
         navigate(from, { replace: true })
       } catch (error: any) {
         console.error('Login error:', error)
-        saveAuth(undefined)
+        // saveAuth(undefined)
         
         // Memastikan pesan error yang keluar persis seperti permintaan dan tidak memicu render object
         setStatus("Email/username atau password salah")

@@ -59,7 +59,7 @@ API.interceptors.response.use(
       // Jika 401 berasal dari endpoint /login itu sendiri (kredensial salah),
       // jangan redirect — biarkan catch di Login.tsx yang menampilkan pesan error
       const requestUrl = error.config?.url || ''
-      if (requestUrl.includes('/login')) {
+      if (requestUrl.includes('login')) {
         return Promise.reject(error)
       }
 

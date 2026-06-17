@@ -9,11 +9,13 @@ import {isSuperAdmin as checkSuperAdmin} from '../../utils/permissionHelper'
 import {exportMasterDataToExcel, exportMasterDataToPDF} from '../../utils/exportUtils'
 import {ConfirmModal} from '../../components/ConfirmModal'
 import {SuccessModal} from '../../components/SuccessModal'
+import {CategoryModal} from '../inventory/components/CategoryModal'
 
 interface Item {
   id: string
   name: string
   description: string
+  unit?: string // Tambahan properti unit pada interface
 }
 
 const MasterDataPage: FC = () => {
@@ -26,7 +28,9 @@ const MasterDataPage: FC = () => {
   const [showModalCategory, setShowModalCategory] = useState(false)
   const [showExportCategory, setShowExportCategory] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<Item | null>(null)
-  const [formDataCategory, setFormDataCategory] = useState({name: '', description: ''})
+  
+  // Tambahan inisialisasi unit
+  const [formDataCategory, setFormDataCategory] = useState({name: '', description: '', unit: ''})
   
   // Materials State
   const [materials, setMaterials] = useState<Item[]>([])
@@ -55,7 +59,7 @@ const MasterDataPage: FC = () => {
   const [currentPageMat, setCurrentPageMat] = useState(1)
   const [itemsPerPageMat, setItemsPerPageMat] = useState(10)
 
-  // Check superadmin - akan otomatis bypass di dev mode
+  // Check superadmin
   const isSuperAdmin = checkSuperAdmin(currentUser)
 
   useEffect(() => {
@@ -97,21 +101,18 @@ const MasterDataPage: FC = () => {
     mat.name.toLowerCase().includes(searchQueryMaterials.toLowerCase())
   )
 
-  // Calculate Pagination Categories
   const totalPagesCat = Math.ceil(filteredCategories.length / itemsPerPageCat)
   const paginatedCategories = filteredCategories.slice(
     (currentPageCat - 1) * itemsPerPageCat,
     currentPageCat * itemsPerPageCat
   )
 
-  // Calculate Pagination Materials
   const totalPagesMat = Math.ceil(filteredMaterials.length / itemsPerPageMat)
   const paginatedMaterials = filteredMaterials.slice(
     (currentPageMat - 1) * itemsPerPageMat,
     currentPageMat * itemsPerPageMat
   )
 
-  // Reset pagination when search or page size changes
   useEffect(() => {
     setCurrentPageCat(1)
   }, [searchQueryCategories, itemsPerPageCat])
@@ -123,19 +124,23 @@ const MasterDataPage: FC = () => {
   // Category Handlers
   const handleAddCategory = () => {
     setSelectedCategory(null)
-    setFormDataCategory({name: '', description: ''})
+    setFormDataCategory({name: '', description: '', unit: ''}) // Reset termasuk unit
     setShowModalCategory(true)
   }
 
   const handleEditCategory = (category: Item) => {
     setSelectedCategory(category)
-    setFormDataCategory({name: category.name, description: category.description})
+    setFormDataCategory({name: category.name, description: category.description, unit: category.unit || ''}) // Set dengan unit
     setShowModalCategory(true)
   }
 
   const handleSaveCategory = async () => {
     if (!formDataCategory.name.trim()) {
       setErrorCategory('Nama kategori tidak boleh kosong!')
+      return
+    }
+    if (!formDataCategory.unit.trim()) {
+      setErrorCategory('Satuan (Unit) tidak boleh kosong!')
       return
     }
     setErrorCategory('')
@@ -225,7 +230,6 @@ const MasterDataPage: FC = () => {
     }
   }
 
-  // Export Functions
   const handleExportCategory = async (type: 'excel' | 'pdf') => {
     if (type === 'excel') {
       exportMasterDataToExcel(filteredCategories, 'Category')
@@ -246,7 +250,6 @@ const MasterDataPage: FC = () => {
 
   return (
     <>
-      {/* Modal konfirmasi hapus */}
       {showDeleteConfirm && (
         <ConfirmModal
           message={`Hapus ${deleteTarget?.type === 'category' ? 'kategori' : 'material'} ini? Data yang dihapus tidak dapat dikembalikan.`}
@@ -257,7 +260,7 @@ const MasterDataPage: FC = () => {
           onCancel={() => setShowDeleteConfirm(false)}
         />
       )}
-      {/* Modal sukses */}
+      
       {showSuccess && (
         <SuccessModal
           message={successMessage}
@@ -276,7 +279,6 @@ const MasterDataPage: FC = () => {
                 </div>
                 
                 <div className='card-toolbar gap-2'>
-                  {/* Export Dropdown */}
                   {isSuperAdmin && (
                   <div className='position-relative'>
                     <button
@@ -338,14 +340,15 @@ const MasterDataPage: FC = () => {
                           <th className='min-w-50px'>No</th>
                           <th className='min-w-100px'>ID</th>
                           <th className='min-w-150px'>Nama Kategori</th>
-                          <th className='min-w-200px'>Deskripsi</th>
+                          <th className='min-w-100px'>Satuan (Unit)</th> {/* Tambahan header unit */}
+                          <th className='min-w-150px'>Deskripsi</th>
                           <th className='min-w-100px text-end'>Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredCategories.length === 0 ? (
                           <tr>
-                            <td colSpan={5}>
+                            <td colSpan={6}>
                               <EmptyState404
                                 title='Tidak ada kategori ditemukan'
                                 subtitle='Pastikan kata kunci pencarian Anda benar.'
@@ -357,6 +360,7 @@ const MasterDataPage: FC = () => {
                             <td>{(currentPageCat - 1) * itemsPerPageCat + index + 1}</td>
                             <td className='text-dark fw-bold'>{category.id}</td>
                             <td className='text-dark fw-bold'>{category.name}</td>
+                            <td className='text-dark fw-bold'>{category.unit || '-'}</td> {/* Render Data Unit */}
                             <td className='text-muted'>{category.description || '-'}</td>
                             <td className='text-end'>
                               <button
@@ -382,6 +386,7 @@ const MasterDataPage: FC = () => {
                 )}
 
                 <div className='d-flex flex-stack flex-wrap mt-4'>
+                  {/* Pagination Section Kategori (Tetap sama) */}
                   <div className='d-flex align-items-center gap-2'>
                     <span className='text-muted'>Show</span>
                     <select 
@@ -455,7 +460,6 @@ const MasterDataPage: FC = () => {
                 </div>
                 
                 <div className='card-toolbar gap-2'>
-                  {/* Export Dropdown */}
                   {isSuperAdmin && (
                   <div className='position-relative'>
                     <button
@@ -629,57 +633,10 @@ const MasterDataPage: FC = () => {
 
       {/* Category Modal */}
       {showModalCategory && (
-        <>
-          <div className='modal-backdrop fade show' onClick={() => setShowModalCategory(false)} />
-          <div className='modal fade show d-block' tabIndex={-1}>
-            <div className='modal-dialog modal-dialog-centered'>
-              <div className='modal-content'>
-                <div className='modal-header'>
-                  <h5 className='modal-title'>
-                    {selectedCategory ? 'Edit Kategori Barang' : 'Tambah Kategori Barang'}
-                  </h5>
-                  <button type='button' className='btn-close' onClick={() => { setShowModalCategory(false); setErrorCategory('') }} />
-                </div>
-                <div className='modal-body'>
-                  {errorCategory && (
-                    <div className='alert alert-danger py-3 mb-4'>{errorCategory}</div>
-                  )}
-                  <div className='mb-5'>
-                    <label className='form-label required'>Nama</label>
-                    <input
-                      type='text'
-                      className={`form-control ${errorCategory && !formDataCategory.name.trim() ? 'is-invalid' : ''}`}
-                      placeholder='Kain Sutra Emas'
-                      value={formDataCategory.name}
-                      onChange={(e) => { setFormDataCategory({...formDataCategory, name: e.target.value}); if (errorCategory) setErrorCategory('') }}
-                    />
-                  </div>
-                  <div className='mb-5'>
-                    <label className='form-label'>Deskripsi</label>
-                    <textarea
-                      className='form-control'
-                      rows={3}
-                      placeholder='Kain Sutra Emas'
-                      value={formDataCategory.description}
-                      onChange={(e) => setFormDataCategory({...formDataCategory, description: e.target.value})}
-                    />
-                  </div>
-                </div>
-                <div className='modal-footer'>
-                  <button className='btn btn-product-light' onClick={() => setShowModalCategory(false)}>
-                    Batal
-                  </button>
-                  <button 
-                    className='btn btn-product' 
-                    onClick={handleSaveCategory}
-                  >
-                    {selectedCategory ? 'Simpan' : 'Tambah'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
+        <CategoryModal
+          onClose={() => setShowModalCategory(false)}
+          onSave={handleSaveCategory}
+        />
       )}
 
       {/* Material Modal */}

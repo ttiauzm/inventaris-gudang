@@ -1,15 +1,15 @@
 import {FC, useState} from 'react'
-import {KTIcon} from '../../../../_metronic/helpers'
 
-interface MaterialModalProps {
+interface CategoryModalProps {
   onClose: () => void
-  onSave: (material: {name: string, description: string}) => void
+  onSave: (category: {name: string, description: string, unit: string}) => void
 }
 
-export const CategoryModal: FC<MaterialModalProps> = ({onClose, onSave}) => {
+export const CategoryModal: FC<CategoryModalProps> = ({onClose, onSave}) => {
   const [formData, setFormData] = useState({
     name: '',
-    description: ''
+    description: '',
+    unit: ''
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -30,7 +30,7 @@ export const CategoryModal: FC<MaterialModalProps> = ({onClose, onSave}) => {
             <form onSubmit={handleSubmit}>
               <div className='modal-body'>
                 <div className='mb-5'>
-                  <label className='form-label required'>Nama</label>
+                  <label className='form-label required'>Nama Kategori</label>
                   <input
                     type='text'
                     className='form-control'
@@ -40,12 +40,24 @@ export const CategoryModal: FC<MaterialModalProps> = ({onClose, onSave}) => {
                     required
                   />
                 </div>
+                {/* Tambahan Input Unit */}
+                <div className='mb-5'>
+                  <label className='form-label required'>Satuan (Unit)</label>
+                  <input
+                    type='text'
+                    className='form-control'
+                    placeholder='Contoh: pcs, meter, kg'
+                    value={formData.unit}
+                    onChange={(e) => setFormData({...formData, unit: e.target.value})}
+                    required
+                  />
+                </div>
                 <div className='mb-5'>
                   <label className='form-label'>Deskripsi</label>
                   <input
                     type='text'
                     className='form-control'
-                    placeholder='Kain Sutra Emas'
+                    placeholder='Deskripsi kategori (Opsional)'
                     value={formData.description}
                     onChange={(e) => setFormData({...formData, description: e.target.value})}
                   />

@@ -19,8 +19,8 @@ const loginSchema = Yup.object().shape({
 })
 
 const initialValues = {
-  email: 'dev@example.com',
-  password: '1234',
+  email: '',
+  password: '',
 }
 
 // Dev user dengan type yang benar

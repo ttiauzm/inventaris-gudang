@@ -58,9 +58,10 @@ API.interceptors.response.use(
       // Aktifkan kembali pelindung ini:
       // Jika 401 berasal dari endpoint /login itu sendiri (kredensial salah),
       // jangan redirect — biarkan catch di Login.tsx yang menampilkan pesan error
-      const requestUrl = error.config?.url || ''
-      if (requestUrl.includes('login')) {
-        return Promise.reject(error)
+      const currentPath = window.location.pathname.toLowerCase();
+      if (currentPath.includes('/login') || currentPath.includes('/auth')) {
+        console.warn('⚠️ 401 ditangkap di halaman login. Mencegah auto-refresh.');
+        return Promise.reject(error);
       }
 
       console.warn('⚠️ 401 Unauthorized - clearing auth and redirecting')

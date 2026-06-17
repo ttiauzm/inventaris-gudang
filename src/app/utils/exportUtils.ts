@@ -124,7 +124,7 @@ export const exportLogsToExcel = (logs: any[]) => {
   const exportData = logs.map((item, index) => ({
     'No': index + 1,
     'Log ID': item.transaction_id,
-    'Admin': item.admin_name,
+    'Pengguna': item.admin_name,
     'User ID': item.user_id,
     'Tabel': item.table_name,
     'Row ID': item.row_id,
@@ -147,7 +147,7 @@ export const exportHistoryToExcel = (history: any[]) => {
     'ID Transaksi': item.transaction_id,
     'Nama Barang': item.item_name,
     'Jumlah': `${item.quantity} ${item.unit}`,
-    'Admin': item.admin_name,
+    'Pengguna': item.admin_name,
     'Tanggal': (item.date || item.created_at) ? new Date(item.date || item.created_at).toLocaleString('id-ID') : '-',
     'Deskripsi': item.description
   }))

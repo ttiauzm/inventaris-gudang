@@ -346,7 +346,7 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
             {/* Error banner */}
             {takeStatus === 'error' && (
               <div style={{backgroundColor: '#fff5f5', border: '1px solid #f5c6cb', borderRadius: '8px', padding: '12px 14px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#842029'}}>
-                <KTIcon iconName='cross-circle' className='fs-5' />
+                <KTIcon iconName='cross-circle' className='fs-5 text-danger' />
                 {takeErrorMsg}
               </div>
             )}
@@ -361,7 +361,7 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({item, onClose, onEdit, onTak
                 {takeLoading ? (
                   <><span className='spinner-border spinner-border-sm' /> Memproses...</>
                 ) : (
-                  <><KTIcon iconName='save-2' className='fs-5' /> Ambil Barang</>
+                  <><KTIcon iconName='save-2' className='fs-5 text-white' /> Ambil Barang</>
                 )}
               </button>
             </div>

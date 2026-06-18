@@ -85,8 +85,16 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
     // Inline validation
     const newErrors: Record<string, string> = {}
     if (!formData.item_name.trim()) {
-      newErrors.item_name = 'Semua kolom wajib diisi'
+      newErrors.item_name = 'Nama barang tidak boleh kosong'
     }
+
+    if (!item) {
+      if (!formData.category_id) newErrors.category_id = 'Kategori harus dipilih'
+      if (!formData.material_id) newErrors.material_id = 'Material harus dipilih'
+      if (formData.supplier_ids.length === 0 || !formData.supplier_ids[0]) newErrors.supplier_ids = 'Supplier harus dipilih'
+      if (formData.quantity <= 0) newErrors.quantity = 'Jumlah harus lebih dari 0'
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return
@@ -196,6 +204,16 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
 
             <form onSubmit={handleSubmit}>
               <div className='modal-body' style={{padding: '20px 30px'}}>
+
+                {errors.general && (
+                  <div className='alert alert-danger d-flex align-items-center py-4 mb-5'>
+                    <KTIcon iconName='cross-circle' className='fs-2 text-danger me-3' />
+                    <div className='d-flex flex-column'>
+                      <span className='fw-semibold'>{errors.general}</span>
+                    </div>
+                  </div>
+                )}
+
                 <div className='row g-4'>
                   {/* Nama */}
                   <div className='col-12'>
@@ -221,7 +239,7 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
                       <div className='col-12'>
                         <label className='form-label fw-semibold'>Kategori</label>
                         <select
-                          className='form-select form-select-lg'
+                          className={`form-select form-select-lg ${errors.category_id ? 'is-invalid' : ''}`}
                           value={formData.category_id}
                           onChange={(e) => {
                             const selectedCatId = e.target.value;
@@ -248,7 +266,7 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
                       <div className='col-12'>
                         <label className='form-label fw-semibold'>Material</label>
                         <select
-                          className='form-select form-select-lg'
+                          className={`form-select form-select-lg ${errors.material_id ? 'is-invalid' : ''}`}
                           value={formData.material_id}
                           onChange={(e) => setFormData({...formData, material_id: e.target.value})}
                           required
@@ -266,7 +284,7 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
                       <div className='col-12'>
                         <label className='form-label fw-semibold'>Supplier</label>
                         <select
-                          className='form-select form-select-lg'
+                          className={`form-select form-select-lg ${errors.supplier_ids ? 'is-invalid' : ''}`}
                           value={formData.supplier_ids[0] || ''}
                           onChange={(e) => setFormData({...formData, supplier_ids: [e.target.value]})}
                           required
@@ -285,7 +303,7 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
                         <label className='form-label fw-semibold'>Jumlah</label>
                         <input
                           type='text'
-                          className='form-control form-control-lg'
+                          className={`form-control form-control-lg ${errors.quantity ? 'is-invalid' : ''}`}
                           placeholder='Jogja'
                           value={formData.quantity}
                           onChange={(e) => setFormData({...formData, quantity: parseInt(e.target.value) || 0})}
@@ -364,8 +382,8 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
                     <label className='form-label fw-semibold'>Harga</label>
                     <input
                       type='text'
-                      className='form-control form-control-lg'
-                      placeholder='Jl. in aja dulu'
+                      className={`form-control form-control-lg ${errors.price ? 'is-invalid' : ''}`}
+                      placeholder='0'
                       value={formData.price}
                       onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
                     />

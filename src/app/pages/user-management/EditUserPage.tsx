@@ -195,7 +195,7 @@ const EditUserPage: FC<EditUserPageProps> = ({user, onBack}) => {
           <div className='card'>
             <div className='card-header border-0 pt-6'>
               <h3 className='card-title align-items-start flex-column'>
-                <span className='card-label fw-bold fs-3 mb-1'>Edit Detail Admin</span>
+                <span className='card-label fw-bold fs-3 mb-1'>Edit Detail User: {userData.username}</span>
               </h3>
             </div>
 

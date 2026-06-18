@@ -550,7 +550,18 @@ const EditDetailInlineModal: FC<EditDetailInlineModalProps> = ({item, onClose, o
 
         <div style={inputRowStyle}>
           <div style={labelCellStyle}>Unit</div>
-          <input type='text' value={form.unit} onChange={(e) => { setForm(f => ({...f, unit: e.target.value})); if (errors.unit) setErrors(p => ({...p, unit: ''})) }} style={inputCellStyle} placeholder='pcs, meter, kg...' />
+          <input 
+            type='text' 
+            value={form.unit} 
+            readOnly
+            style={{
+              ...inputCellStyle, 
+              backgroundColor: '#f5f2ee',
+              cursor: 'not-allowed',
+              color: '#9e9992'
+            }} 
+            placeholder='Otomatis dari kategori' 
+          />
         </div>
         {errors.unit && <p style={{color: '#dc3545', fontSize: '12px', marginTop: '-6px', marginBottom: '8px', paddingLeft: '4px'}}>{errors.unit}</p>}
 

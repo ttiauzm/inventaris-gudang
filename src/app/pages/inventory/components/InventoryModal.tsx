@@ -44,7 +44,7 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
     material_id: '',
     supplier_ids: [] as string[],
     quantity: 0,
-    unit: 'pcs',
+    unit: '',
     price: 0,
     description: ''
   })
@@ -223,7 +223,16 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
                         <select
                           className='form-select form-select-lg'
                           value={formData.category_id}
-                          onChange={(e) => setFormData({...formData, category_id: e.target.value})}
+                          onChange={(e) => {
+                            const selectedCatId = e.target.value;
+                            const selectedCat = dropdownData.categories.find((c: any) => String(c.category_id) === String(selectedCatId));
+                            
+                            setFormData({
+                              ...formData, 
+                              category_id: selectedCatId,
+                              unit: selectedCat ? (selectedCat.unit || '') : ''
+                            });
+                          }}
                           required
                         >
                           <option value=''>Pilih Kategori</option>
@@ -343,11 +352,10 @@ const InventoryModal: FC<InventoryModalProps> = ({item, onClose, onSave, onDelet
                     <label className='form-label fw-semibold'>Unit</label>
                     <input
                       type='text'
-                      className='form-control form-control-lg'
-                      placeholder='per cm/item/'
+                      className='form-control form-control-lg bg-secondary'
+                      placeholder='Pilih kategori terlebih dahulu'
                       value={formData.unit}
-                      onChange={(e) => setFormData({...formData, unit: e.target.value})}
-                      required
+                      readOnly
                     />
                   </div>
 

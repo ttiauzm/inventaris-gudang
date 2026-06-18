@@ -633,10 +633,70 @@ const MasterDataPage: FC = () => {
 
       {/* Category Modal */}
       {showModalCategory && (
-        <CategoryModal
-          onClose={() => setShowModalCategory(false)}
-          onSave={handleSaveCategory}
-        />
+        <>
+          <div className='modal-backdrop fade show' onClick={() => setShowModalCategory(false)} />
+          <div className='modal fade show d-block' tabIndex={-1}>
+            <div className='modal-dialog modal-dialog-centered'>
+              <div className='modal-content'>
+                <div className='modal-header'>
+                  <h5 className='modal-title'>
+                    {selectedCategory ? 'Edit Kategori Barang' : 'Tambah Kategori Barang'}
+                  </h5>
+                  <button type='button' className='btn-close' onClick={() => { setShowModalCategory(false); setErrorCategory('') }} />
+                </div>
+                <div className='modal-body'>
+                  {errorCategory && (
+                    <div className='alert alert-danger py-3 mb-4'>{errorCategory}</div>
+                  )}
+                  <div className='mb-5'>
+                    <label className='form-label required'>Nama Kategori</label>
+                    <input
+                      type='text'
+                      className={`form-control ${errorCategory && !formDataCategory.name.trim() ? 'is-invalid' : ''}`}
+                      placeholder='Contoh: Kain, Aksesoris'
+                      value={formDataCategory.name}
+                      onChange={(e) => { setFormDataCategory({...formDataCategory, name: e.target.value}); if (errorCategory) setErrorCategory('') }}
+                    />
+                  </div>
+                  
+                  {/* Tambahan Input Satuan (Unit) */}
+                  <div className='mb-5'>
+                    <label className='form-label required'>Satuan (Unit)</label>
+                    <input
+                      type='text'
+                      className={`form-control ${errorCategory && !formDataCategory.unit.trim() ? 'is-invalid' : ''}`}
+                      placeholder='Contoh: pcs, meter, kilogram'
+                      value={formDataCategory.unit}
+                      onChange={(e) => { setFormDataCategory({...formDataCategory, unit: e.target.value}); if (errorCategory) setErrorCategory('') }}
+                    />
+                  </div>
+
+                  <div className='mb-5'>
+                    <label className='form-label'>Deskripsi</label>
+                    <textarea
+                      className='form-control'
+                      rows={3}
+                      placeholder='Deskripsi kategori (opsional)'
+                      value={formDataCategory.description}
+                      onChange={(e) => setFormDataCategory({...formDataCategory, description: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className='modal-footer'>
+                  <button className='btn btn-product-light' onClick={() => setShowModalCategory(false)}>
+                    Batal
+                  </button>
+                  <button 
+                    className='btn btn-product' 
+                    onClick={handleSaveCategory}
+                  >
+                    {selectedCategory ? 'Simpan' : 'Tambah'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Material Modal */}

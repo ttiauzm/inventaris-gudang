@@ -136,7 +136,8 @@ const MasterDataPage: FC = () => {
     setShowModalCategory(true)
   }
 
-  const handleSaveCategory = async (dataDariModal: {name: string, description: string, unit: string}) => {
+  const handleSaveCategory = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
     if (!formDataCategory.name.trim()) {
       setErrorCategory('Nama kategori tidak boleh kosong!')
       return

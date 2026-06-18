@@ -6,6 +6,7 @@ export interface Category {
   id: string
   name: string
   description: string
+  unit: string
 }
 
 export const getCategories = async (): Promise<Category[]> => {
@@ -13,7 +14,8 @@ export const getCategories = async (): Promise<Category[]> => {
   return response.data.data.map((item: any) => ({
     id: item.category_id,
     name: item.category_name,
-    description: item.description || ''
+    description: item.description || '',
+    unit: item.unit || ''
   }))
 }
 
@@ -23,14 +25,16 @@ export const getCategoryById = async (id: string): Promise<Category> => {
   return {
     id: item.category_id,
     name: item.category_name,
-    description: item.description || ''
+    description: item.description || '',
+    unit: item.unit || ''
   }
 }
 
 export const createCategory = async (data: Partial<Category>): Promise<Category> => {
   const payload = {
     category_name: data.name,
-    description: data.description
+    description: data.description,
+    unit: data.unit
   }
   const response = await API.post<{data: any}>(CATEGORY_URL, payload)
   return response.data.data
@@ -39,7 +43,8 @@ export const createCategory = async (data: Partial<Category>): Promise<Category>
 export const updateCategory = async (id: string, data: Partial<Category>): Promise<Category> => {
   const payload = {
     category_name: data.name,
-    description: data.description
+    description: data.description,
+    unit: data.unit
   }
   const response = await API.put<{data: any}>(`${CATEGORY_URL}/${id}`, payload)
   return response.data.data

@@ -10,6 +10,7 @@ import {exportMasterDataToExcel, exportMasterDataToPDF} from '../../utils/export
 import {ConfirmModal} from '../../components/ConfirmModal'
 import {SuccessModal} from '../../components/SuccessModal'
 import {CategoryModal} from '../inventory/components/CategoryModal'
+import axios from 'axios'
 
 interface Item {
   id: string
@@ -28,6 +29,7 @@ const MasterDataPage: FC = () => {
   const [showModalCategory, setShowModalCategory] = useState(false)
   const [showExportCategory, setShowExportCategory] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<Item | null>(null)
+  
   
   // Tambahan inisialisasi unit
   const [formDataCategory, setFormDataCategory] = useState({name: '', description: '', unit: ''})
@@ -124,7 +126,7 @@ const MasterDataPage: FC = () => {
   // Category Handlers
   const handleAddCategory = () => {
     setSelectedCategory(null)
-    setFormDataCategory({name: '', description: '', unit: ''}) // Reset termasuk unit
+    setFormDataCategory({name: '', description: '', unit: ''})
     setShowModalCategory(true)
   }
 
@@ -134,7 +136,7 @@ const MasterDataPage: FC = () => {
     setShowModalCategory(true)
   }
 
-  const handleSaveCategory = async () => {
+  const handleSaveCategory = async (dataDariModal: {name: string, description: string, unit: string}) => {
     if (!formDataCategory.name.trim()) {
       setErrorCategory('Nama kategori tidak boleh kosong!')
       return
@@ -145,8 +147,24 @@ const MasterDataPage: FC = () => {
     }
     setErrorCategory('')
 
+    // try {
+    //   if (selectedCategory) {
+    //     await updateCategory(selectedCategory.id, formDataCategory)
+    //     setSuccessMessage('Kategori berhasil diperbarui')
+    //   } else {
+    //     await createCategory(formDataCategory)
+    //     setSuccessMessage('Kategori berhasil ditambahkan')
+    //   }
+    //   setShowModalCategory(false)
+    //   fetchCategories()
+    //   setShowSuccess(true)
+    // } catch (error) {
+    //   console.error('Error saving category:', error)
+    //   setErrorCategory('Terjadi kesalahan saat menyimpan kategori. Silakan coba lagi.')
+    // }
     try {
       if (selectedCategory) {
+        // Mode Edit
         await updateCategory(selectedCategory.id, formDataCategory)
         setSuccessMessage('Kategori berhasil diperbarui')
       } else {

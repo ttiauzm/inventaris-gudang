@@ -42,12 +42,16 @@ class RolePermissionSeeder extends Seeder
         $shared = [
             'login', 
             'view_item', 
-            'update_item', // 👈 Ini untuk fungsi "Potong Kain" / Cut Stock
+            'update_item', //Ini untuk fungsi "Potong Kain" / Cut Stock
             'view_category',
             'view_supplier',
             'view_material',
             'view_transaction', 'add_transaction',
-            'update_profile_self' 
+            'update_profile_self',
+            
+            // TAMBAHAN BARU UNTUK FITUR BARANG RUSAK:
+            'report_faulty', 
+            'view_faulty'    
         ];
 
         // Masukkan semua untuk Superadmin
@@ -60,7 +64,7 @@ class RolePermissionSeeder extends Seeder
             $this->insertPermission($perm, $adminId, $now);
         }
 
-        $this->command->info('✅ Seeder Berhasil! Admin sekarang cuma bisa potong stok, Superadmin pegang Master Data.');
+        $this->command->info('Seeder Berhasil! Admin sekarang cuma bisa potong stok, Superadmin pegang Master Data.');
     }
 
     private function insertPermission($name, $roleId, $now) 

@@ -14,7 +14,6 @@ class TransactionController extends Controller
     {
         $authUser = Auth::user();
 
-        // ✅ SEKARANG AKTIF: Pakai hasPermission dan view_transaction
         if (!$authUser->hasPermission('view_transaction')) {
             return response()->json([
                 'success' => false,
@@ -24,14 +23,23 @@ class TransactionController extends Controller
         }
 
         $transactions = Transactions::with([
-            'items:item_id,item_name',
-            'suppliers:supplier_id,supplier_name',
-            'users:user_id,username'
+            'item:item_id,item_name',
+            'supplier:supplier_id,supplier_name',
+            'user:user_id,username'
         ])
         ->select('transaction_id', 'item_id', 'supplier_id', 'user_id', 'transaction_type', 'quantity', 'unit', 'description', 'created_at')
         ->orderBy('created_at', 'desc')
         ->get();
 
+        $transactions->map(function ($transaction) {
+            // Gandakan data tunggal menjadi properti jamak yang dicari frontend
+            $transaction->items = $transaction->item;
+            $transaction->users = $transaction->user;
+            $transaction->suppliers = $transaction->supplier; // Jaga-jaga kalau FE butuh nama supplier
+            
+            return $transaction;
+        });
+        
         return response()->json([
             'success' => true,
             'message' => 'Daftar transaksi berhasil diambil',
@@ -52,9 +60,9 @@ class TransactionController extends Controller
         }
 
         $transaction = Transactions::with([
-            'items:item_id,item_name',
-            'suppliers:supplier_id,supplier_name',
-            'users:user_id,username'
+            'item:item_id,item_name',
+            'supplier:supplier_id,supplier_name',
+            'user:user_id,username'
         ])
         ->select('transaction_id', 'item_id', 'supplier_id', 'user_id', 'transaction_type', 'quantity', 'unit', 'description', 'created_at')
         ->find($id);
@@ -86,16 +94,17 @@ class TransactionController extends Controller
             ], 403);
         }
 
-        $transactions = Transactions::with(['items', 'suppliers', 'users'])
+        $transactions = Transactions::with(['item', 'supplier', 'user'])
             ->orderBy('created_at', 'desc')
             ->get();
 
         $rows = $transactions->map(function ($t) {
             return [
                 'Transaction ID' => $t->transaction_id,
-                'Item Name'      => $t->items->item_name ?? '-',
-                'Supplier'       => $t->suppliers->supplier_name ?? '-',
-                'User'           => $t->users->username ?? '-',
+                // UBAH DI SINI: Panggil property objeknya tanpa huruf 's'
+                'Item Name'      => $t->item->item_name ?? '-',
+                'Supplier'       => $t->supplier->supplier_name ?? '-',
+                'User'           => $t->user->username ?? '-',
                 'Type'           => $t->transaction_type,
                 'Quantity'       => $t->quantity,
                 'Unit'           => $t->unit,
@@ -123,7 +132,7 @@ class TransactionController extends Controller
             ], 403);
         }
 
-        $transactions = Transactions::with(['items', 'suppliers', 'users'])
+        $transactions = Transactions::with(['item', 'supplier', 'user'])
             ->orderBy('created_at', 'desc')
             ->get();
 

@@ -109,9 +109,9 @@ class ItemController extends Controller
             'material_id' => 'required|exists:materials,material_id',
             'supplier_ids' => 'required|array',
             'supplier_ids.*' => 'exists:suppliers,supplier_id',
-            'quantity' => 'required|integer|min:0',
+            'quantity' => 'required|integer|min:1',
             'unit' => 'required|string|max:50',
-            'price' => 'required|numeric|min:0',
+            'price' => 'required|numeric|min:1',
             'images' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
@@ -132,13 +132,13 @@ class ItemController extends Controller
 
         if ($request->hasFile('images')) {
             $file = $request->file('images');
-            $fileName = 'item_' . time() . '_' . Str::random(5) . '.webp';
+            $fileName = 'item_' . time() . '_' . Str::random(5) . '.jpg';
             $path = 'items/' . $fileName;
 
             $manager = new ImageManager(new Driver());
             $image = $manager->read($file);
             $image->scaleDown(width: 800);
-            $encodedImage = (string) $image->toWebp(70);
+            $encodedImage = (string) $image->toJpeg(70);
             Storage::disk('public')->put($path, $encodedImage);
 
             Images::create([
@@ -437,7 +437,7 @@ class ItemController extends Controller
 
         //JANGAN LUPA DISESUAIKAN LAGI
         // Ngambil alamat web dari file .env
-        $baseUrl = env('FRONTEND_URL', 'http://localhost:3306'); 
+        $baseUrl = env('FRONTEND_URL', 'https://app-delova.vercel.app'); // Default kalau FRONTEND_URL belum diset
 
         // Gabungin sama path detail barang dan ID barangnya
         $frontendUrl = $baseUrl . "/apps/inventory/" . $item->item_id;
@@ -490,13 +490,13 @@ class ItemController extends Controller
                 $imagePath = null;
                 if ($request->hasFile('image')) {
                     $file = $request->file('image');
-                    $fileName = 'faulty_' . time() . '_' . Str::random(5) . '.webp';
+                    $fileName = 'faulty_' . time() . '_' . Str::random(5) . '.jpg';
                     $imagePath = 'faulty_proofs/' . $fileName;
 
                     $manager = new ImageManager(new Driver());
                     $image = $manager->read($file);
                     $image->scaleDown(width: 800);
-                    $encodedImage = (string) $image->toWebp(70);
+                    $encodedImage = (string) $image->toJpeg(70);
                     
                     Storage::disk('public')->put($imagePath, $encodedImage);
                 }
@@ -559,12 +559,17 @@ class ItemController extends Controller
                 ], 403);
             }
 
-            $faultyList = Transactions::with(['items', 'user']) 
+            $faultyList = Transactions::with(['item', 'user']) 
                 ->where('transaction_type', 'FAULTY')
                 ->orderBy('transaction_date', 'desc')
                 ->get();
 
             $faultyList->map(function ($transaction) {
+                
+                // Trik Ninja: Kembalikan nama properti ke bentuk jamak untuk frontend
+                $transaction->items = $transaction->item;
+                $transaction->users = $transaction->user;
+
                 if ($transaction->image_proof) {
                     $transaction->image_url = asset('storage/' . $transaction->image_proof);
                 } else {

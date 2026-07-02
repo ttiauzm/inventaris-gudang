@@ -79,12 +79,14 @@ class CategoryController extends Controller
 
         $request->validate([
             'category_name' => 'required|string|max:255',
+            'unit'          => 'required|string|max:50',
             'description'   => 'nullable|string',
         ]);
 
         $category = Categories::create([
             'category_id'   => Str::uuid(),
             'category_name' => $request->category_name,
+            'unit'          => $request->unit,
             'description'   => $request->description,
             'is_deleted'    => 0,
             'created_at'    => now(),
@@ -130,11 +132,13 @@ class CategoryController extends Controller
 
         $request->validate([
             'category_name' => 'required|string|max:255',
+            'unit'          => 'required|string|max:50',
             'description'   => 'nullable|string',
         ]);
 
         $category->update([
             'category_name' => $request->category_name,
+            'unit'          => $request->unit,
             'description'   => $request->description,
             'updated_at'    => now(),
         ]);

@@ -15,8 +15,10 @@ class Categories extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'category_id',
         'category_name',
         'description',
+        'unit',
         'is_deleted',
     ];
 

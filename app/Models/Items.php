@@ -30,6 +30,21 @@ class Items extends Model
         'parent_item_id',
     ];
 
+    protected $appends = ['image_url'];
+
+    public function getImageUrlAttribute()
+    {
+        // Cari gambar pertama yang nyambung dengan barang ini
+        $firstImage = $this->images()->first();
+        
+        if ($firstImage && $firstImage->file_path) {
+            // Ubah file_path menjadi URL lengkap dengan https://
+            return asset('storage/' . $firstImage->file_path);
+        }
+        
+        return null; // Kalau nggak ada gambar, kirim null
+    }
+
     public function categories()
     {
         return $this->belongsTo(Categories::class, 'category_id');
